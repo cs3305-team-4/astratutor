@@ -1,0 +1,17 @@
+bind:
+  address: "0.0.0.0"
+  port: "8080"
+database:
+  host: db
+  user: grindsapp
+  password: grindsapp
+  database: grindsapp
+  port: 5432
+subjects:
+  - id: 2376
+    slug: "lc-english"
+    name: "Leaving Certificate - English"
+  - id: 2377
+    slug: "lc-english"
+    name: "Leaving Certificate - English"
+    
