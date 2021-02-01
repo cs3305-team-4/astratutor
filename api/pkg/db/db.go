@@ -2,11 +2,20 @@ package db
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+type Model struct {
+	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
 
 func DB() (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
