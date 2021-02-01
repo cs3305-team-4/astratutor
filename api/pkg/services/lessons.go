@@ -14,23 +14,23 @@ const (
 	Requested LessonRequestState = "requested"
 
 	// The lesson has been accepted by the reciever party
-	Accepted = "accepted"
+	Accepted LessonRequestState = "accepted"
 
 	// One party has suggested a reschedule
-	SuggestReschedule = "reschedule"
+	SuggestReschedule LessonRequestState = "reschedule"
 
 	// The lesson (request) has been denied
-	Denied = "denied"
+	Denied LessonRequestState = "denied"
 
 	// The lesson has been cancelled
-	Cancelled = "cancelled"
+	Cancelled LessonRequestState = "cancelled"
 
 	// Lesson completed
-	Completed = "completed"
+	Completed LessonRequestState = "completed"
 
-	NoShowStudent = "no-show-student"
+	NoShowStudent LessonRequestState = "no-show-student"
 
-	NoShowTeacher = "no-show-teacher"
+	NoShowTeacher LessonRequestState = "no-show-teacher"
 )
 
 type Lesson struct {

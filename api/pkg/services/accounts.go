@@ -10,7 +10,7 @@ type AccountType string
 
 const (
 	Tutor   AccountType = "tutor"
-	Student             = "student"
+	Student AccountType = "student"
 )
 
 type Account struct {
