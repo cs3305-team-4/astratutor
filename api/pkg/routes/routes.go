@@ -65,5 +65,5 @@ func getUUID(r *http.Request) (uuid.UUID, error) {
 	if !ok {
 		return uuid.UUID{}, errors.New("No uuid found")
 	}
-	return uuid.FromBytes([]byte(val))
+	return uuid.Parse(val)
 }

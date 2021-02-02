@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cs3305-team-4/api/pkg/database"
@@ -36,12 +37,29 @@ type Account struct {
 	Type          AccountType
 	Suspended     bool
 	PasswordHash  PasswordHash `gorm:"foreignKey:AccountID"`
-	Profile       Profile      `gorm:"foreignKey:AccountID"`
+	Profile       *Profile     `gorm:"foreignKey:AccountID"`
 }
 
 // CreateAccount will create an account entry in the DB.
 func CreateAccount(a *Account) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
 	return conn.Create(a).Error
+}
+
+// GetAccountByID queries the DB by account ID.
+func GetAccounteByID(id uuid.UUID, preloads ...string) (*Account, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
+	account := &Account{}
+	return account, conn.First(account, id).Error
 }
 
 type PasswordHash struct {
@@ -59,6 +77,7 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 	return &PasswordHash{Hash: hash}, nil
 }
 
+// Profile model.
 type Profile struct {
 	database.Model
 	AccountID      uuid.UUID `gorm:"type:uuid"`
@@ -74,6 +93,28 @@ type Profile struct {
 
 	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
 	Availability []bool `gorm:"type:text"`
+}
+
+// CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
+func CreateProfile(p *Profile) error {
+	account, err := GetAccounteByID(p.AccountID, "Profile")
+	if err != nil {
+		return err
+	}
+	if account.Profile != nil {
+		return errors.New("profile already exists")
+	}
+	account.Profile = p
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Save(account).Error
+}
+
+// GetProfileByAccountID queries the DB by account ID.
+func GetProfileByAccountID(id uuid.UUID) (*Profile, error) {
+	return nil, nil
 }
 
 type Qualification struct {
