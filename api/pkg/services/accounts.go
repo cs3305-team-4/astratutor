@@ -16,7 +16,7 @@ const (
 	Student AccountType = "student"
 )
 
-// ToAccountType will case to AccounType if it exists.
+// ToAccountType will cast to AccounType if it exists.
 func ToAccountType(s string) (AccountType, error) {
 	switch AccountType(s) {
 	case Tutor:
