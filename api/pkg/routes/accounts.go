@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -11,9 +10,6 @@ import (
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleAccounts).Methods("POST")
-	subrouter.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("test")
-	})
 }
 
 type Account struct {
