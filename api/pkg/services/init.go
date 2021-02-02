@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/db"
@@ -57,6 +58,10 @@ func SetCustomValidators() {
 		}
 		if strings.ToUpper(val) == val {
 			return errors.New("Must have at least one lower case letter")
+		}
+		numRe := regexp.MustCompile(`[0-9]+`)
+		if !numRe.MatchString(val) {
+			return errors.New("Must have at least one number")
 		}
 		return nil
 	})
