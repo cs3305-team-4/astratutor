@@ -58,7 +58,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(log.Fields{
 			"host": r.Host,
-			"slug": r.URL.RawPath,
+			"slug": r.URL.Path,
 		}).WithContext(r.Context()).Infof("Incoming request")
 		next.ServeHTTP(w, r)
 	})
