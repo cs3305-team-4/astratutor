@@ -2,11 +2,13 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/cs3305-team-4/api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,6 +42,8 @@ func customErrors(in error, code int) (out error, codeOut int) {
 	codeOut = code
 	out = in
 	switch {
+	case errors.Is(in, services.AccountErrorProfileExists):
+		codeOut = http.StatusBadRequest
 	case strings.Contains(in.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
 		if e != nil {

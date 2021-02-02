@@ -46,7 +46,7 @@ func handleStudentsProfileGet(w http.ResponseWriter, r *http.Request) {
 		httpError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	serviceProfile, err := services.GetProfileByAccountID(id)
+	serviceProfile, err := services.GetProfileByAccountID(id, nil)
 	if err != nil {
 		httpError(w, r, err, http.StatusBadRequest)
 		return

@@ -11,6 +11,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// AccountError types.
+type AccountError string
+
+func (e AccountError) Error() string {
+	return string(e)
+}
+
+const (
+	AccountErrorProfileExists AccountError = "a profile already exists for this account"
+)
+
 // AccountType is the type of account.
 type AccountType string
 
@@ -52,10 +63,14 @@ func CreateAccount(a *Account) error {
 }
 
 // GetAccountByID queries the DB by account ID.
-func GetAccounteByID(id uuid.UUID, preloads ...string) (*Account, error) {
-	conn, err := database.Open()
-	if err != nil {
-		return nil, err
+// conn is optional.
+func GetAccounteByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
 	}
 	for _, preload := range preloads {
 		conn = conn.Preload(preload)
@@ -99,49 +114,59 @@ type Profile struct {
 
 // CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
 func CreateProfile(p *Profile) error {
-	account, err := GetAccounteByID(p.AccountID, "Profile")
-	if err != nil {
-		return err
-	}
-	if account.Profile != nil {
-		return errors.New("profile already exists")
-	}
-
-	// Generate slug
-	name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
-	_, slugErr := GetProfileBySlug(name)
-	i := 1
-	slug := name
-	for !errors.Is(slugErr, gorm.ErrRecordNotFound) {
-		slug = fmt.Sprintf("%s-%d", name, i)
-		_, slugErr = GetProfileBySlug(slug)
-		i++
-	}
-	p.Slug = slug
-
-	account.Profile = p
 	conn, err := database.Open()
 	if err != nil {
 		return err
 	}
-	return conn.Save(account).Error
+	return conn.Transaction(func(tx *gorm.DB) error {
+		account, err := GetAccounteByID(p.AccountID, tx, "Profile")
+		if err != nil {
+			return err
+		}
+		if account.Profile != nil {
+			return AccountErrorProfileExists
+		}
+
+		// Generate slug
+		name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
+		_, slugErr := GetProfileBySlug(name, tx)
+		i := 1
+		slug := name
+		for !errors.Is(slugErr, gorm.ErrRecordNotFound) {
+			slug = fmt.Sprintf("%s-%d", name, i)
+			_, slugErr = GetProfileBySlug(slug, tx)
+			i++
+		}
+		p.Slug = slug
+
+		account.Profile = p
+		return conn.Save(account).Error
+	})
 }
 
 // GetProfileByAccountSlug queries the DB by slug.
-func GetProfileBySlug(slug string) (*Profile, error) {
-	conn, err := database.Open()
-	if err != nil {
-		return nil, err
+// conn is optional.
+func GetProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
 	}
 	profile := &Profile{}
 	return profile, conn.First(profile, "slug = ?", slug).Error
 }
 
 // GetProfileByAccountID queries the DB by account ID.
-func GetProfileByAccountID(id uuid.UUID) (*Profile, error) {
-	conn, err := database.Open()
-	if err != nil {
-		return nil, err
+// conn is optional.
+func GetProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
 	}
 	profile := &Profile{}
 	return profile, conn.First(profile, "account_id = ?", id).Error
