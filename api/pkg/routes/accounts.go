@@ -12,6 +12,7 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleAccounts).Methods("POST")
 }
 
+// Account DTO.
 type Account struct {
 	ID           string `json:"id" validate:"len=0"`
 	Email        string `json:"email" validate:"nonzero"`
