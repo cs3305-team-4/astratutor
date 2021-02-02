@@ -33,22 +33,29 @@ const (
 	NoShowTeacher LessonRequestState = "no-show-teacher"
 )
 
+// Lesson contains information about a lesson
 type Lesson struct {
 	database.Model
-	Tutor   Account   `gorm:"foreignKey:TutorID"`
-	TutorID uuid.UUID `gorm:"type:uuid"`
 
-	Student   Account   `gorm:"foreignKey:StudentID"`
-	StudentID uuid.UUID `gorm:"type:uuid"`
+	// ScheduledTime of the lesson
+	ScheduledTime time.Time
 
-	SubjectTaught SubjectTaught // `gorm:"foreignKey:ID"`
+	// Tutor of the lesson
+	Tutor Account `gorm:"foreignKey:ID"`
 
-	Time time.Time
+	// Student of the lesson
+	Student Account `gorm:"foreignKey:ID"`
 
-	RequestState        LessonRequestState
-	RequestStateDetail  string
-	RequestStateChanger AccountType
+	// RequestState determines what state of request the lesson is in
+	RequestState LessonRequestState
 
+	// RequestStateDetail contains a string related to the current request state
+	RequestStateDetail string
+
+	// RequestStateChanger contains a reference to the account of the person who last changed the state of the lesson
+	RequestStateChanger Account `gorm:"foreignKey:ID"`
+
+	// Resources are
 	Resources []Resource `gorm:"foreignKey:LessonID"`
 }
 

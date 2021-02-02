@@ -35,7 +35,15 @@ func init() {
 	log.Info("Migrating account service models")
 	// Do migrations
 	conn.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-	conn.AutoMigrate(&Account{}, &PasswordHash{}, &Profile{}, &Qualification{}, &WorkExperience{})
+	conn.AutoMigrate(
+		&Account{},
+		&PasswordHash{},
+		&Profile{},
+		&Qualification{},
+		&WorkExperience{}
+		&Lesson{},
+		&Resource{}
+	)
 }
 
 // SetCustomValidator will set field validators.
