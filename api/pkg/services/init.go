@@ -55,9 +55,6 @@ func SetCustomValidators() {
 		if strings.ToUpper(val) == val {
 			return errors.New("Must have at least one lower case letter")
 		}
-		if strings.ToUpper(val) == val {
-			return errors.New("Must have at least one lower case letter")
-		}
 		numRe := regexp.MustCompile(`[0-9]+`)
 		if !numRe.MatchString(val) {
 			return errors.New("Must have at least one number")
