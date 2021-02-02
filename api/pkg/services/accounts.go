@@ -3,10 +3,12 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // AccountType is the type of account.
@@ -104,12 +106,35 @@ func CreateProfile(p *Profile) error {
 	if account.Profile != nil {
 		return errors.New("profile already exists")
 	}
+
+	// Generate slug
+	name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
+	_, slugErr := GetProfileBySlug(name)
+	i := 1
+	slug := name
+	for !errors.Is(slugErr, gorm.ErrRecordNotFound) {
+		slug = fmt.Sprintf("%s-%d", name, i)
+		_, slugErr = GetProfileBySlug(slug)
+		i++
+	}
+	p.Slug = slug
+
 	account.Profile = p
 	conn, err := database.Open()
 	if err != nil {
 		return err
 	}
 	return conn.Save(account).Error
+}
+
+// GetProfileByAccountSlug queries the DB by slug.
+func GetProfileBySlug(slug string) (*Profile, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	profile := &Profile{}
+	return profile, conn.First(profile, "slug = ?", slug).Error
 }
 
 // GetProfileByAccountID queries the DB by account ID.
