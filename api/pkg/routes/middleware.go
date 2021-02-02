@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -57,8 +56,17 @@ import (
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("ass")
-		log.WithContext(r.Context()).Infof("Incoming request to %s", r.URL.String())
+		log.WithFields(log.Fields{
+			"host": r.Host,
+			"slug": r.URL.RawPath,
+		}).WithContext(r.Context()).Infof("Incoming request")
+		next.ServeHTTP(w, r)
+	})
+}
+func jsonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		next.ServeHTTP(w, r)
 	})
 }

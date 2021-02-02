@@ -19,8 +19,6 @@ type returnError struct {
 
 func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
 	log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 
 	err = customErrors(err)

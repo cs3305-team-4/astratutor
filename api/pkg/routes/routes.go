@@ -14,7 +14,10 @@ func GetHandler() http.Handler {
 	services.SetCustomValidators()
 	r := mux.NewRouter()
 
-	r.Use(loggingMiddleware)
+	r.Use(
+		loggingMiddleware,
+		jsonMiddleware,
+	)
 
 	InjectAccountsRoutes(r.PathPrefix("/accounts").Subrouter())
 	InjectAuthRoutes(r.PathPrefix("/auth").Subrouter())
