@@ -2,16 +2,20 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/validator.v2"
 )
 
 func GetHandler() http.Handler {
+	services.SetCustomValidators()
 	r := mux.NewRouter()
 
 	r.Use(loggingMiddleware)
@@ -41,14 +45,29 @@ func GetHandler() http.Handler {
 	}).Handler(r)
 }
 
+// ParseBody inplace. Returns false if error has been written.
+func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
+	if err := json.NewDecoder(r.Body).Decode(i); err != nil {
+		httpError(w, r, err, http.StatusBadRequest)
+		return false
+	}
+	if err := validator.Validate(i); err != nil {
+		httpError(w, r, err, http.StatusBadRequest)
+		return false
+	}
+	return true
+}
+
 const (
 	sqlDuplicate = "(SQLSTATE 23505)"
 )
 
+type returnDetail struct {
+	Loc []string `json:"loc"`
+	Msg string   `json:"msg"`
+}
 type returnError struct {
-	Error          string `json:"error"`
-	Type           string `json:"type"`
-	DuplicateField string `json:"duplicate_field,omitempty"`
+	Detail returnDetail `json:"detail"`
 }
 
 func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
@@ -57,9 +76,7 @@ func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 
-	var outErr returnError
-
-	// Special error cases
+	// Error cases
 	switch {
 	case strings.Contains(err.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
@@ -68,17 +85,13 @@ func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
 		}
 		match := re.FindStringSubmatch(err.Error())
 		if len(match) > 1 {
-			outErr = returnError{
-				Error:          "Duplicate key found",
-				DuplicateField: match[1],
-				Type:           "duplicate",
-			}
+			err = fmt.Errorf("%s already exists", match[1])
 		}
-	default:
-		outErr = returnError{
-			Error: err.Error(),
-			Type:  "standard",
-		}
+	}
+	outErr := returnError{
+		Detail: returnDetail{
+			Msg: err.Error(),
+		},
 	}
 
 	if err := json.NewEncoder(w).Encode(&outErr); err != nil {

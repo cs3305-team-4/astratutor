@@ -17,17 +17,16 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 }
 
 type Account struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
+	ID           string `json:"id" validate:"len=0"`
+	Email        string `json:"email" validate:"nonzero"`
 	Type         string `json:"type"`
-	Password     string `json:"password,omitempty"`
+	Password     string `json:"password,omitempty" validate:"passwd"`
 	ParentsEmail string `json:"parents_email,omitempty"`
 }
 
 func handleAccounts(w http.ResponseWriter, r *http.Request) {
 	account := &Account{}
-	if err := json.NewDecoder(r.Body).Decode(account); err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+	if !ParseBody(w, r, account) {
 		return
 	}
 	accountType, err := services.ToAccountType(account.Type)
