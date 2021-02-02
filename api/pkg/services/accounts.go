@@ -1,11 +1,14 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/cs3305-team-4/api/pkg/db"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// Type is the type of account
+// AccountType is the type of account.
 type AccountType string
 
 const (
@@ -13,6 +16,19 @@ const (
 	Student AccountType = "student"
 )
 
+// ToAccountType will case to AccounType if it exists.
+func ToAccountType(s string) (AccountType, error) {
+	switch AccountType(s) {
+	case Tutor:
+		return Tutor, nil
+	case Student:
+		return Student, nil
+	default:
+		return "", fmt.Errorf("Couldn't find account type %s", s)
+	}
+}
+
+// Account model.
 type Account struct {
 	db.Model
 	Email         string
@@ -23,11 +39,24 @@ type Account struct {
 	Profile       Profile      `gorm:"foreignKey:AccountID"`
 }
 
+// CreateAccount will create an account entry in the DB.
+func CreateAccount(a *Account) error {
+	return conn.Create(a).Error
+}
+
 type PasswordHash struct {
 	db.Model
 	AccountID uuid.UUID `gorm:"type:uuid"`
 	Hash      []byte
-	Salt      string
+}
+
+// NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.
+func NewPasswordHash(password string) (*PasswordHash, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost) // Salt embedded in hash
+	if err != nil {
+		return nil, err
+	}
+	return &PasswordHash{Hash: hash}, nil
 }
 
 type Profile struct {

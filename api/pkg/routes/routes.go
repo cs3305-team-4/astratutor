@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -38,7 +39,20 @@ func GetHandler() http.Handler {
 	}).Handler(r)
 }
 
+type returnError struct {
+	Error string `json:"error"`
+}
+
 func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
 	log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
-	http.Error(w, http.StatusText(code), code)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	outErr := returnError{
+		Error: err.Error(),
+	}
+	if err := json.NewEncoder(w).Encode(&outErr); err != nil {
+		log.WithContext(r.Context()).WithError(err).Error("Could not return error to user")
+		return
+	}
 }
