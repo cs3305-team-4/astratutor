@@ -12,7 +12,7 @@ import (
 func GetHandler() http.Handler {
 	r := mux.NewRouter()
 
-	r.Use()
+	r.Use(loggingMiddleware)
 
 	InjectAccountsRoutes(r.PathPrefix("/accounts").Subrouter())
 	InjectAuthRoutes(r.PathPrefix("/auth").Subrouter())

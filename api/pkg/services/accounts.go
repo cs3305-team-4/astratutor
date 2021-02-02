@@ -47,7 +47,7 @@ func CreateAccount(a *Account) error {
 type PasswordHash struct {
 	db.Model
 	AccountID uuid.UUID `gorm:"type:uuid"`
-	Hash      []byte
+	Hash      []byte    `gorm:"type:text"`
 }
 
 // NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.
@@ -73,7 +73,7 @@ type Profile struct {
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
 	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
-	Availability []bool
+	Availability []bool `gorm:"type:text"`
 }
 
 type Qualification struct {

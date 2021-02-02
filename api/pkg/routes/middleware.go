@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -56,6 +57,7 @@ import (
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("ass")
 		log.WithContext(r.Context()).Infof("Incoming request to %s", r.URL.String())
 		next.ServeHTTP(w, r)
 	})

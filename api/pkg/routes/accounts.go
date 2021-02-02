@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -9,15 +10,18 @@ import (
 )
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
-	subrouter.HandleFunc("/", handleAccounts).Methods("POST")
+	subrouter.HandleFunc("", handleAccounts).Methods("POST")
+	subrouter.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("test")
+	})
 }
 
 type Account struct {
 	ID           string `json:"id"`
 	Email        string `json:"email"`
 	Type         string `json:"type"`
-	Password     string `json:"password"`
-	ParentsEmail string `json:"parents:email"`
+	Password     string `json:"password,omitempty"`
+	ParentsEmail string `json:"parents_email,omitempty"`
 }
 
 func handleAccounts(w http.ResponseWriter, r *http.Request) {
@@ -36,15 +40,21 @@ func handleAccounts(w http.ResponseWriter, r *http.Request) {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	if err = services.CreateAccount(&services.Account{
+	serviceAccount := &services.Account{
 		Email:        account.Email,
 		Type:         accountType,
 		PasswordHash: *hash,
-	}); err != nil {
+	}
+	if err = services.CreateAccount(serviceAccount); err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	if err = json.NewEncoder(w).Encode(account); err != nil {
+	outAccount := &Account{
+		ID:    serviceAccount.ID.String(),
+		Email: serviceAccount.Email,
+		Type:  string(serviceAccount.Type),
+	}
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
 	}

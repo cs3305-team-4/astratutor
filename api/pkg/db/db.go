@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var db *gorm.DB
+
 type Model struct {
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	CreatedAt time.Time
@@ -27,7 +29,8 @@ func DB() (*gorm.DB, error) {
 		viper.GetString("database.database"),
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	return db, err
 }
