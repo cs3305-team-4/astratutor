@@ -3,6 +3,8 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -39,8 +41,14 @@ func GetHandler() http.Handler {
 	}).Handler(r)
 }
 
+const (
+	sqlDuplicate = "(SQLSTATE 23505)"
+)
+
 type returnError struct {
-	Error string `json:"error"`
+	Error          string `json:"error"`
+	Type           string `json:"type"`
+	DuplicateField string `json:"duplicate_field,omitempty"`
 }
 
 func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
@@ -48,9 +56,31 @@ func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-	outErr := returnError{
-		Error: err.Error(),
+
+	var outErr returnError
+
+	// Special error cases
+	switch {
+	case strings.Contains(err.Error(), sqlDuplicate):
+		re, e := regexp.Compile("_([a-z]+)_key")
+		if e != nil {
+			log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
+		}
+		match := re.FindStringSubmatch(err.Error())
+		if len(match) > 1 {
+			outErr = returnError{
+				Error:          "Duplicate key found",
+				DuplicateField: match[1],
+				Type:           "duplicate",
+			}
+		}
+	default:
+		outErr = returnError{
+			Error: err.Error(),
+			Type:  "standard",
+		}
 	}
+
 	if err := json.NewEncoder(w).Encode(&outErr); err != nil {
 		log.WithContext(r.Context()).WithError(err).Error("Could not return error to user")
 		return

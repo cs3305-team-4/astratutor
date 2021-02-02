@@ -31,7 +31,7 @@ func ToAccountType(s string) (AccountType, error) {
 // Account model.
 type Account struct {
 	db.Model
-	Email         string
+	Email         string `gorm:"unique;not null;"`
 	EmailVerified bool
 	Type          AccountType
 	Suspended     bool
