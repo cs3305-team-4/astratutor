@@ -26,13 +26,36 @@ type Profile struct {
 	Description string `json:"description"`
 }
 
-func handleStudentsProfileGet(w http.ResponseWriter, r *http.Request) {
-	// id, err := getUUID(r)
-	// if err != nil {
-	// 	httpError(w, r, err, http.StatusBadRequest)
-	// return
-	// }
+func mapOutProfile(p *services.Profile) *Profile {
+	return &Profile{
+		AccountID:   p.AccountID.String(),
+		ID:          p.ID.String(),
+		Avatar:      p.Avatar,
+		Slug:        p.Slug,
+		FirstName:   p.FirstName,
+		LastName:    p.LastName,
+		City:        p.City,
+		Country:     p.Country,
+		Description: p.Description,
+	}
+}
 
+func handleStudentsProfileGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r)
+	if err != nil {
+		httpError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceProfile, err := services.GetProfileByAccountID(id)
+	if err != nil {
+		httpError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outProfile := mapOutProfile(serviceProfile)
+	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
+		httpError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
 
 func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
@@ -59,17 +82,7 @@ func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	outProfile := &Profile{
-		AccountID:   serviceProfile.AccountID.String(),
-		ID:          serviceProfile.ID.String(),
-		Avatar:      serviceProfile.Avatar,
-		Slug:        serviceProfile.Slug,
-		FirstName:   serviceProfile.FirstName,
-		LastName:    serviceProfile.LastName,
-		City:        serviceProfile.City,
-		Country:     serviceProfile.Country,
-		Description: serviceProfile.Description,
-	}
+	outProfile := mapOutProfile(serviceProfile)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return

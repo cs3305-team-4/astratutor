@@ -139,7 +139,12 @@ func GetProfileBySlug(slug string) (*Profile, error) {
 
 // GetProfileByAccountID queries the DB by account ID.
 func GetProfileByAccountID(id uuid.UUID) (*Profile, error) {
-	return nil, nil
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	profile := &Profile{}
+	return profile, conn.First(profile, "account_id = ?", id).Error
 }
 
 type Qualification struct {
