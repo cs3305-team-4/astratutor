@@ -6,37 +6,23 @@ import (
 
 	"github.com/cs3305-team-4/api/pkg/db"
 	"github.com/cs3305-team-4/api/pkg/routes"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 func main() {
-	fmt.Println("grindsapp api starting")
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("/")
-	viper.AddConfigPath(".")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Could not read config file %s\n", err))
-	}
-
+	log.Info("grindsapp api starting")
 	bindStr := fmt.Sprintf(
 		"%s:%s",
 		viper.GetString("bind.address"),
 		viper.GetString("bind.port"),
 	)
-
 	// do an initial db connection to test credentials
-	_, err = db.DB()
-	if err != nil {
+	if _, err := db.DB(); err != nil {
 		panic(fmt.Errorf("could not connect to database: %s", err))
 	}
-
-	fmt.Printf("binding to %s\n", bindStr)
-
+	log.Infof("binding to %s", bindStr)
 	router := routes.GetHandler()
 	http.ListenAndServe(bindStr, router)
 }

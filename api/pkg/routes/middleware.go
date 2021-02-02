@@ -1,5 +1,11 @@
 package routes
 
+import (
+	"net/http"
+
+	log "github.com/sirupsen/logrus"
+)
+
 // // Define our struct
 // type authenticationMiddleware struct {
 // 	tokenUsers map[string]string
@@ -47,3 +53,20 @@ package routes
 
 // 	}
 // }
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.WithFields(log.Fields{
+			"host": r.Host,
+			"slug": r.URL.Path,
+		}).WithContext(r.Context()).Infof("Incoming request")
+		next.ServeHTTP(w, r)
+	})
+}
+func jsonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		next.ServeHTTP(w, r)
+	})
+}
