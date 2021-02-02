@@ -3,7 +3,7 @@ package services
 import (
 	"time"
 
-	"github.com/cs3305-team-4/api/pkg/db"
+	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
 )
 
@@ -34,7 +34,7 @@ const (
 )
 
 type Lesson struct {
-	db.Model
+	database.Model
 	Tutor   Account   `gorm:"foreignKey:TutorID"`
 	TutorID uuid.UUID `gorm:"type:uuid"`
 
@@ -53,7 +53,7 @@ type Lesson struct {
 }
 
 type Resource struct {
-	db.Model
+	database.Model
 	LessonID   uuid.UUID `gorm:"type:uuid"`
 	Base64Data string
 }

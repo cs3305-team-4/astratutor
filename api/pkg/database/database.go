@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"fmt"
@@ -10,8 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
-
 type Model struct {
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	CreatedAt time.Time
@@ -19,7 +17,7 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-func DB() (*gorm.DB, error) {
+func Open() (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		viper.GetString("database.user"),
@@ -30,7 +28,7 @@ func DB() (*gorm.DB, error) {
 	)
 
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	return db, err
 }

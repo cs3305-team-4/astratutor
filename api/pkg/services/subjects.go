@@ -1,15 +1,15 @@
 package services
 
-import "github.com/cs3305-team-4/api/pkg/db"
+import "github.com/cs3305-team-4/api/pkg/database"
 
 type Subject struct {
-	db.Model
+	database.Model
 	Name string
 	Slug string
 }
 
 type SubjectTaught struct {
-	db.Model
+	database.Model
 	Subject     Subject
 	Tutor       Account
 	Price       uint

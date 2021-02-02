@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cs3305-team-4/api/pkg/db"
+	"github.com/cs3305-team-4/api/pkg/database"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/validator.v2"
@@ -26,15 +26,14 @@ func init() {
 	if err != nil {
 		panic(fmt.Errorf("Could not read config file %s\n", err))
 	}
-	conn, err = db.DB()
+
+	conn, err = database.Open()
 	if err != nil {
 		log.WithError(err).Error("Couldn't establish DB connection")
 	}
-	modelMigrations()
-}
 
-func modelMigrations() {
 	log.Info("Migrating account service models")
+	// Do migrations
 	conn.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 	conn.AutoMigrate(&Account{}, &PasswordHash{}, &Profile{}, &Qualification{}, &WorkExperience{})
 }

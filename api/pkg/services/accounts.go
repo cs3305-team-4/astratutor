@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 
-	"github.com/cs3305-team-4/api/pkg/db"
+	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +30,7 @@ func ToAccountType(s string) (AccountType, error) {
 
 // Account model.
 type Account struct {
-	db.Model
+	database.Model
 	Email         string `gorm:"unique;not null;"`
 	EmailVerified bool
 	Type          AccountType
@@ -45,7 +45,7 @@ func CreateAccount(a *Account) error {
 }
 
 type PasswordHash struct {
-	db.Model
+	database.Model
 	AccountID uuid.UUID `gorm:"type:uuid"`
 	Hash      []byte    `gorm:"type:text"`
 }
@@ -60,7 +60,7 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 }
 
 type Profile struct {
-	db.Model
+	database.Model
 	AccountID      uuid.UUID `gorm:"type:uuid"`
 	Avatar         string
 	Slug           string
