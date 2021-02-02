@@ -5,10 +5,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 )
 
 func GetHandler() http.Handler {
 	r := mux.NewRouter()
+
+	r.Use()
 
 	InjectAccountsRoutes(r.PathPrefix("/accounts").Subrouter())
 	InjectAuthRoutes(r.PathPrefix("/auth").Subrouter())
@@ -33,4 +36,9 @@ func GetHandler() http.Handler {
 			"*",
 		},
 	}).Handler(r)
+}
+
+func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
+	log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
+	http.Error(w, http.StatusText(code), code)
 }
