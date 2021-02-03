@@ -11,10 +11,12 @@ import (
 func InjectStudentsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfileGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfilePost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")
+	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsPost).Methods("POST")
 }
 
 // Profile DTO.
-type Profile struct {
+type ProfileDTO struct {
 	AccountID   string `json:"account_id" validate:"len=0"`
 	ID          string `json:"id" validate:"len=0"`
 	Avatar      string `json:"avatar"`
@@ -26,8 +28,8 @@ type Profile struct {
 	Description string `json:"description"`
 }
 
-func mapOutProfile(p *services.Profile) *Profile {
-	return &Profile{
+func dtoFromProfile(p *services.Profile) *ProfileDTO {
+	return &ProfileDTO{
 		AccountID:   p.AccountID.String(),
 		ID:          p.ID.String(),
 		Avatar:      p.Avatar,
@@ -41,33 +43,34 @@ func mapOutProfile(p *services.Profile) *Profile {
 }
 
 func handleStudentsProfileGet(w http.ResponseWriter, r *http.Request) {
-	id, err := getUUID(r)
+	id, err := getUUID(r, "uuid")
 	if err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	serviceProfile, err := services.GetProfileByAccountID(id, nil)
+	serviceProfile, err := services.ReadProfileByAccountID(id, nil)
 	if err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	outProfile := mapOutProfile(serviceProfile)
+	outProfile := dtoFromProfile(serviceProfile)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 }
 
 func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
-	id, err := getUUID(r)
+	id, err := getUUID(r, "uuid")
 	if err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	profile := &Profile{}
+	profile := &ProfileDTO{}
 	if !ParseBody(w, r, profile) {
 		return
 	}
+
 	serviceProfile := &services.Profile{
 		AccountID:   id,
 		Avatar:      profile.Avatar,
@@ -79,12 +82,63 @@ func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
 		Description: profile.Description,
 	}
 	if err := services.CreateProfile(serviceProfile); err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	outProfile := mapOutProfile(serviceProfile)
+	outProfile := dtoFromProfile(serviceProfile)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lessons, err := services.ReadLessonsByStudentID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	dtoLessons := dtoFromLessons(lessons)
+	if err = json.NewEncoder(w).Encode(dtoLessons); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsPost(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lessonRequest := &LessonRequestDTO{}
+	if !ParseBody(w, r, lessonRequest) {
+		return
+	}
+
+	tutor, err := services.ReadTutorByID(lessonRequest.RequesterID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	student, err := services.ReadStudentByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = services.CreateLesson(student, tutor, lessonRequest.TimeStarts, lessonRequest.LessonDetail)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 }
