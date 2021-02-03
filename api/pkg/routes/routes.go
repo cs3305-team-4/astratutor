@@ -74,3 +74,17 @@ func getUUID(r *http.Request, param string) (uuid.UUID, error) {
 	}
 	return uuid.Parse(val)
 }
+
+// UpdateDTO used for single field update route posts.
+type UpdateDTO struct {
+	Detail string `json:"detail"`
+}
+
+// ParseUpdateString will parse
+func ParseUpdateString(w http.ResponseWriter, r *http.Request) string {
+	update := &UpdateDTO{}
+	if !ParseBody(w, r, update) {
+		return ""
+	}
+	return update.Detail
+}

@@ -19,7 +19,9 @@ func (e AccountError) Error() string {
 }
 
 const (
-	AccountErrorProfileExists AccountError = "a profile already exists for this account"
+	AccountErrorProfileExists        AccountError = "A profile already exists for this account."
+	AccountErrorAccountDoesNotExist  AccountError = "This account does not exist."
+	AccountErrorProfileDoesNotExists AccountError = "A profile does not exist for this account."
 )
 
 // AccountType is the type of account.
@@ -241,7 +243,26 @@ func CreateProfile(p *Profile) error {
 		p.Slug = slug
 
 		account.Profile = p
-		return conn.Save(account).Error
+		return tx.Save(account).Error
+	})
+}
+
+// UpdateProfileField will update a single profile field belonging to the provided account ID.
+func UpdateProfileField(id uuid.UUID, key string, value string) (*Profile, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		account, err := ReadAccountByID(id, tx, "Profile")
+		if err != nil {
+			return err
+		}
+		if profile = account.Profile; profile == nil {
+			return AccountErrorProfileDoesNotExists
+		}
+		return tx.Model(profile).Update(key, value).Error
 	})
 }
 

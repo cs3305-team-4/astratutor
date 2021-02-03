@@ -9,8 +9,19 @@ import (
 )
 
 func InjectStudentsRoutes(subrouter *mux.Router) {
+	// Profile routes
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfileGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfilePost).Methods("POST")
+
+	// Profile update routes
+	subrouter.HandleFunc("/{uuid}/profile/avatar", handleStudentsLessonsUpdateAvatar).Methods("POST")
+	// subrouter.HandleFunc("/{uuid}/profile/first_name", handleStudentsLessonsUpdateFirstName).Methods("POST")
+	// subrouter.HandleFunc("/{uuid}/profile/last_name", handleStudentsLessonsUpdateLastName).Methods("POST")
+	// subrouter.HandleFunc("/{uuid}/profile/city", handleStudentsLessonsUpdateCity).Methods("POST")
+	// subrouter.HandleFunc("/{uuid}/profile/country", handleStudentsLessonsUpdateCountry).Methods("POST")
+	// subrouter.HandleFunc("/{uuid}/profile/description", handleStudentsLessonsUpdateDescription).Methods("POST")
+
+	// Lessons routes
 	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsPost).Methods("POST")
 }
@@ -87,6 +98,25 @@ func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
 	}
 	outProfile := dtoFromProfile(serviceProfile)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsUpdateAvatar(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "avatar", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/cs3305-team-4/api/pkg/services"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type returnDetail struct {
@@ -44,6 +45,14 @@ func customErrors(in error, code int) (out error, codeOut int) {
 	switch {
 	case errors.Is(in, services.AccountErrorProfileExists):
 		codeOut = http.StatusBadRequest
+	case errors.Is(in, services.AccountErrorProfileDoesNotExists):
+		codeOut = http.StatusNotFound
+	case errors.Is(in, services.AccountErrorAccountDoesNotExist):
+		codeOut = http.StatusNotFound
+	case errors.Is(in, gorm.ErrRecordNotFound):
+		codeOut = http.StatusNotFound
+		out = errors.New("No record matching provided ID found.")
+
 	case strings.Contains(in.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
 		if e != nil {
