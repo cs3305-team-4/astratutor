@@ -37,10 +37,13 @@ func init() {
 		&PasswordHash{},
 		&Profile{},
 		&Qualification{},
-		&WorkExperience{}
+		&WorkExperience{},
 		&Lesson{},
-		&Resource{}
+		&Resource{},
 	)
+
+	// Add some test users so we don't need to manually test things
+	CreateTestAccounts()
 }
 
 // SetCustomValidator will set field validators.
