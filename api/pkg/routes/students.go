@@ -216,6 +216,7 @@ func handleStudentsLessonsUpdateDescription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 }
+
 func handleStudentsLessonsGet(w http.ResponseWriter, r *http.Request) {
 	id, err := getUUID(r, "uuid")
 	if err != nil {

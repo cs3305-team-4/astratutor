@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -21,7 +20,6 @@ var validate *validator.Validate
 func GetHandler() http.Handler {
 	validate = validator.New()
 	setCustomValidators()
-	services.SetCustomValidators()
 	r := mux.NewRouter()
 
 	r.Use(

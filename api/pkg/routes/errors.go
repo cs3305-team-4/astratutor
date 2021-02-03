@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
+	"github.com/go-playground/validator/v10"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -52,7 +53,6 @@ func customErrors(in error, code int) (out error, codeOut int) {
 	case errors.Is(in, gorm.ErrRecordNotFound):
 		codeOut = http.StatusNotFound
 		out = errors.New("No record matching provided ID found.")
-
 	case strings.Contains(in.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
 		if e != nil {
@@ -64,6 +64,18 @@ func customErrors(in error, code int) (out error, codeOut int) {
 			out = fmt.Errorf("%s already exists", match[1])
 		}
 		codeOut = http.StatusBadRequest
+	}
+
+	// Validation error
+	if errs, ok := in.(validator.ValidationErrors); ok {
+		outs := "Validation failed for "
+		for _, err := range errs {
+			field := err.Field()
+			kind := err.ActualTag()
+			outs += fmt.Sprintf("('%s' on field '%s') ", kind, field)
+		}
+		codeOut = http.StatusBadRequest
+		out = errors.New(outs)
 	}
 	return
 }

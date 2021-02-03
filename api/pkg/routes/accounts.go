@@ -19,8 +19,8 @@ type AccountDTO struct {
 	ID           string `json:"id" validate:"len=0"`
 	Email        string `json:"email" validate:"required,email"`
 	Type         string `json:"type" validate:"required"`
-	Password     string `json:"password,omitempty" validate:"passwd"`
-	ParentsEmail string `json:"parents_email,omitempty" validate:"email"`
+	Password     string `json:"password,omitempty" validate:"required,passwd"`
+	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 
 func handleAccounts(w http.ResponseWriter, r *http.Request) {
