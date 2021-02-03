@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -53,6 +54,12 @@ func customErrors(in error, code int) (out error, codeOut int) {
 	case errors.Is(in, gorm.ErrRecordNotFound):
 		codeOut = http.StatusNotFound
 		out = errors.New("No record matching provided ID found.")
+	case errors.Is(in, io.EOF):
+		fallthrough
+	case errors.Is(in, &json.SyntaxError{}):
+		codeOut = http.StatusBadRequest
+		out = errors.New("Validation failed for body: invalid format.")
+
 	case strings.Contains(in.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
 		if e != nil {
