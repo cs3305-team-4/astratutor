@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -91,16 +92,44 @@ func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
-	errs := &map[string]error{}
-	ctx := context.WithValue(context.Background(), "error", errs)
-	if err := validate.StructCtx(ctx, i); err != nil {
-		if _, ok := (*errs)["error"]; ok {
-			err = (*errs)["error"]
-		}
+	if err := validateStruct(i); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
 	return true
+}
+
+func validateUpdate(field string, value interface{}, dto interface{}) error {
+	refDto := reflect.ValueOf(dto).Elem()
+	refVal := reflect.ValueOf(value)
+	refField := refDto.FieldByName(field)
+	fmt.Println(refField.Type(), reflect.TypeOf(value), refDto.CanSet())
+	if refDto.CanSet() && refField.Type() == reflect.TypeOf(value) {
+		refField.Set(refVal)
+	}
+	except := []string{}
+	for i := 0; i < refDto.Type().NumField(); i++ {
+		if name := refDto.Type().Field(i).Name; name != field {
+			except = append(except, name)
+		}
+	}
+	dto = refDto.Interface()
+	if err := validateStruct(dto, except...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateStruct(i interface{}, except ...string) error {
+	errs := &map[string]error{}
+	ctx := context.WithValue(context.Background(), "error", errs)
+	if err := validate.StructExceptCtx(ctx, i, except...); err != nil {
+		if _, ok := (*errs)["error"]; ok {
+			err = (*errs)["error"]
+		}
+		return err
+	}
+	return nil
 }
 
 // getUUID can parse a UUID from the router variables

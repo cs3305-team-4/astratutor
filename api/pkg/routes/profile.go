@@ -21,7 +21,7 @@ func getAccountType(r *http.Request) (services.AccountType, error) {
 type ProfileDTO struct {
 	AccountID   string `json:"account_id" validate:"len=0"`
 	ID          string `json:"id" validate:"len=0"`
-	Avatar      string `json:"avatar"`
+	Avatar      string `json:"avatar" validate:"omitempty,base64"`
 	Slug        string `json:"slug" validate:"len=0"`
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
@@ -146,6 +146,10 @@ func handleProfileUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("Avatar", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "avatar", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -177,6 +181,10 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("FirstName", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "first_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -208,6 +216,10 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("LastName", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "last_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -239,6 +251,10 @@ func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("City", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "city", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -270,6 +286,10 @@ func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("Country", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "country", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -301,6 +321,10 @@ func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
+	if err := validateUpdate("Description", value, &ProfileDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "description", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
