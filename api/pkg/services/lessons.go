@@ -231,7 +231,7 @@ func ReadLessonsByStudentID(id uuid.UUID) ([]Lesson, error) {
 	return lessons, nil
 }
 
-func (l *Lesson) CreateResource(name string, mime string, b64Data string) error {
+func (l *Lesson) CreateResource(name string, mime string, base64Data string) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -271,7 +271,7 @@ func (l *Lesson) ChangeLessonRequestStage(requestee Account, newState LessonRequ
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// re-read the lesson, stops data races
-		lesson, err := GetLessonByID(l.ID)
+		lesson, err := ReadLessonByID(l.ID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -280,15 +280,17 @@ func (l *Lesson) ChangeLessonRequestStage(requestee Account, newState LessonRequ
 		switch newState {
 
 		}
+
+		return nil
 	})
 
-	return nil
+	return err
 }
 
-func (l *Lesson) ReadResourceByID(rid uuid.UUID) error {
+func (l *Lesson) ReadResourceByID(rid uuid.UUID) (*Resource, error) {
 	db, err := database.Open()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var resource Resource
@@ -299,8 +301,8 @@ func (l *Lesson) ReadResourceByID(rid uuid.UUID) error {
 		LessonID: l.ID,
 	}).Find(&resource).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &resource, nil
 }
