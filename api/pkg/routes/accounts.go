@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -10,6 +11,7 @@ import (
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleAccounts).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/verify", handleAccountsVerify).Methods("POST")
 }
 
 // Account DTO.
@@ -54,4 +56,12 @@ func handleAccounts(w http.ResponseWriter, r *http.Request) {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+}
+
+func handleAccountsVerify(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r)
+	if err != nil {
+		httpError(w, r, err, http.StatusBadRequest)
+	}
+	fmt.Println(id)
 }

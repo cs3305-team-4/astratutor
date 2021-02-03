@@ -2,9 +2,11 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"gopkg.in/validator.v2"
@@ -55,4 +57,13 @@ func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 		return false
 	}
 	return true
+}
+
+func getUUID(r *http.Request) (uuid.UUID, error) {
+	vars := mux.Vars(r)
+	val, ok := vars["uuid"]
+	if !ok {
+		return uuid.UUID{}, errors.New("No uuid found")
+	}
+	return uuid.Parse(val)
 }

@@ -11,10 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/validator.v2"
-	"gorm.io/gorm"
 )
-
-var conn *gorm.DB
 
 func init() {
 	viper.SetConfigName("config")
@@ -27,7 +24,7 @@ func init() {
 		panic(fmt.Errorf("Could not read config file %s\n", err))
 	}
 
-	conn, err = database.Open()
+	conn, err := database.Open()
 	if err != nil {
 		log.WithError(err).Error("Couldn't establish DB connection")
 	}
