@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -103,7 +102,6 @@ func validateUpdate(field string, value interface{}, dto interface{}) error {
 	refDto := reflect.ValueOf(dto).Elem()
 	refVal := reflect.ValueOf(value)
 	refField := refDto.FieldByName(field)
-	fmt.Println(refField.Type(), reflect.TypeOf(value), refDto.CanSet())
 	if refDto.CanSet() && refField.Type() == reflect.TypeOf(value) {
 		refField.Set(refVal)
 	}
