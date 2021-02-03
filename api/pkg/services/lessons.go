@@ -263,7 +263,7 @@ func (r *Resource) DeleteResource() error {
 	return nil
 }
 
-func (l *Lesson) ChangeLessonRequestStage(requestee Account, newState LessonRequestStage) error {
+func (l *Lesson) ChangeLessonRequestStage(requestee *Account, newState LessonRequestStage) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -271,15 +271,15 @@ func (l *Lesson) ChangeLessonRequestStage(requestee Account, newState LessonRequ
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// re-read the lesson, stops data races
-		lesson, err := ReadLessonByID(l.ID)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+		// lesson, err := ReadLessonByID(l.ID)
+		// if err != nil {
+		// 	tx.Rollback()
+		// 	return err
+		// }
 
-		switch newState {
+		// switch newState {
 
-		}
+		// }
 
 		return nil
 	})
