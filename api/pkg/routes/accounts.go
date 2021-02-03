@@ -17,10 +17,10 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 // Account DTO.
 type AccountDTO struct {
 	ID           string `json:"id" validate:"len=0"`
-	Email        string `json:"email" validate:"nonzero"`
-	Type         string `json:"type"`
+	Email        string `json:"email" validate:"required,email"`
+	Type         string `json:"type" validate:"required"`
 	Password     string `json:"password,omitempty" validate:"passwd"`
-	ParentsEmail string `json:"parents_email,omitempty"`
+	ParentsEmail string `json:"parents_email,omitempty" validate:"email"`
 }
 
 func handleAccounts(w http.ResponseWriter, r *http.Request) {

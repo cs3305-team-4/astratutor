@@ -32,10 +32,10 @@ type ProfileDTO struct {
 	ID          string `json:"id" validate:"len=0"`
 	Avatar      string `json:"avatar"`
 	Slug        string `json:"slug" validate:"len=0"`
-	FirstName   string `json:"first_name" validate:"nonzero"`
-	LastName    string `json:"last_name" validate:"nonzero"`
-	City        string `json:"city" validate:"nonzero"`
-	Country     string `json:"country" validate:"nonzero"`
+	FirstName   string `json:"first_name" validate:"required"`
+	LastName    string `json:"last_name" validate:"required"`
+	City        string `json:"city" validate:"required"`
+	Country     string `json:"country" validate:"required"`
 	Description string `json:"description"`
 }
 

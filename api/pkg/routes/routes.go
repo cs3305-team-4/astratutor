@@ -1,18 +1,26 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"reflect"
+	"regexp"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"gopkg.in/validator.v2"
 )
 
+var validate *validator.Validate
+
 func GetHandler() http.Handler {
+	validate = validator.New()
+	setCustomValidators()
 	services.SetCustomValidators()
 	r := mux.NewRouter()
 
@@ -46,13 +54,51 @@ func GetHandler() http.Handler {
 	}).Handler(r)
 }
 
+func setCustomValidators() {
+	validate.RegisterValidationCtx("passwd", func(ctx context.Context, v validator.FieldLevel) bool {
+		errs, ok := ctx.Value("error").(*map[string]error)
+		if !ok {
+			return false
+		}
+		st := v.Field()
+		if st.Kind() != reflect.String {
+			(*errs)["error"] = errors.New("passwd only validates strings")
+			return false
+		}
+		val := st.String()
+		if len(val) < 8 {
+			(*errs)["error"] = errors.New("Password must have at least 8 characters.")
+			return false
+		}
+		if strings.ToLower(val) == val {
+			(*errs)["error"] = errors.New("Password must have at least one upper case letter.")
+			return false
+		}
+		if strings.ToUpper(val) == val {
+			(*errs)["error"] = errors.New("Password must have at least one lower case letter.")
+			return false
+		}
+		numRe := regexp.MustCompile(`[0-9]+`)
+		if !numRe.MatchString(val) {
+			(*errs)["error"] = errors.New("Password must have at least one number.")
+			return false
+		}
+		return true
+	})
+}
+
 // ParseBody inplace. Returns false if error has been written.
 func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 	if err := json.NewDecoder(r.Body).Decode(i); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
-	if err := validator.Validate(i); err != nil {
+	errs := &map[string]error{}
+	ctx := context.WithValue(context.Background(), "error", errs)
+	if err := validate.StructCtx(ctx, i); err != nil {
+		if _, ok := (*errs)["error"]; ok {
+			err = (*errs)["error"]
+		}
 		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
