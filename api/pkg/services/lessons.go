@@ -9,32 +9,35 @@ import (
 	"gorm.io/gorm"
 )
 
-type LessonRequestState string
+type LessonRequestStage string
 
 const (
 	// The lesson has been requested by the sending party
-	Requested LessonRequestState = "requested"
+	Requested LessonRequestStage = "requested"
 
 	// The lesson has been accepted by the reciever party
-	Accepted LessonRequestState = "accepted"
+	Accepted LessonRequestStage = "accepted"
 
 	// One party has suggested a reschedule
-	SuggestReschedule LessonRequestState = "reschedule"
+	// SuggestReschedule LessonRequestStage = "reschedule"
 
 	// The lesson (request) has been denied
-	Denied LessonRequestState = "denied"
+	Denied LessonRequestStage = "denied"
 
 	// The lesson has been cancelled
-	Cancelled LessonRequestState = "cancelled"
+	Cancelled LessonRequestStage = "cancelled"
 
 	// Lesson completed
-	Completed LessonRequestState = "completed"
+	Completed LessonRequestStage = "completed"
 
-	NoShowStudent LessonRequestState = "no-show-student"
+	// No show from student
+	NoShowStudent LessonRequestStage = "no-show-student"
 
-	NoShowTeacher LessonRequestState = "no-show-teacher"
+	// No show from tutor
+	NoShowTutor LessonRequestStage = "no-show-tutor"
 
-	Expired LessonRequestState = "expired"
+	// Lesson request expired
+	Expired LessonRequestStage = "expired"
 )
 
 // Lesson contains information about a lesson
@@ -56,14 +59,14 @@ type Lesson struct {
 	// LessonDetail contains notes about what the student needs out of this lesson
 	LessonDetail string
 
-	// RequestState determines what state of request the lesson is in
-	RequestState LessonRequestState
+	// RequestStagedetermines what state of request the lesson is in
+	RequestStage LessonRequestStage
 
-	// RequestStateDetail contains a string related to the current request state
-	RequestStateDetail string
+	// RequestStageDetail contains a string related to the current request state
+	RequestStageDetail string
 
-	// RequestStateChanger contains a reference to the account of the person who last changed the state of the lesson
-	RequestStateChanger Account `gorm:"foreignKey:ID"`
+	// RequestStageChanger contains a reference to the account of the person who last changed the state of the lesson
+	RequestStageChanger Account `gorm:"foreignKey:ID"`
 
 	// Resources are
 	Resources []Resource `gorm:"foreignKey:LessonID"`
@@ -75,27 +78,32 @@ type Resource struct {
 	database.Model
 	LessonID   uuid.UUID `gorm:"type:uuid"`
 	Name       string
-	Base64Data string
+	MIME       string
+	Base64Data string `gorm:"type:text"`
 }
 
 // LessonAtTime returns true if the account has a lesson at that time
-func LessonAtTime(acc Account, t time.Time) (bool, error) {
+func LessonAtTime(acc *Account, t time.Time) (bool, error) {
 	db, err := database.Open()
 	if err != nil {
 		return false, err
 	}
 
 	var lessons []Lesson
-	db.Find(&lessons, "id = ? AND time_start BETWEEN ? AND ?", acc.ID, t, t.Add(time.Minute*time.Duration(60)))
+	result := db.Find(&lessons, "id = ? AND time_start BETWEEN ? AND ?", acc.ID, t, t.Add(time.Minute*time.Duration(60)))
 
-	if len(lessons) > 0 {
+	if result.Error != nil {
+		return false, nil
+	}
+
+	if result.RowsAffected > 0 {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-func CreateLesson(student Account, tutor Account, t time.Time /*subject Subject*/, lessonDetail string) error {
+func CreateLesson(student *Account, tutor *Account, t time.Time /*subject *Subject*/, lessonDetail string) error {
 	if !student.IsStudent() {
 		return fmt.Errorf("account specified as student is not a student!")
 	}
@@ -142,19 +150,21 @@ func CreateLesson(student Account, tutor Account, t time.Time /*subject Subject*
 
 		err = tx.Create(&Lesson{
 			TimeStarts:          t,
-			Student:             student,
-			Tutor:               tutor,
+			Student:             *student,
+			Tutor:               *tutor,
 			LessonDetail:        lessonDetail,
-			RequestState:        Requested,
-			RequestStateDetail:  fmt.Sprintf("%s %s requested a lesson", student.Profile.FirstName, student.Profile.LastName),
+			RequestStage:        Requested,
+			RequestStageDetail:  fmt.Sprintf("%s %s requested a lesson", student.Profile.FirstName, student.Profile.LastName),
 			Resources:           []Resource{},
-			RequestStateChanger: student,
+			RequestStageChanger: *student,
 		}).Error
 
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
+
+		return nil
 	})
 
 	return err
@@ -175,21 +185,53 @@ func ReadLessonByID(id uuid.UUID) (*Lesson, error) {
 	return &lesson, nil
 }
 
-func ReadLessonByAccount(tutor Account) (*Lesson, error) {
+func ReadLessonsByTutorID(id uuid.UUID) ([]Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	var lesson Lesson
-	if err := db.First(&lesson, id).Error; err != nil {
-		return nil, fmt.Errorf("Lesson not found")
+	var lessons []Lesson
+
+	err = db.Where(&Lesson{
+		Tutor: Account{
+			Model: database.Model{
+				ID: id,
+			},
+		},
+	}).Find(&lessons).Error
+
+	if err != nil {
+		return nil, err
 	}
 
-	return &lesson, nil
+	return lessons, nil
 }
 
-func (l *Lesson) CreateLessonResource(name string, data string) error {
+func ReadLessonsByStudentID(id uuid.UUID) ([]Lesson, error) {
+	db, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	var lessons []Lesson
+
+	err = db.Where(&Lesson{
+		Student: Account{
+			Model: database.Model{
+				ID: id,
+			},
+		},
+	}).Find(&lessons).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return lessons, nil
+}
+
+func (l *Lesson) CreateResource(name string, mime string, b64Data string) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -198,41 +240,67 @@ func (l *Lesson) CreateLessonResource(name string, data string) error {
 	err = db.Create(&Resource{
 		LessonID:   l.ID,
 		Name:       name,
-		Base64Data: data,
+		Base64Data: base64Data,
 	}).Error
 	if err != nil {
 		return err
 	}
+
+	return nil
 }
 
-func (l *Resource) DeleteResource() {
+func (r *Resource) DeleteResource() error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
 
+	err = db.Delete(&r).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// func (l *Lesson) ChangeLessonRequestState(requestee Account, newState LessonRequestState) error {
-// 	db, err := database.Open()
-// 	if err != nil {
-// 		return err
-// 	}
+func (l *Lesson) ChangeLessonRequestStage(requestee Account, newState LessonRequestStage) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
 
-// 	err := db.Transaction(func(tx *gorm.DB) error {
-// 		err = tx.Exec(`set transaction isolation level repeatable read`).Error
-// 		if err != nil {
-// 			tx.Rollback()
-// 			return err
-// 		}
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := GetLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 
-// 		// re-read the lesson, stops data races
-// 		lesson, err := GetLessonByID(l)
-// 		if err != nil {
-// 			tx.Rollback()
-// 			return err
-// 		}
+		switch newState {
 
-// 		switch newState {
+		}
+	})
 
-// 		}
-// 	})
+	return nil
+}
 
-// 	return err
-// }
+func (l *Lesson) ReadResourceByID(rid uuid.UUID) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	var resource Resource
+	err = db.First(&Resource{
+		Model: database.Model{
+			ID: rid,
+		},
+		LessonID: l.ID,
+	}).Find(&resource).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
