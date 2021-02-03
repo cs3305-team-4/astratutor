@@ -19,7 +19,7 @@ type returnError struct {
 	Detail returnDetail `json:"detail"`
 }
 
-func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
+func restError(w http.ResponseWriter, r *http.Request, err error, code int) {
 	log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
 	err, code = customErrors(err, code)
 	w.WriteHeader(code)
