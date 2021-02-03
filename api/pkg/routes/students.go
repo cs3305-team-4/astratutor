@@ -15,11 +15,11 @@ func InjectStudentsRoutes(subrouter *mux.Router) {
 
 	// Profile update routes
 	subrouter.HandleFunc("/{uuid}/profile/avatar", handleStudentsLessonsUpdateAvatar).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/profile/first_name", handleStudentsLessonsUpdateFirstName).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/profile/last_name", handleStudentsLessonsUpdateLastName).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/profile/city", handleStudentsLessonsUpdateCity).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/profile/country", handleStudentsLessonsUpdateCountry).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/profile/description", handleStudentsLessonsUpdateDescription).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/first_name", handleStudentsLessonsUpdateFirstName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/last_name", handleStudentsLessonsUpdateLastName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/city", handleStudentsLessonsUpdateCity).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/country", handleStudentsLessonsUpdateCountry).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/description", handleStudentsLessonsUpdateDescription).Methods("POST")
 
 	// Lessons routes
 	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")
@@ -122,6 +122,100 @@ func handleStudentsLessonsUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleStudentsLessonsUpdateFirstName(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "first_name", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsUpdateLastName(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "last_name", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsUpdateCity(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "city", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsUpdateCountry(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "country", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleStudentsLessonsUpdateDescription(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	value := ParseUpdateString(w, r)
+	var profile *services.Profile
+	if profile, err = services.UpdateProfileField(id, "description", value); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := dtoFromProfile(profile)
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
 func handleStudentsLessonsGet(w http.ResponseWriter, r *http.Request) {
 	id, err := getUUID(r, "uuid")
 	if err != nil {

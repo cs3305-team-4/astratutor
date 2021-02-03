@@ -77,7 +77,7 @@ func getUUID(r *http.Request, param string) (uuid.UUID, error) {
 
 // UpdateDTO used for single field update route posts.
 type UpdateDTO struct {
-	Detail string `json:"detail"`
+	Value string `json:"value"`
 }
 
 // ParseUpdateString will parse
@@ -86,5 +86,5 @@ func ParseUpdateString(w http.ResponseWriter, r *http.Request) string {
 	if !ParseBody(w, r, update) {
 		return ""
 	}
-	return update.Detail
+	return update.Value
 }
