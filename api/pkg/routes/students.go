@@ -11,8 +11,8 @@ import (
 func InjectStudentsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfileGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/profile", handleStudentsProfilePost).Methods("POST")
-	// subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")
-	// subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsPost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")
+	subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsPost).Methods("POST")
 }
 
 // Profile DTO.
@@ -92,53 +92,53 @@ func handleStudentsProfilePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func handleStudentsLessonsGet(w http.ResponseWriter, r *http.Request) {
-// 	id, err := getUUID(r, "uuid")
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
+func handleStudentsLessonsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 
-// 	lessons, err := services.ReadLessonsByStudentID(id)
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
+	lessons, err := services.ReadLessonsByStudentID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 
-// 	dtoLessons := dtoFromLessons(lessons)
-// 	if err = json.NewEncoder(w).Encode(dtoLessons); err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
-// }
+	dtoLessons := dtoFromLessons(lessons)
+	if err = json.NewEncoder(w).Encode(dtoLessons); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
 
-// func handleStudentsLessonsPost(w http.ResponseWriter, r *http.Request) {
-// 	id, err := getUUID(r, "uuid")
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
+func handleStudentsLessonsPost(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 
-// 	lessonRequest := &LessonRequestDTO{}
-// 	if !ParseBody(w, r, lessonRequest) {
-// 		return
-// 	}
+	lessonRequest := &LessonRequestDTO{}
+	if !ParseBody(w, r, lessonRequest) {
+		return
+	}
 
-// 	tutor, err := services.ReadTutorByID(lessonRequest.RequesterID, nil)
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
+	tutor, err := services.ReadTutorByID(lessonRequest.RequesterID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 
-// 	student, err := services.ReadStudentByID(id, nil)
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
+	student, err := services.ReadStudentByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 
-// 	err = services.CreateLesson(student, tutor, lessonRequest.TimeStarts, lessonRequest.LessonDetail)
-// 	if err != nil {
-// 		restError(w, r, err, http.StatusBadRequest)
-// 		return
-// 	}
-// }
+	err = services.CreateLesson(student, tutor, lessonRequest.TimeStarts, lessonRequest.LessonDetail)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
