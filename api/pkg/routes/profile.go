@@ -76,6 +76,13 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+	if ok, err := serviceProfile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
 	outProfile := dtoFromProfile(serviceProfile, t)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
@@ -175,6 +182,13 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+	if ok, err := profile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
 	dto := dtoFromProfile(profile, t)
 	if err = json.NewEncoder(w).Encode(dto); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
@@ -197,6 +211,13 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "last_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	dto := dtoFromProfile(profile, t)
@@ -223,6 +244,13 @@ func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+	if ok, err := profile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
 	dto := dtoFromProfile(profile, t)
 	if err = json.NewEncoder(w).Encode(dto); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
@@ -247,6 +275,13 @@ func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+	if ok, err := profile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
 	dto := dtoFromProfile(profile, t)
 	if err = json.NewEncoder(w).Encode(dto); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
@@ -269,6 +304,13 @@ func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "description", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(t); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	dto := dtoFromProfile(profile, t)
