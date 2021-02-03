@@ -1,5 +1,4 @@
 import React from 'react';
-import styled from 'styled-components';
 
 import 'antd/dist/antd.css';
 import {
@@ -28,12 +27,6 @@ import { AuthClaims } from './api/auth'
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
-
-const StyledLayoutHeader = styled(Header)`
-  background: white;
-`
-
-const StyledPageHeader = styled(PageHeader)``
 
 function App() {
   const [auth, setAuth] = React.useState<AuthContextValues>()
@@ -65,20 +58,19 @@ function App() {
   return (
     <AuthContext.Provider value={auth}>
       <Layout>
-        <StyledLayoutHeader>
-          <StyledPageHeader
-            ghost={false}
-            onBack={() => window.history.back()}
-            title="AstraTutor"
-            extra={[
-              <Button key="2">Login</Button>,
-              <Button key="1" type="primary">
-                Register
-              </Button>
-            ]}
-          >
-          </StyledPageHeader>
-        </StyledLayoutHeader>
+        <PageHeader
+          ghost={false}
+          //onBack={() => window.history.back()}
+          title={<a href="/">AstraTutor</a>}
+          extra={[
+            <Button href="/" key="5" type="text">Home</Button>,
+            <Button href="/subjects" key="4" type="text">Subjects</Button>,
+            <Button href="/subjects/tutors" key="3" type="text">Find a tutor</Button>,
+            <Button href="/login" key="2" type="primary">Log in</Button>,
+            <Button href="/register" key="1"> Register</Button>
+          ]}
+        >
+        </PageHeader>
         <Content>
           <Router>
             <Switch>
