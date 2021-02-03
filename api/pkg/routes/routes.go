@@ -98,6 +98,10 @@ func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 	return true
 }
 
+// validateUpdate will ensure that the value provided will follow the DTO's validation tags.
+//
+// field is case sensitive and should match the field in the struct.
+// dto should be a pointer value to an empty object constructed from the DTO.
 func validateUpdate(field string, value interface{}, dto interface{}) error {
 	refDto := reflect.ValueOf(dto).Elem()
 	refVal := reflect.ValueOf(value)
