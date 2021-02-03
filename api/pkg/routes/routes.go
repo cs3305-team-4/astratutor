@@ -49,21 +49,28 @@ func GetHandler() http.Handler {
 // ParseBody inplace. Returns false if error has been written.
 func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 	if err := json.NewDecoder(r.Body).Decode(i); err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
 	if err := validator.Validate(i); err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusBadRequest)
 		return false
 	}
 	return true
 }
 
-func getUUID(r *http.Request) (uuid.UUID, error) {
+// getUUID can parse a UUID from the router variables
+// if param is nil, the default variable used "uuid"
+func getUUID(r *http.Request, param *string) (uuid.UUID, error) {
+	para := "uuid"
+	if param != nil {
+		para = *param
+	}
+
 	vars := mux.Vars(r)
-	val, ok := vars["uuid"]
+	val, ok := vars[para]
 	if !ok {
-		return uuid.UUID{}, errors.New("No uuid found")
+		return uuid.UUID{}, errors.New("no uuid found")
 	}
 	return uuid.Parse(val)
 }
