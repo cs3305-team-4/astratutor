@@ -9,6 +9,19 @@ import (
 )
 
 func InjectTutorsRoutes(subrouter *mux.Router) {
+	// Profile routes
+	subrouter.HandleFunc("/{uuid}/profile", handleProfileGet).Methods("GET")
+	subrouter.HandleFunc("/{uuid}/profile", handleProfilePost).Methods("POST")
+
+	// Profile update routes
+	subrouter.HandleFunc("/{uuid}/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/first_name", handleProfileUpdateFirstName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/last_name", handleProfileUpdateLastName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/city", handleProfileUpdateCity).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/country", handleProfileUpdateCountry).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/description", handleProfileUpdateDescription).Methods("POST")
+
+	// Lesson routes.
 	subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsPost).Methods("POST")
 }

@@ -215,6 +215,19 @@ type Profile struct {
 	Availability []bool `gorm:"type:text"`
 }
 
+// IsAccountType checks the account type of the given profile.
+func (p *Profile) IsAccountType(accountType AccountType) (bool, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return false, err
+	}
+	account := &Account{}
+	if err := conn.First(account, p.AccountID).Error; err != nil {
+		return false, err
+	}
+	return account.Type == accountType, nil
+}
+
 // CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
 func CreateProfile(p *Profile) error {
 	conn, err := database.Open()
