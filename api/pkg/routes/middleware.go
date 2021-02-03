@@ -57,9 +57,12 @@ import (
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(log.Fields{
-			"host": r.Host,
-			"slug": r.URL.Path,
-		}).WithContext(r.Context()).Infof("Incoming request")
+			"host":           r.Host,
+			"slug":           r.URL.Path,
+			"method":         r.Method,
+			"user_agent":     r.Header.Get("User-Agent"),
+			"source_address": r.RemoteAddr,
+		}).WithContext(r.Context()).Info("Incoming request")
 		next.ServeHTTP(w, r)
 	})
 }

@@ -1,11 +1,25 @@
 package services
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+// AccountError types.
+type AccountError string
+
+func (e AccountError) Error() string {
+	return string(e)
+}
+
+const (
+	AccountErrorProfileExists AccountError = "a profile already exists for this account"
 )
 
 // AccountType is the type of account.
@@ -36,12 +50,33 @@ type Account struct {
 	Type          AccountType
 	Suspended     bool
 	PasswordHash  PasswordHash `gorm:"foreignKey:AccountID"`
-	Profile       Profile      `gorm:"foreignKey:AccountID"`
+	Profile       *Profile     `gorm:"foreignKey:AccountID"`
 }
 
 // CreateAccount will create an account entry in the DB.
 func CreateAccount(a *Account) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
 	return conn.Create(a).Error
+}
+
+// GetAccountByID queries the DB by account ID.
+// conn is optional.
+func GetAccounteByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
+	account := &Account{}
+	return account, conn.First(account, id).Error
 }
 
 type PasswordHash struct {
@@ -59,6 +94,7 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 	return &PasswordHash{Hash: hash}, nil
 }
 
+// Profile model.
 type Profile struct {
 	database.Model
 	AccountID      uuid.UUID `gorm:"type:uuid"`
@@ -74,6 +110,66 @@ type Profile struct {
 
 	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
 	Availability []bool `gorm:"type:text"`
+}
+
+// CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
+func CreateProfile(p *Profile) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
+		account, err := GetAccounteByID(p.AccountID, tx, "Profile")
+		if err != nil {
+			return err
+		}
+		if account.Profile != nil {
+			return AccountErrorProfileExists
+		}
+
+		// Generate slug
+		name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
+		_, slugErr := GetProfileBySlug(name, tx)
+		i := 1
+		slug := name
+		for !errors.Is(slugErr, gorm.ErrRecordNotFound) {
+			slug = fmt.Sprintf("%s-%d", name, i)
+			_, slugErr = GetProfileBySlug(slug, tx)
+			i++
+		}
+		p.Slug = slug
+
+		account.Profile = p
+		return conn.Save(account).Error
+	})
+}
+
+// GetProfileByAccountSlug queries the DB by slug.
+// conn is optional.
+func GetProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	profile := &Profile{}
+	return profile, conn.First(profile, "slug = ?", slug).Error
+}
+
+// GetProfileByAccountID queries the DB by account ID.
+// conn is optional.
+func GetProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	profile := &Profile{}
+	return profile, conn.First(profile, "account_id = ?", id).Error
 }
 
 type Qualification struct {
