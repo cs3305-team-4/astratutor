@@ -53,6 +53,14 @@ type LessonResourceFileDTO struct {
 	Base64Data string `json:"base64_data"`
 }
 
+func dtoFromResourceFile(resource *services.Resource) *LessonResourceFileDTO {
+	return &LessonResourceFileDTO{
+		Name:       resource.Name,
+		MIME:       resource.MIME,
+		Base64Data: resource.Base64Data,
+	}
+}
+
 // LessonRequestDTO represents a lesson that was first requested by an account
 type LessonRequestDTO struct {
 	// Time of the lesson
@@ -193,8 +201,14 @@ func handleLessonsResourceGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lesson.ReadResourceByID(rid)
+	resource, err := lesson.ReadResourceByID(rid)
 	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	dtoResourceFile := dtoFromResourceFile(resource)
+	if err = json.NewEncoder(w).Encode(dtoResourceFile); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
