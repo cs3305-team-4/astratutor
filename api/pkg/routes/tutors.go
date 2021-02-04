@@ -21,10 +21,53 @@ func InjectTutorsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("/{uuid}/profile/country", handleProfileUpdateCountry).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/description", handleProfileUpdateDescription).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/availability", handleTutorProfileAvailabilityPost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/qualifications", handleTutorProfileQualificationsPost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/qualifications/{qid}", handleTutorProfileQualificationsDelete).Methods("DELETE")
 
 	// Lesson routes.
 	subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsPost).Methods("POST")
+}
+
+func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := &QualificationsDTO{}
+	if !ParseBody(w, r, dto) {
+		return
+	}
+	qualifications := &services.Qualification{
+		Field:    dto.Field,
+		Degree:   dto.Degree,
+		School:   dto.School,
+		Verified: dto.Verified,
+	}
+	profile, err := qualifications.SetOnProfileByAccountID(userID)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Request) {
+	// userID, err := getUUID(r, "uuid")
+	// if err != nil {
+	// 	restError(w, r, err, http.StatusBadRequest)
+	// 	return
+	// }
+	// qualificationID, err := getUUID(r, "qid")
+	// if err != nil {
+	// 	restError(w, r, err, http.StatusBadRequest)
+	// 	return
+	// }
 }
 
 // UpdateAvailabilityDTO DTO.

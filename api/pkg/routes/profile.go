@@ -19,16 +19,26 @@ func getAccountType(r *http.Request) (services.AccountType, error) {
 
 // Profile DTO.
 type ProfileDTO struct {
-	AccountID    string `json:"account_id" validate:"len=0"`
-	ID           string `json:"id" validate:"len=0"`
-	Avatar       string `json:"avatar" validate:"omitempty,base64"`
-	Slug         string `json:"slug" validate:"len=0"`
-	FirstName    string `json:"first_name" validate:"required"`
-	LastName     string `json:"last_name" validate:"required"`
-	City         string `json:"city" validate:"required"`
-	Country      string `json:"country" validate:"required"`
-	Description  string `json:"description"`
-	Availability []bool `json:"availability,omitempty" validate:"omitempty,len=336"`
+	AccountID      string              `json:"account_id" validate:"len=0"`
+	ID             string              `json:"id" validate:"len=0"`
+	Avatar         string              `json:"avatar" validate:"omitempty,base64"`
+	Slug           string              `json:"slug" validate:"len=0"`
+	FirstName      string              `json:"first_name" validate:"required"`
+	LastName       string              `json:"last_name" validate:"required"`
+	City           string              `json:"city" validate:"required"`
+	Country        string              `json:"country" validate:"required"`
+	Description    string              `json:"description"`
+	Qualifications []QualificationsDTO `json:"qualifications,omitempty" validate:"len=0"`
+	Availability   []bool              `json:"availability,omitempty" validate:"omitempty,len=336"`
+}
+
+// QualificationsDTO DTO.
+type QualificationsDTO struct {
+	ID       string `json:"id" validate:"len=0"`
+	Field    string `json:"field" validate:"required"`
+	Degree   string `json:"degree" validate:"required"`
+	School   string `json:"school" validate:"required"`
+	Verified bool   `json:"verified" validate:"eq=false"`
 }
 
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) *ProfileDTO {
@@ -46,17 +56,28 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) *Prof
 			Description: p.Description,
 		}
 	case services.Tutor:
+		qualifications := []QualificationsDTO{}
+		for _, val := range p.Qualifications {
+			qualifications = append(qualifications, QualificationsDTO{
+				ID:       val.ID.String(),
+				Field:    val.Field,
+				Degree:   val.Degree,
+				School:   val.School,
+				Verified: val.Verified,
+			})
+		}
 		return &ProfileDTO{
-			AccountID:    p.AccountID.String(),
-			ID:           p.ID.String(),
-			Avatar:       p.Avatar,
-			Slug:         p.Slug,
-			FirstName:    p.FirstName,
-			LastName:     p.LastName,
-			City:         p.City,
-			Country:      p.Country,
-			Description:  p.Description,
-			Availability: p.Availability.Get(),
+			AccountID:      p.AccountID.String(),
+			ID:             p.ID.String(),
+			Avatar:         p.Avatar,
+			Slug:           p.Slug,
+			FirstName:      p.FirstName,
+			LastName:       p.LastName,
+			City:           p.City,
+			Country:        p.Country,
+			Description:    p.Description,
+			Availability:   p.Availability.Get(),
+			Qualifications: qualifications,
 		}
 	}
 	return nil
@@ -73,7 +94,7 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	serviceProfile, err := services.ReadProfileByAccountID(id, nil)
+	serviceProfile, err := services.ReadProfileByAccountID(id, nil, "Qualifications")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

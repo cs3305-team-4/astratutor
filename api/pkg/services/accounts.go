@@ -352,7 +352,7 @@ func ReadProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
 
 // ReadProfileByAccountID queries the DB by account ID.
 // conn is optional.
-func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Profile, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
@@ -360,11 +360,15 @@ func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
 			return nil, err
 		}
 	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
 	profile := &Profile{}
 	return profile, conn.First(profile, "account_id = ?", id).Error
 }
 
 type Qualification struct {
+	database.Model
 	ProfileID uuid.UUID `gorm:"type:uuid"`
 	Field     string
 	Degree    string
@@ -373,7 +377,27 @@ type Qualification struct {
 	// SupportingDocuments
 }
 
+// SetOnProfileByAccountID will set the qualification on the profile matching the
+// provided account ID.
+func (q *Qualification) SetOnProfileByAccountID(id uuid.UUID) (*Profile, error) {
+	var err error
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		profile, err = ReadProfileByAccountID(id, tx, "Qualifications")
+		if err != nil {
+			return err
+		}
+		profile.Qualifications = append(profile.Qualifications, *q)
+		return tx.Save(profile).Error
+	})
+}
+
 type WorkExperience struct {
+	database.Model
 	ProfileID   uuid.UUID `gorm:"type:uuid"`
 	Role        string
 	YearsExp    string
