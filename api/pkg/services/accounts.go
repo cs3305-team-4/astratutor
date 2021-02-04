@@ -251,7 +251,7 @@ func (a *Availability) Get() []bool {
 	if a != nil {
 		return *a
 	}
-	return []bool{}
+	return make([]bool, AvailabilityLength)
 }
 
 // Profile model.
