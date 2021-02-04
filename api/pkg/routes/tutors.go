@@ -86,7 +86,7 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	value := services.Availability(update.Value)
-	if err := validateUpdate("Availability", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("Availability", value, &TutorDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
