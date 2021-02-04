@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -15,14 +16,17 @@ func InjectTutorsRoutes(subrouter *mux.Router) {
 
 	// Profile update routes
 	subrouter.HandleFunc("/{uuid}/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/first_name", handleProfileUpdateFirstName).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/last_name", handleProfileUpdateLastName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/first-name", handleProfileUpdateFirstName).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/last-name", handleProfileUpdateLastName).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/city", handleProfileUpdateCity).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/country", handleProfileUpdateCountry).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/description", handleProfileUpdateDescription).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/availability", handleTutorProfileAvailabilityPost).Methods("POST")
+
 	subrouter.HandleFunc("/{uuid}/profile/qualifications", handleTutorProfileQualificationsPost).Methods("POST")
 	subrouter.HandleFunc("/{uuid}/profile/qualifications/{qid}", handleTutorProfileQualificationsDelete).Methods("DELETE")
+	subrouter.HandleFunc("/{uuid}/profile/work-experience", handleTutorProfileWorkExperiencePost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/profile/work-experience/{wid}", handleTutorProfileWorkExperienceDelete).Methods("DELETE")
 
 	// Lesson routes.
 	subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsGet).Methods("GET")
@@ -50,6 +54,13 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	if ok, err := profile.IsAccountType(services.Tutor); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
 	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
@@ -68,12 +79,87 @@ func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Reque
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	profile, err := services.ReadProfileByAccountID(userID, nil, "Qualifications")
+	profile, err := services.ReadProfileByAccountID(userID, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	if err = profile.RemoveQualificationByID(qualificationID); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(services.Tutor); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	dto := &WorkExperienceDTO{}
+	if !ParseBody(w, r, dto) {
+		return
+	}
+	exp := &services.WorkExperience{
+		Role:        dto.Role,
+		YearsExp:    dto.YearsExp,
+		Description: dto.Description,
+	}
+	profile, err := exp.SetOnProfileByAccountID(userID)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(services.Tutor); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleTutorProfileWorkExperienceDelete(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	expID, err := getUUID(r, "wid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	profile, err := services.ReadProfileByAccountID(userID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(services.Tutor); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		return
+	}
+	if err = profile.RemoveWorkExperienceByID(expID); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -107,6 +193,13 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "availability", &value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if ok, err := profile.IsAccountType(services.Tutor); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	} else if !ok {
+		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	dto := dtoFromProfile(profile, services.Tutor)

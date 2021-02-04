@@ -34,6 +34,7 @@ type ProfileDTO struct {
 type TutorDTO struct {
 	ProfileDTO
 	Qualifications []QualificationsDTO `json:"qualifications" validate:"len=0"`
+	WorkExperience []WorkExperienceDTO `json:"work_experience" validate:"len=0"`
 	Availability   []bool              `json:"availability" validate:"omitempty,len=336"`
 }
 
@@ -44,6 +45,15 @@ type QualificationsDTO struct {
 	Degree   string `json:"degree" validate:"required"`
 	School   string `json:"school" validate:"required"`
 	Verified bool   `json:"verified" validate:"eq=false"`
+}
+
+// WorkExperienceDTO DTO.
+type WorkExperienceDTO struct {
+	ID          string `json:"id" validate:"len=0"`
+	Role        string `json:"role" validate:"required"`
+	YearsExp    int    `json:"years_exp" validate:"required"`
+	Description string `json:"description"`
+	Verified    bool   `json:"verified" validate:"eq=false"`
 }
 
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) interface{} {
@@ -71,6 +81,16 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 				Verified: val.Verified,
 			})
 		}
+		workExperience := make([]WorkExperienceDTO, 0)
+		for _, val := range p.WorkExperience {
+			workExperience = append(workExperience, WorkExperienceDTO{
+				ID:          val.ID.String(),
+				Role:        val.Role,
+				YearsExp:    val.YearsExp,
+				Description: val.Description,
+				Verified:    val.Verified,
+			})
+		}
 		return &TutorDTO{
 			ProfileDTO: ProfileDTO{
 				AccountID:   p.AccountID.String(),
@@ -85,6 +105,7 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 			},
 			Availability:   p.Availability.Get(),
 			Qualifications: qualifications,
+			WorkExperience: workExperience,
 		}
 	}
 	return nil
@@ -101,8 +122,8 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	// TODO(ericm): Filter verified qualifications for other users.
-	serviceProfile, err := services.ReadProfileByAccountID(id, nil, "Qualifications")
+	// TODO(ericm): Filter verified qualifications and work experience for other users.
+	serviceProfile, err := services.ReadProfileByAccountID(id, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

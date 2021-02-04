@@ -51,7 +51,7 @@ func customErrors(in error, code int) (out error, codeOut int) {
 		codeOut = http.StatusNotFound
 	case errors.Is(in, services.AccountErrorAccountDoesNotExist):
 		codeOut = http.StatusNotFound
-	case errors.Is(in, services.AccountErrorQualificationDoesNotExists):
+	case errors.Is(in, services.AccountErrorEntryDoesNotExists):
 		codeOut = http.StatusNotFound
 	case errors.Is(in, gorm.ErrRecordNotFound):
 		codeOut = http.StatusNotFound

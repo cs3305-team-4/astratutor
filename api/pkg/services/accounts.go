@@ -20,10 +20,10 @@ func (e AccountError) Error() string {
 }
 
 const (
-	AccountErrorProfileExists              AccountError = "A profile already exists for this account."
-	AccountErrorAccountDoesNotExist        AccountError = "This account does not exist."
-	AccountErrorProfileDoesNotExists       AccountError = "A profile does not exist for this account."
-	AccountErrorQualificationDoesNotExists AccountError = "This qualification does not exist."
+	AccountErrorProfileExists        AccountError = "A profile already exists for this account."
+	AccountErrorAccountDoesNotExist  AccountError = "This account does not exist."
+	AccountErrorProfileDoesNotExists AccountError = "A profile does not exist for this account."
+	AccountErrorEntryDoesNotExists   AccountError = "This Entry does not exist."
 )
 
 // AccountType is the type of account.
@@ -302,7 +302,27 @@ func (p *Profile) RemoveQualificationByID(qualificationID uuid.UUID) error {
 				return tx.Save(p).Error
 			}
 		}
-		return AccountErrorQualificationDoesNotExists
+		return AccountErrorEntryDoesNotExists
+	})
+}
+
+// RemoveWorkExperienceByID removes work experience inplace and in the DB.
+func (p *Profile) RemoveWorkExperienceByID(expID uuid.UUID) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
+		for i, val := range p.WorkExperience {
+			if val.ID == expID {
+				p.WorkExperience = append(p.WorkExperience[:i], p.WorkExperience[i+1:]...)
+				if err = tx.Delete(&val).Error; err != nil {
+					return err
+				}
+				return tx.Save(p).Error
+			}
+		}
+		return AccountErrorEntryDoesNotExists
 	})
 }
 
@@ -373,7 +393,11 @@ func ReadProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
 
 // ReadProfileByAccountID queries the DB by account ID.
 // conn is optional.
-func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Profile, error) {
+func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+	return readProfileByAccountID(id, conn, "Qualifications", "WorkExperience")
+}
+
+func readProfileByAccountID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Profile, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
@@ -386,6 +410,11 @@ func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*P
 	}
 	profile := &Profile{}
 	return profile, conn.First(profile, "account_id = ?", id).Error
+}
+
+// Settable on Profile.
+type Settable interface {
+	SetOnProfileByAccountID(id uuid.UUID) (*Profile, error)
 }
 
 type Qualification struct {
@@ -408,7 +437,7 @@ func (q *Qualification) SetOnProfileByAccountID(id uuid.UUID) (*Profile, error) 
 	}
 	var profile *Profile
 	return profile, conn.Transaction(func(tx *gorm.DB) error {
-		profile, err = ReadProfileByAccountID(id, tx, "Qualifications")
+		profile, err = ReadProfileByAccountID(id, tx)
 		if err != nil {
 			return err
 		}
@@ -421,8 +450,27 @@ type WorkExperience struct {
 	database.Model
 	ProfileID   uuid.UUID `gorm:"type:uuid"`
 	Role        string
-	YearsExp    string
+	YearsExp    int
 	Description string
 	Verified    bool
 	// Supporting Documents
+}
+
+// SetOnProfileByAccountID will set the work experience on the profile matching the
+// provided account ID.
+func (w *WorkExperience) SetOnProfileByAccountID(id uuid.UUID) (*Profile, error) {
+	var err error
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		profile, err = ReadProfileByAccountID(id, tx)
+		if err != nil {
+			return err
+		}
+		profile.WorkExperience = append(profile.WorkExperience, *w)
+		return tx.Save(profile).Error
+	})
 }
