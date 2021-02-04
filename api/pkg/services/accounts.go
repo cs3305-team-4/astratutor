@@ -220,7 +220,6 @@ func (a *Availability) Scan(value interface{}) error {
 	out := make(Availability, 0)
 	text = text[1 : len(text)-1]
 	for i := 0; i < len(text); i += 2 {
-		fmt.Println(text[i])
 		switch text[i] {
 		case '0':
 			out = append(out, false)
