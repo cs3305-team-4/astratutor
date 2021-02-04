@@ -217,14 +217,15 @@ func (a *Availability) Scan(value interface{}) error {
 	if len(text) < (AvailabilityLength*2)-1 {
 		return errors.New("Invalid availability length.")
 	}
-	out := make(Availability, AvailabilityLength)
+	out := make(Availability, 0)
 	text = text[1 : len(text)-1]
-	for i := 0; i < AvailabilityLength; i += 2 {
+	for i := 0; i < len(text); i += 2 {
+		fmt.Println(text[i])
 		switch text[i] {
 		case '0':
-			out[i] = false
+			out = append(out, false)
 		case '1':
-			out[i] = true
+			out = append(out, true)
 		}
 	}
 	*a = out
