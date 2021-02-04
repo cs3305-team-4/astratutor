@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"strings"
@@ -103,7 +104,7 @@ func CreateTestAccounts() error {
 			Description:    "A student",
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
-			Availability:   []bool{},
+			Availability:   &Availability{},
 		},
 	}).Error
 	if err != nil {
@@ -129,7 +130,7 @@ func CreateTestAccounts() error {
 			Description:    "A tutor",
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
-			Availability:   []bool{},
+			Availability:   &Availability{},
 		},
 	}).Error
 	if err != nil {
@@ -197,6 +198,62 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 	return &PasswordHash{Hash: hash}, nil
 }
 
+// AvailabilityLength length of slice.
+const AvailabilityLength = 336
+
+// Availability for tutors.
+type Availability []bool
+
+// Scan scan value into availability, implements sql.Scanner interface.
+func (a *Availability) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	text, ok := value.(string)
+	if !ok {
+		return errors.New("Invalid value for availability.")
+	}
+	if len(text) < (AvailabilityLength*2)-1 {
+		return errors.New("Invalid availability length.")
+	}
+	out := make(Availability, AvailabilityLength)
+	text = text[1 : len(text)-1]
+	for i := 0; i < AvailabilityLength; i += 2 {
+		switch text[i] {
+		case '0':
+			out[i] = false
+		case '1':
+			out[i] = true
+		}
+	}
+	*a = out
+	return nil
+}
+
+// Value return availability value, implement driver.Valuer interface.
+func (a *Availability) Value() (driver.Value, error) {
+	if a != nil {
+		out := []int{}
+		for _, val := range *a {
+			switch val {
+			case false:
+				out = append(out, 0)
+			case true:
+				out = append(out, 1)
+			}
+		}
+		return out, nil
+	}
+	return nil, nil
+}
+
+func (a *Availability) Get() []bool {
+	if a != nil {
+		return *a
+	}
+	return []bool{}
+}
+
 // Profile model.
 type Profile struct {
 	database.Model
@@ -212,7 +269,7 @@ type Profile struct {
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
 	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
-	Availability []bool `gorm:"type:text"`
+	Availability *Availability `gorm:"type:int[]"`
 }
 
 // IsAccountType checks the account type of the given profile.
@@ -261,7 +318,7 @@ func CreateProfile(p *Profile) error {
 }
 
 // UpdateProfileField will update a single profile field belonging to the provided account ID.
-func UpdateProfileField(id uuid.UUID, key string, value string) (*Profile, error) {
+func UpdateProfileField(id uuid.UUID, key string, value interface{}) (*Profile, error) {
 	conn, err := database.Open()
 	if err != nil {
 		return nil, err

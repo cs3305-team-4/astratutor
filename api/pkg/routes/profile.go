@@ -19,15 +19,16 @@ func getAccountType(r *http.Request) (services.AccountType, error) {
 
 // Profile DTO.
 type ProfileDTO struct {
-	AccountID   string `json:"account_id" validate:"len=0"`
-	ID          string `json:"id" validate:"len=0"`
-	Avatar      string `json:"avatar" validate:"omitempty,base64"`
-	Slug        string `json:"slug" validate:"len=0"`
-	FirstName   string `json:"first_name" validate:"required"`
-	LastName    string `json:"last_name" validate:"required"`
-	City        string `json:"city" validate:"required"`
-	Country     string `json:"country" validate:"required"`
-	Description string `json:"description"`
+	AccountID    string `json:"account_id" validate:"len=0"`
+	ID           string `json:"id" validate:"len=0"`
+	Avatar       string `json:"avatar" validate:"omitempty,base64"`
+	Slug         string `json:"slug" validate:"len=0"`
+	FirstName    string `json:"first_name" validate:"required"`
+	LastName     string `json:"last_name" validate:"required"`
+	City         string `json:"city" validate:"required"`
+	Country      string `json:"country" validate:"required"`
+	Description  string `json:"description"`
+	Availability []bool `json:"availability,omitempty" validate:"omitempty,len=336"`
 }
 
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) *ProfileDTO {
@@ -46,15 +47,16 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) *Prof
 		}
 	case services.Tutor:
 		return &ProfileDTO{
-			AccountID:   p.AccountID.String(),
-			ID:          p.ID.String(),
-			Avatar:      p.Avatar,
-			Slug:        p.Slug,
-			FirstName:   p.FirstName,
-			LastName:    p.LastName,
-			City:        p.City,
-			Country:     p.Country,
-			Description: p.Description,
+			AccountID:    p.AccountID.String(),
+			ID:           p.ID.String(),
+			Avatar:       p.Avatar,
+			Slug:         p.Slug,
+			FirstName:    p.FirstName,
+			LastName:     p.LastName,
+			City:         p.City,
+			Country:      p.Country,
+			Description:  p.Description,
+			Availability: p.Availability.Get(),
 		}
 	}
 	return nil
