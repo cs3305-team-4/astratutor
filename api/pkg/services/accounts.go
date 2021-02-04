@@ -20,9 +20,10 @@ func (e AccountError) Error() string {
 }
 
 const (
-	AccountErrorProfileExists        AccountError = "A profile already exists for this account."
-	AccountErrorAccountDoesNotExist  AccountError = "This account does not exist."
-	AccountErrorProfileDoesNotExists AccountError = "A profile does not exist for this account."
+	AccountErrorProfileExists              AccountError = "A profile already exists for this account."
+	AccountErrorAccountDoesNotExist        AccountError = "This account does not exist."
+	AccountErrorProfileDoesNotExists       AccountError = "A profile does not exist for this account."
+	AccountErrorQualificationDoesNotExists AccountError = "This qualification does not exist."
 )
 
 // AccountType is the type of account.
@@ -283,6 +284,26 @@ func (p *Profile) IsAccountType(accountType AccountType) (bool, error) {
 		return false, err
 	}
 	return account.Type == accountType, nil
+}
+
+// RemoveQualificationByID removes qualification inplace and in the DB.
+func (p *Profile) RemoveQualificationByID(qualificationID uuid.UUID) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
+		for i, val := range p.Qualifications {
+			if val.ID == qualificationID {
+				p.Qualifications = append(p.Qualifications[:i], p.Qualifications[i+1:]...)
+				if err = tx.Delete(&val).Error; err != nil {
+					return err
+				}
+				return tx.Save(p).Error
+			}
+		}
+		return AccountErrorQualificationDoesNotExists
+	})
 }
 
 // CreateProfile will create a profile entry in the DB relating to the Account from AccountID.

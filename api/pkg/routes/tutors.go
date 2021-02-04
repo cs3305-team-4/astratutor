@@ -58,16 +58,30 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 }
 
 func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Request) {
-	// userID, err := getUUID(r, "uuid")
-	// if err != nil {
-	// 	restError(w, r, err, http.StatusBadRequest)
-	// 	return
-	// }
-	// qualificationID, err := getUUID(r, "qid")
-	// if err != nil {
-	// 	restError(w, r, err, http.StatusBadRequest)
-	// 	return
-	// }
+	userID, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	qualificationID, err := getUUID(r, "qid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	profile, err := services.ReadProfileByAccountID(userID, nil, "Qualifications")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if err = profile.RemoveQualificationByID(qualificationID); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
 
 // UpdateAvailabilityDTO DTO.

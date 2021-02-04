@@ -51,6 +51,8 @@ func customErrors(in error, code int) (out error, codeOut int) {
 		codeOut = http.StatusNotFound
 	case errors.Is(in, services.AccountErrorAccountDoesNotExist):
 		codeOut = http.StatusNotFound
+	case errors.Is(in, services.AccountErrorQualificationDoesNotExists):
+		codeOut = http.StatusNotFound
 	case errors.Is(in, gorm.ErrRecordNotFound):
 		codeOut = http.StatusNotFound
 		out = errors.New("No record matching provided ID found.")
