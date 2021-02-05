@@ -61,14 +61,9 @@ func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 
 // getUUID can parse a UUID from the router variables
 // if param is nil, the default variable used "uuid"
-func getUUID(r *http.Request, param *string) (uuid.UUID, error) {
-	para := "uuid"
-	if param != nil {
-		para = *param
-	}
-
+func getUUID(r *http.Request, param string) (uuid.UUID, error) {
 	vars := mux.Vars(r)
-	val, ok := vars[para]
+	val, ok := vars[param]
 	if !ok {
 		return uuid.UUID{}, errors.New("no uuid found")
 	}

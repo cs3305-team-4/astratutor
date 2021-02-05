@@ -39,11 +39,12 @@ func init() {
 		&Qualification{},
 		&WorkExperience{},
 		&Lesson{},
-		&Resource{},
+		&ResourceMetadata{},
+		&ResourceData{},
 	)
 
 	// Add some test users so we don't need to manually test things
-	CreateTestAccounts()
+	CreateDebugData()
 }
 
 // SetCustomValidator will set field validators.

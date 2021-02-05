@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,8 +11,28 @@ import (
 )
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
-	subrouter.HandleFunc("", handleAccounts).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/verify", handleAccountsVerify).Methods("POST")
+	// /
+	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
+
+	// /{uuid}/
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+
+	// Only allow users to access routes relevant to their own account
+	accountResource.Use(authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
+		id, err := getUUID(r, "uuid")
+		if err != nil {
+			return err
+		}
+
+		if ac.Account.ID != id {
+			return errors.New("cannot operate on a resource you do not own")
+		}
+
+		return nil
+	}))
+
+	// /{uuid}/lessons
+	accountResource.HandleFunc("/lessons", handleAccountsLessonsGet).Methods("GET")
 }
 
 // Account DTO.
@@ -23,7 +44,7 @@ type AccountDTO struct {
 	ParentsEmail string `json:"parents_email,omitempty"`
 }
 
-func handleAccounts(w http.ResponseWriter, r *http.Request) {
+func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
 	account := &AccountDTO{}
 	if !ParseBody(w, r, account) {
 		return
@@ -64,4 +85,24 @@ func handleAccountsVerify(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 	}
 	fmt.Println(id)
+}
+
+func handleAccountsLessonsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lessons, err := services.ReadLessonsByAccountID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	dtoLessons := dtoFromLessons(lessons)
+	if err = json.NewEncoder(w).Encode(dtoLessons); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
