@@ -20,6 +20,7 @@ import {
 
 import Landing from "./views/Landing";
 import Login from "./views/Login";
+import Register from "./views/Register";
 import './App.css';
 
 import jwt_decode from 'jwt-decode'
@@ -100,6 +101,7 @@ function App() {
                 <Login />
               </Route>
               <Route path="/register">
+                <Register />
               </Route>
             </Switch>
           </Router>
