@@ -18,7 +18,8 @@ import {
   Link
 } from "react-router-dom";
 
-import Landing from "./views/Landing"
+import Landing from "./views/Landing";
+import Login from "./views/Login";
 import './App.css';
 
 import jwt_decode from 'jwt-decode'
@@ -57,7 +58,7 @@ function App() {
 
   return (
     <AuthContext.Provider value={auth}>
-      <Layout>
+      <Layout style={{ minHeight: '100vh' }}>
         <PageHeader
           ghost={false}
           //onBack={() => window.history.back()}
@@ -69,13 +70,12 @@ function App() {
             <Button href="/login" key="2" type="primary">Log in</Button>,
             <Button href="/register" key="1"> Register</Button>
           ]}
-        >
-        </PageHeader>
+        />
         <Content>
           <Router>
             <Switch>
-              <Route path="/">
-                <Landing></Landing>
+              <Route path="/" exact={true}>
+                <Landing />
               </Route>
               <Route path="/account">
               </Route>
@@ -97,6 +97,7 @@ function App() {
               </Route>
 
               <Route path="/login">
+                <Login />
               </Route>
               <Route path="/register">
               </Route>
