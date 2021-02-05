@@ -48,7 +48,7 @@ const Register: React.FunctionComponent = () => {
         return { accountType: 'student', under16: state.under16 };
       case "account-tutor":
         state.accountType = "tutor";
-        return { accountType: 'tutor', under16: false };
+        return { accountType: 'tutor', under16: state.under16 };
       case "toggle-under-16":
         return { accountType: state.accountType, under16: !state.under16 };
     }
@@ -100,7 +100,8 @@ const Register: React.FunctionComponent = () => {
           initialValue={state.under16}
         >
           <Checkbox 
-            onChange={() => dispatch({ type: "toggle-under-16" })} 
+            onChange={() => dispatch({ type: "toggle-under-16" })}
+            value={state.under16}
           >
             I am under the age of 16
           </Checkbox>
