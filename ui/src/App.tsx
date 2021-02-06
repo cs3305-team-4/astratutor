@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useContext} from 'react';
 
 import 'antd/dist/antd.css';
 import {
@@ -10,6 +10,10 @@ import {
   Col,
   Typography
 } from "antd";
+
+import {
+  UserOutlined
+} from "@ant-design/icons"
 
 import {
   BrowserRouter as Router,
@@ -24,44 +28,65 @@ import Login from "./views/Login";
 import Register from "./views/Register";
 import './App.css';
 
-import jwt_decode from 'jwt-decode'
-import AuthContext, { AuthContextValues } from './contexts/auth'
+import { AuthContext, useAuthValues, PrivateRoute } from './api/auth'
 import { AuthClaims } from './api/auth'
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
 function App() {
-  const [auth, setAuth] = React.useState<AuthContextValues>()
+  let auth = useAuthValues()
 
   React.useEffect(() => {
-  
-    const loginFromJwt = (jwt: string) => {
-      try {
-        const claims = jwt_decode(jwt) as AuthClaims;
-
-        setAuth({
-          claims: claims,
-          isLoggedIn: () => true,
-          loginFromJwt: loginFromJwt
-        })
-      } catch (e) {
-        console.error("tried to decode jwt from login but it didn't work: ", e)
-      }
+    try {
+      auth.loginFromLocalStorage()
+    } catch (e) {
+      console.error(`error attempting to login from localStorage ${e}`)
     }
-
-    // TODO - load token from localstorage
-    setAuth({
-      claims: undefined,
-      isLoggedIn: () => false,
-      loginFromJwt: loginFromJwt
-    })
   }, [])
 
-  let history = useHistory()
-  
-
-
+  let headerLinks = []
+  if (auth.isLoggedIn()) {
+    headerLinks = [
+      <Link to="/" key="home">
+        <Button type="text">Home</Button>
+      </Link>,
+      <Link to="/subjects" key="subjects">
+        <Button type="text">Subjects</Button>
+      </Link>,
+      <Link to="/subjects/tutors" key="tutors">
+        <Button type="text">Find A Tutor</Button>
+      </Link>,
+      <Link to="/lessons" key="lessons">
+        <Button type="text">My Lessons</Button>
+      </Link>,
+      <Link to="/account" key="profile">
+        <Button type="primary">
+          <UserOutlined />
+          Account
+        </Button>
+      </Link>,
+      <Button onClick={()=>auth.logout()}>Logout</Button>
+    ]
+  } else {
+    headerLinks = [
+      <Link to="/" key="home">
+        <Button type="text">Home</Button>,
+      </Link>,
+      <Link to="/subjects" key="subjects">
+        <Button type="text">Subjects</Button>,
+      </Link>,
+      <Link to="/subjects/tutors" key="tutors">
+        <Button type="text">Find A Tutor</Button>,
+      </Link>,
+      <Link to="/login" key="login">
+        <Button type="primary">Log in</Button>
+      </Link>,
+      <Link to="/register" key="register">
+        <Button>Register</Button>
+      </Link>
+    ]
+  }
 
   return (
     <AuthContext.Provider value={auth}>
@@ -71,34 +96,18 @@ function App() {
             ghost={false}
             title={
               <Link to="/" key="logo-home">
-                <a>AstraTutor</a>
+                <span>AstraTutor</span>
               </Link>
             }
-            extra={[
-              <Link to="/" key="home">
-                <Button type="text">Home</Button>,
-              </Link>,
-              <Link to="/subjects" key="subjects">
-                <Button type="text">Subjects</Button>,
-              </Link>,
-              <Link to="/subjects/tutors" key="tutors">
-                <Button type="text">Find A Tutor</Button>,
-              </Link>,
-              <Link to="/login" key="login">
-                <Button type="primary">Log in</Button>
-              </Link>,
-              <Link to="/register" key="register">
-                <Button>Register</Button>
-              </Link>,
-            ]}
+            extra={headerLinks}
           />
           <Content>
             <Switch>
               <Route path="/" exact={true}>
                 <Landing />
               </Route>
-              <Route path="/account">
-              </Route>
+              <PrivateRoute path="/account"/>
+              <PrivateRoute path="/account/profile"/>
               <Route path="/subjects">
               </Route>
               <Route path="/subjects/:subject_slug/tutors">
@@ -107,15 +116,10 @@ function App() {
               </Route>
               <Route path="/tutors/:slug/profile">
               </Route>
-              <Route path="/lessons">
-              </Route>
-              <Route path="/lessons/:lid">
-              </Route>
-              <Route path="/lessons/:lid/lobby">
-              </Route>
-              <Route path="/lessons/:lid/classroom">
-              </Route>
-
+              <PrivateRoute path="/lessons"/>
+              <PrivateRoute path="/lessons/:lid"/>
+              <PrivateRoute path="/lessons/:lid/lobby"/>
+              <PrivateRoute path="/lessons/:lid/classroom"/>
               <Route path="/login" component={Login}/>
               <Route path="/register" component={Register}/>
             </Switch>

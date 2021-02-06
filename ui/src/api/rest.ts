@@ -45,7 +45,7 @@ export async function fetchRest(
     return res;
   } catch (e) {
     throw new Error(
-      `Oops, something went wrong. Please try again later. (${e})`
+      `${e}`
     );
   }
 }

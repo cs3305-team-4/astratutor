@@ -20,6 +20,7 @@ import {
   UserAddOutlined,
 } from "@ant-design/icons";
 
+import { AuthContext } from '../api/auth'
 import DeskImg from "../assets/stock/desk-medium.jpg"
 
 const { Title, Paragraph, Text, Link } = Typography;
@@ -139,6 +140,28 @@ const Register: React.FunctionComponent = () => {
     )
 
     return items; 
+  }
+
+
+  const authContext = React.useContext(AuthContext)
+  if (authContext.isLoggedIn()) {
+    return (
+      <StyledLayout>
+        <Content>
+          <Row
+            style={{height: "calc(100vh - 72px)"}}
+            align="middle"
+            justify="center"
+          >
+            <Col md={9} sm={6} xs={0}/>
+            <Col md={6} sm={10} xs={24} style={{padding: "1rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
+              You are already logged in. Click <Link to="/">here</Link> to continue
+            </Col>
+            <Col md={9} sm={6} xs={0}/>
+          </Row>
+        </Content>
+      </StyledLayout>
+    )
   }
 
   return (

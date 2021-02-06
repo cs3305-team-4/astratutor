@@ -22,5 +22,5 @@
   },
   "include": [
     "./src/**/*.ts"
-  ]
+, "src/api/auth.tsx"  ]
 }
