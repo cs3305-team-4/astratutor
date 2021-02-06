@@ -15,7 +15,8 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Link
+  Link,
+  useHistory
 } from "react-router-dom";
 
 import Landing from "./views/Landing";
@@ -57,23 +58,41 @@ function App() {
     })
   }, [])
 
+  let history = useHistory()
+  
+
+
+
   return (
     <AuthContext.Provider value={auth}>
-      <Layout style={{ minHeight: '100vh' }}>
-        <PageHeader
-          ghost={false}
-          //onBack={() => window.history.back()}
-          title={<a href="/">AstraTutor</a>}
-          extra={[
-            <Button href="/" key="5" type="text">Home</Button>,
-            <Button href="/subjects" key="4" type="text">Subjects</Button>,
-            <Button href="/subjects/tutors" key="3" type="text">Find a tutor</Button>,
-            <Button href="/login" key="2" type="primary">Log in</Button>,
-            <Button href="/register" key="1"> Register</Button>
-          ]}
-        />
-        <Content>
-          <Router>
+      <Router>
+        <Layout style={{ minHeight: '100vh' }}>
+          <PageHeader
+            ghost={false}
+            title={
+              <Link to="/" key="logo-home">
+                <a>AstraTutor</a>
+              </Link>
+            }
+            extra={[
+              <Link to="/" key="home">
+                <Button type="text">Home</Button>,
+              </Link>,
+              <Link to="/subjects" key="subjects">
+                <Button type="text">Subjects</Button>,
+              </Link>,
+              <Link to="/subjects/tutors" key="tutors">
+                <Button type="text">Find A Tutor</Button>,
+              </Link>,
+              <Link to="/login" key="login">
+                <Button type="primary">Log in</Button>
+              </Link>,
+              <Link to="/register" key="register">
+                <Button>Register</Button>
+              </Link>,
+            ]}
+          />
+          <Content>
             <Switch>
               <Route path="/" exact={true}>
                 <Landing />
@@ -97,30 +116,26 @@ function App() {
               <Route path="/lessons/:lid/classroom">
               </Route>
 
-              <Route path="/login">
-                <Login />
-              </Route>
-              <Route path="/register">
-                <Register />
-              </Route>
+              <Route path="/login" component={Login}/>
+              <Route path="/register" component={Register}/>
             </Switch>
-          </Router>
-        </Content>
-        <Footer>
-          <Divider orientation="left">AstraTutor</Divider>
-          <Row>
-            <Col flex={16}>
-              Site Map
-            </Col>
-            <Col flex={24-16}>
-              Links
-            </Col>
-          </Row>
-          <Row style={{margin: "0 auto", textAlign: "center"}}>
-            <p>Made with love by CS3505 Team 4</p>
-          </Row>
-        </Footer>
-      </Layout>
+          </Content>
+          <Footer>
+            <Divider orientation="left">AstraTutor</Divider>
+            <Row>
+              <Col flex={16}>
+                Site Map
+              </Col>
+              <Col flex={24-16}>
+                Links
+              </Col>
+            </Row>
+            <Row style={{margin: "0 auto", textAlign: "center"}}>
+              <p>Made with love by CS3505 Team 4</p>
+            </Row>
+          </Footer>
+        </Layout>
+      </Router>
     </AuthContext.Provider>
   )
 }
