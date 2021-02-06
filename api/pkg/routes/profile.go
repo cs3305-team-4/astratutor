@@ -122,7 +122,6 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	// TODO(ericm): Filter verified qualifications and work experience for other users.
 	serviceProfile, err := services.ReadProfileByAccountID(id, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -134,6 +133,15 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 	} else if !ok {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
+	}
+	// Filter verified if same user isn't authenticated.
+	auth, err := ParseRequestAuth(r)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if auth == nil || auth.Account.ID != id {
+		serviceProfile.FilterVerifiedFields()
 	}
 	outProfile := dtoFromProfile(serviceProfile, t)
 	if err = json.NewEncoder(w).Encode(outProfile); err != nil {

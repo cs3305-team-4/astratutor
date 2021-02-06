@@ -289,6 +289,24 @@ type Profile struct {
 	Availability *Availability `gorm:"type:int[]"`
 }
 
+// FilterVerifiedFields will filter qualifications and work experience for verified in-place.
+func (p *Profile) FilterVerifiedFields() {
+	qualifications := make([]Qualification, 0)
+	workExperience := make([]WorkExperience, 0)
+	for _, val := range p.Qualifications {
+		if val.Verified {
+			qualifications = append(qualifications, val)
+		}
+	}
+	for _, val := range p.WorkExperience {
+		if val.Verified {
+			workExperience = append(workExperience, val)
+		}
+	}
+	p.Qualifications = qualifications
+	p.WorkExperience = workExperience
+}
+
 // IsAccountType checks the account type of the given profile.
 func (p *Profile) IsAccountType(accountType AccountType) (bool, error) {
 	conn, err := database.Open()

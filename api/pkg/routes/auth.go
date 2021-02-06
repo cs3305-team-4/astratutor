@@ -142,17 +142,26 @@ const (
 	authContextKey AuthContextKeyType = "routes.auth.context"
 )
 
-func ReadRequestAuthContext(r *http.Request) (*AuthContext, error) {
+func ParseRequestAuth(r *http.Request) (*AuthContext, error) {
 	val := r.Context().Value(authContextKey)
 	if val == nil {
-		return nil, errors.New("auth context not present on request")
+		return nil, nil
 	}
-
 	if context, ok := val.(*AuthContext); ok {
 		return context, nil
 	}
-
 	return nil, errors.New("auth context not valid type")
+}
+
+func ReadRequestAuthContext(r *http.Request) (*AuthContext, error) {
+	val, err := ParseRequestAuth(r)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, errors.New("auth context not present on request")
+	}
+	return val, nil
 }
 
 func authRequired(next http.Handler) http.Handler {
