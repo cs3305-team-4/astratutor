@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -99,8 +100,20 @@ func handleAccountsUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if !ParseBody(w, r, update) {
 		return
 	}
+	oldPassword := update.Value.OldPassword
 	newPassword := update.Value.NewPassword
-	// TODO(ericm): Validate OldPassword hash.
+
+	// Validate old password.
+	oldPasswordHash, err := services.ReadPasswordHashByAccountID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if !oldPasswordHash.ValidMatch(oldPassword) {
+		restError(w, r, errors.New("Old password provided is incorrect."), http.StatusForbidden)
+		return
+	}
+
 	if err = validateUpdate("Password", newPassword, &AccountDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
