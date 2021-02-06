@@ -12,21 +12,25 @@ import (
 func InjectTutorsRoutes(subrouter *mux.Router) {
 	// Profile routes
 	subrouter.HandleFunc("/{uuid}/profile", handleProfileGet).Methods("GET")
-	subrouter.HandleFunc("/{uuid}/profile", handleProfilePost).Methods("POST")
+
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+	accountResource.Use(authAccount())
+
+	accountResource.HandleFunc("/profile", handleProfilePost).Methods("POST")
 
 	// Profile update routes
-	subrouter.HandleFunc("/{uuid}/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/first-name", handleProfileUpdateFirstName).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/last-name", handleProfileUpdateLastName).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/city", handleProfileUpdateCity).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/country", handleProfileUpdateCountry).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/description", handleProfileUpdateDescription).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/availability", handleTutorProfileAvailabilityPost).Methods("POST")
+	accountResource.HandleFunc("/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
+	accountResource.HandleFunc("/profile/first-name", handleProfileUpdateFirstName).Methods("POST")
+	accountResource.HandleFunc("/profile/last-name", handleProfileUpdateLastName).Methods("POST")
+	accountResource.HandleFunc("/profile/city", handleProfileUpdateCity).Methods("POST")
+	accountResource.HandleFunc("/profile/country", handleProfileUpdateCountry).Methods("POST")
+	accountResource.HandleFunc("/profile/description", handleProfileUpdateDescription).Methods("POST")
+	accountResource.HandleFunc("/profile/availability", handleTutorProfileAvailabilityPost).Methods("POST")
 
-	subrouter.HandleFunc("/{uuid}/profile/qualifications", handleTutorProfileQualificationsPost).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/qualifications/{qid}", handleTutorProfileQualificationsDelete).Methods("DELETE")
-	subrouter.HandleFunc("/{uuid}/profile/work-experience", handleTutorProfileWorkExperiencePost).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/work-experience/{wid}", handleTutorProfileWorkExperienceDelete).Methods("DELETE")
+	accountResource.HandleFunc("/profile/qualifications", handleTutorProfileQualificationsPost).Methods("POST")
+	accountResource.HandleFunc("/profile/qualifications/{qid}", handleTutorProfileQualificationsDelete).Methods("DELETE")
+	accountResource.HandleFunc("/profile/work-experience", handleTutorProfileWorkExperiencePost).Methods("POST")
+	accountResource.HandleFunc("/profile/work-experience/{wid}", handleTutorProfileWorkExperienceDelete).Methods("DELETE")
 
 	// Lesson routes.
 	// subrouter.HandleFunc("/{uuid}/lessons", handleTutorsLessonsGet).Methods("GET")

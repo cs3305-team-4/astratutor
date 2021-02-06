@@ -7,15 +7,18 @@ import (
 func InjectStudentsRoutes(subrouter *mux.Router) {
 	// Profile routes
 	subrouter.HandleFunc("/{uuid}/profile", handleProfileGet).Methods("GET")
-	subrouter.HandleFunc("/{uuid}/profile", handleProfilePost).Methods("POST")
+
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+	accountResource.Use(authAccount())
+	accountResource.HandleFunc("/profile", handleProfilePost).Methods("POST")
 
 	// Profile update routes
-	subrouter.HandleFunc("/{uuid}/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/first_name", handleProfileUpdateFirstName).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/last_name", handleProfileUpdateLastName).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/city", handleProfileUpdateCity).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/country", handleProfileUpdateCountry).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/profile/description", handleProfileUpdateDescription).Methods("POST")
+	accountResource.HandleFunc("/profile/avatar", handleProfileUpdateAvatar).Methods("POST")
+	accountResource.HandleFunc("/profile/first_name", handleProfileUpdateFirstName).Methods("POST")
+	accountResource.HandleFunc("/profile/last_name", handleProfileUpdateLastName).Methods("POST")
+	accountResource.HandleFunc("/profile/city", handleProfileUpdateCity).Methods("POST")
+	accountResource.HandleFunc("/profile/country", handleProfileUpdateCountry).Methods("POST")
+	accountResource.HandleFunc("/profile/description", handleProfileUpdateDescription).Methods("POST")
 
 	// Lessons routes
 	// subrouter.HandleFunc("/{uuid}/lessons", handleStudentsLessonsGet).Methods("GET")

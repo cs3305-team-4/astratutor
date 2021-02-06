@@ -10,12 +10,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func InjectAccountsRoutes(subrouter *mux.Router) {
-	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
-
-	// Only allow users to access routes relevant to their own account
-	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
-	accountResource.Use(authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
+func authAccount() func(next http.Handler) http.Handler {
+	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
 		id, err := getUUID(r, "uuid")
 		if err != nil {
 			return err
@@ -26,7 +22,15 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 		}
 
 		return nil
-	}))
+	})
+}
+
+func InjectAccountsRoutes(subrouter *mux.Router) {
+	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
+
+	// Only allow users to access routes relevant to their own account
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+	accountResource.Use(authAccount())
 	accountResource.HandleFunc("", handleAccountsGet).Methods("GET")
 	accountResource.HandleFunc("/verify", handleAccountsVerify).Methods("POST")
 	accountResource.HandleFunc("/email", handleAccountsUpdateEmail).Methods("POST")
