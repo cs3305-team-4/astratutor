@@ -2,28 +2,12 @@ package routes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/gorilla/mux"
 )
-
-func authAccount() func(next http.Handler) http.Handler {
-	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
-		id, err := getUUID(r, "uuid")
-		if err != nil {
-			return err
-		}
-
-		if ac.Account.ID != id {
-			return errors.New("cannot operate on a resource you do not own")
-		}
-
-		return nil
-	})
-}
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")

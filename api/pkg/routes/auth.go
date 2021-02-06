@@ -159,10 +159,10 @@ func authRequired(next http.Handler) http.Handler {
 	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
 		// The auth middleware pulls their account and checks if it's suspended, so we don't need to do any checking ere
 		return nil
-	})(next)
+	}, true)(next)
 }
 
-func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error) func(next http.Handler) http.Handler {
+func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error, required bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// First we need to check if they used this middleware multiple times (i.e an AuthContext is already present on the request)
@@ -237,8 +237,11 @@ func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *
 				return
 			}
 
-			restError(w, r, errors.New("endpoint requires authorization header"), http.StatusForbidden)
-			return
+			if required {
+				restError(w, r, errors.New("endpoint requires authorization header"), http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authContextKey, nil)))
 		})
 	}
 }

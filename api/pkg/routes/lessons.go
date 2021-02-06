@@ -146,7 +146,7 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 			}
 
 			return errors.New("can only operate on a lesson that you are a participant in")
-		},
+		}, true,
 	))
 
 	// GET /{uuid}

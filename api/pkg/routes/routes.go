@@ -25,6 +25,7 @@ func GetHandler() http.Handler {
 	r.Use(
 		loggingMiddleware,
 		jsonMiddleware,
+		authSetCtx(),
 	)
 
 	InjectAccountsRoutes(r.PathPrefix("/accounts").Subrouter())

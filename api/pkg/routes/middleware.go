@@ -1,10 +1,32 @@
 package routes
 
 import (
+	"errors"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 )
+
+func authAccount() func(next http.Handler) http.Handler {
+	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
+		id, err := getUUID(r, "uuid")
+		if err != nil {
+			return err
+		}
+
+		if ac.Account.ID != id {
+			return errors.New("cannot operate on a resource you do not own")
+		}
+
+		return nil
+	}, true)
+}
+
+func authSetCtx() func(next http.Handler) http.Handler {
+	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
+		return nil
+	}, false)
+}
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
