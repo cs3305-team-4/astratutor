@@ -124,7 +124,7 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 	}
 	serviceProfile, err := services.ReadProfileByAccountID(id, nil)
 	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if ok, err := serviceProfile.IsAccountType(t); err != nil {

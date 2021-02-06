@@ -47,7 +47,7 @@ func handleAccountsGet(w http.ResponseWriter, r *http.Request) {
 	}
 	serviceAccount, err := services.ReadAccountByID(id, nil)
 	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
+		restError(w, r, err, http.StatusNotFound)
 		return
 	}
 	outAccount := dtoFromAccount(serviceAccount)
