@@ -16,14 +16,19 @@ import {
 } from "antd";
 import {
   LockOutlined,
-  MailOutlined
+  MailOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
+
+import DeskImg from "../assets/stock/desk-medium.jpg"
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
 
 const StyledLayout = styled(Layout)`
-  padding: 2em 0;
+  height: calc(100vh - 72px);
+  background-image: url(${DeskImg});
+  background-size: cover;
 `;
 
 type RegisterState = {
@@ -107,6 +112,7 @@ const Register: React.FunctionComponent = () => {
           </Checkbox>
         </Form.Item>
       );
+
       if (state.under16) {
         items.push(
           <Form.Item
@@ -137,8 +143,14 @@ const Register: React.FunctionComponent = () => {
 
   return (
     <StyledLayout>
-      <Row justify="center">
-        <Col span={8}>
+      <Row
+          style={{height: "calc(100vh - 72px)"}}
+          align="middle"
+          justify="center"
+      >
+        <Col md={10} sm={6} xs={0}/>
+        <Col md={4} sm={10} xs={24} style={{padding: "1rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
+          <UserAddOutlined style={{ display: "block", margin: "0 auto", fontSize: "4rem", padding: "2rem", color: "rgb(200,200,200)"}} />
           <Form
             onFinish={onSubmit}
           >
@@ -164,11 +176,13 @@ const Register: React.FunctionComponent = () => {
             {FormItems()}
             
             <Form.Item>
-              <Button type="primary" htmlType="submit">Register</Button>
-              <Button type="link" href="/login">Log in</Button>
+              <Button style={{width: "100%"}} type="primary" htmlType="submit">
+                Register
+              </Button> 
             </Form.Item>
           </Form>
         </Col>
+        <Col md={10} sm={6} xs={0}/>
       </Row>
     </StyledLayout>
   );
