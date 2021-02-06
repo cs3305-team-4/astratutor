@@ -23,7 +23,8 @@ type returnError struct {
 }
 
 func restError(w http.ResponseWriter, r *http.Request, err error, code int) {
-	log.WithContext(r.Context()).WithError(err).Error("Error parsing body")
+	log.WithContext(r.Context()).WithError(err).Error("REST error")
+
 	err, code = customErrors(err, code)
 	w.WriteHeader(code)
 	outErr := returnError{

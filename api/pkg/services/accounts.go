@@ -75,72 +75,6 @@ func CreateAccount(a *Account) error {
 	return conn.Create(a).Error
 }
 
-func CreateTestAccounts() error {
-	db, err := database.Open()
-	if err != nil {
-		return err
-	}
-
-	hash, err := NewPasswordHash("grindshub")
-	if err != nil {
-		return err
-	}
-
-	err = db.FirstOrCreate(&Account{
-		Model: database.Model{
-			ID: uuid.MustParse("deadbeef-cafe-badd-c0de-facadebadbad"),
-		},
-		Email:         "student@grindshub.localhost",
-		EmailVerified: true,
-		Type:          Student,
-		Suspended:     false,
-		PasswordHash:  *hash,
-		Profile: &Profile{
-			Avatar:         "",
-			Slug:           "john-student",
-			FirstName:      "John",
-			LastName:       "Student",
-			City:           "Cork",
-			Country:        "Ireland",
-			Description:    "A student",
-			Qualifications: []Qualification{},
-			WorkExperience: []WorkExperience{},
-			Availability:   &Availability{},
-		},
-	}).Error
-	if err != nil {
-		return err
-	}
-
-	err = db.FirstOrCreate(&Account{
-		Model: database.Model{
-			ID: uuid.MustParse("deadbeef-cafe-badd-c0de-facadebadbad"),
-		},
-		Email:         "tutor@grindshub.localhost",
-		EmailVerified: true,
-		Type:          Tutor,
-		Suspended:     false,
-		PasswordHash:  *hash,
-		Profile: &Profile{
-			Avatar:         "",
-			Slug:           "john-tutor",
-			FirstName:      "John",
-			LastName:       "Tutor",
-			City:           "Cork",
-			Country:        "Ireland",
-			Description:    "A tutor",
-			Qualifications: []Qualification{},
-			WorkExperience: []WorkExperience{},
-			Availability:   &Availability{},
-		},
-	}).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ReadAccountByID queries the DB by account ID.
 // conn is optional.
 func ReadAccountByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
@@ -156,6 +90,24 @@ func ReadAccountByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account,
 	}
 	account := &Account{}
 	return account, conn.First(account, id).Error
+}
+
+func ReadAccountByEmail(email string, conn *gorm.DB, preloads ...string) (*Account, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
+
+	account := &Account{}
+	return account, conn.Where(
+		&Account{Email: email},
+	).First(&account).Error
 }
 
 func ReadTutorByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
@@ -224,6 +176,34 @@ func (p PasswordHash) SetOnAccountByID(id uuid.UUID) (*Account, error) {
 		account.PasswordHash = p
 		return tx.Save(account).Error
 	})
+}
+
+func (p *PasswordHash) ValidMatch(match string) bool {
+	res := bcrypt.CompareHashAndPassword(p.Hash, []byte(match))
+
+	if res == nil {
+		return true
+	}
+
+	return false
+}
+
+func ReadPasswordHashByAccountID(id uuid.UUID) (*PasswordHash, error) {
+	db, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	var hash PasswordHash
+	err = db.Where(&PasswordHash{
+		AccountID: id,
+	}).Find(&hash).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &hash, nil
 }
 
 // NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.

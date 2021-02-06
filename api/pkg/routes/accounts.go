@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,10 +12,26 @@ import (
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
-	subrouter.HandleFunc("/{uuid}", handleAccountsGet).Methods("GET")
-	subrouter.HandleFunc("/{uuid}/verify", handleAccountsVerify).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/email", handleAccountsUpdateEmail).Methods("POST")
-	subrouter.HandleFunc("/{uuid}/password", handleAccountsUpdatePassword).Methods("POST")
+
+	// Only allow users to access routes relevant to their own account
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+	accountResource.Use(authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
+		id, err := getUUID(r, "uuid")
+		if err != nil {
+			return err
+		}
+
+		if ac.Account.ID != id {
+			return errors.New("cannot operate on a resource you do not own")
+		}
+
+		return nil
+	}))
+	accountResource.HandleFunc("", handleAccountsGet).Methods("GET")
+	accountResource.HandleFunc("/verify", handleAccountsVerify).Methods("POST")
+	accountResource.HandleFunc("/email", handleAccountsUpdateEmail).Methods("POST")
+	accountResource.HandleFunc("/password", handleAccountsUpdatePassword).Methods("POST")
+	accountResource.HandleFunc("/lessons", handleAccountsLessonsGet).Methods("GET")
 }
 
 // Account DTO.
@@ -155,4 +172,24 @@ func handleAccountsVerify(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 	}
 	fmt.Println(id)
+}
+
+func handleAccountsLessonsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lessons, err := services.ReadLessonsByAccountID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	dtoLessons := dtoFromLessons(lessons)
+	if err = json.NewEncoder(w).Encode(dtoLessons); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
