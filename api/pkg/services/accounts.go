@@ -171,6 +171,22 @@ func ReadTutorByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, e
 	return account, nil
 }
 
+// UpdateAccountField will update a single account field belonging to the provided account ID.
+func UpdateAccountField(id uuid.UUID, key string, value interface{}) (*Account, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var account *Account
+	return account, conn.Transaction(func(tx *gorm.DB) error {
+		account, err = ReadAccountByID(id, tx)
+		if err != nil {
+			return err
+		}
+		return tx.Model(account).Update(key, value).Error
+	})
+}
+
 func ReadStudentByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
 	account, err := ReadAccountByID(id, conn, preloads...)
 	if err != nil {
@@ -188,6 +204,26 @@ type PasswordHash struct {
 	database.Model
 	AccountID uuid.UUID `gorm:"type:uuid"`
 	Hash      []byte    `gorm:"type:text"`
+}
+
+// SetOnAccountID will delete the previous password hash and set it to the new one.
+func (p PasswordHash) SetOnAccountByID(id uuid.UUID) (*Account, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var account *Account
+	return account, conn.Transaction(func(tx *gorm.DB) error {
+		account, err = ReadAccountByID(id, tx, "PasswordHash")
+		if err != nil {
+			return err
+		}
+		if err = tx.Delete(&account.PasswordHash).Error; err != nil {
+			return err
+		}
+		account.PasswordHash = p
+		return tx.Save(account).Error
+	})
 }
 
 // NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.

@@ -10,8 +10,11 @@ import (
 )
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
-	subrouter.HandleFunc("", handleAccounts).Methods("POST")
+	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
+	subrouter.HandleFunc("/{uuid}", handleAccountsGet).Methods("GET")
 	subrouter.HandleFunc("/{uuid}/verify", handleAccountsVerify).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/email", handleAccountsUpdateEmail).Methods("POST")
+	subrouter.HandleFunc("/{uuid}/password", handleAccountsUpdatePassword).Methods("POST")
 }
 
 // Account DTO.
@@ -23,7 +26,98 @@ type AccountDTO struct {
 	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 
-func handleAccounts(w http.ResponseWriter, r *http.Request) {
+func dtoFromAccount(a *services.Account) *AccountDTO {
+	return &AccountDTO{
+		ID:    a.ID.String(),
+		Email: a.Email,
+		Type:  string(a.Type),
+	}
+}
+
+func handleAccountsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outAccount := dtoFromAccount(serviceAccount)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleAccountsUpdateEmail(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	// TODO(ericm): Add email verification.
+	field := ParseUpdateString(w, r)
+	if err = validateUpdate("Email", field, &AccountDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	var account *services.Account
+	if account, err = services.UpdateAccountField(id, "email", field); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outAccount := dtoFromAccount(account)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+// UpdateDTO used for single field update route posts.
+type UpdatePasswordDTO struct {
+	Value struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	} `json:"value"`
+}
+
+func handleAccountsUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	update := &UpdatePasswordDTO{}
+	if !ParseBody(w, r, update) {
+		return
+	}
+	newPassword := update.Value.NewPassword
+	// TODO(ericm): Validate OldPassword hash.
+	if err = validateUpdate("Password", newPassword, &AccountDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	passwordHash, err := services.NewPasswordHash(newPassword)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	var account *services.Account
+	if account, err = passwordHash.SetOnAccountByID(id); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outAccount := dtoFromAccount(account)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
 	account := &AccountDTO{}
 	if !ParseBody(w, r, account) {
 		return
@@ -38,6 +132,7 @@ func handleAccounts(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	// TODO(ericm): Add email verification.
 	serviceAccount := &services.Account{
 		Email:        account.Email,
 		Type:         accountType,
@@ -47,11 +142,7 @@ func handleAccounts(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	outAccount := &AccountDTO{
-		ID:    serviceAccount.ID.String(),
-		Email: serviceAccount.Email,
-		Type:  string(serviceAccount.Type),
-	}
+	outAccount := dtoFromAccount(serviceAccount)
 	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
