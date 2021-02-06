@@ -11,37 +11,128 @@ import (
 )
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
-	// /
 	subrouter.HandleFunc("", handleAccountsPost).Methods("POST")
 
-	// /{uuid}/
-	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
-
 	// Only allow users to access routes relevant to their own account
-	accountResource.Use(authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
-		id, err := getUUID(r, "uuid")
-		if err != nil {
-			return err
-		}
-
-		if ac.Account.ID != id {
-			return errors.New("cannot operate on a resource you do not own")
-		}
-
-		return nil
-	}))
-
-	// /{uuid}/lessons
+	accountResource := subrouter.PathPrefix("/{uuid}").Subrouter()
+	accountResource.Use(authAccount())
+	accountResource.HandleFunc("", handleAccountsGet).Methods("GET")
+	accountResource.HandleFunc("/verify", handleAccountsVerify).Methods("POST")
+	accountResource.HandleFunc("/email", handleAccountsUpdateEmail).Methods("POST")
+	accountResource.HandleFunc("/password", handleAccountsUpdatePassword).Methods("POST")
 	accountResource.HandleFunc("/lessons", handleAccountsLessonsGet).Methods("GET")
 }
 
 // Account DTO.
 type AccountDTO struct {
 	ID           string `json:"id" validate:"len=0"`
-	Email        string `json:"email" validate:"nonzero"`
-	Type         string `json:"type"`
-	Password     string `json:"password,omitempty" validate:"passwd"`
-	ParentsEmail string `json:"parents_email,omitempty"`
+	Email        string `json:"email" validate:"required,email"`
+	Type         string `json:"type" validate:"required"`
+	Password     string `json:"password,omitempty" validate:"required,passwd"`
+	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
+}
+
+func dtoFromAccount(a *services.Account) *AccountDTO {
+	return &AccountDTO{
+		ID:    a.ID.String(),
+		Email: a.Email,
+		Type:  string(a.Type),
+	}
+}
+
+func handleAccountsGet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	outAccount := dtoFromAccount(serviceAccount)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleAccountsUpdateEmail(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	// TODO(ericm): Add email verification.
+	field := ParseUpdateString(w, r)
+	if err = validateUpdate("Email", field, &AccountDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	var account *services.Account
+	if account, err = services.UpdateAccountField(id, "email", field); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outAccount := dtoFromAccount(account)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+// UpdateDTO used for single field update route posts.
+type UpdatePasswordDTO struct {
+	Value struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	} `json:"value"`
+}
+
+func handleAccountsUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	update := &UpdatePasswordDTO{}
+	if !ParseBody(w, r, update) {
+		return
+	}
+	oldPassword := update.Value.OldPassword
+	newPassword := update.Value.NewPassword
+
+	// Validate old password.
+	oldPasswordHash, err := services.ReadPasswordHashByAccountID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if !oldPasswordHash.ValidMatch(oldPassword) {
+		restError(w, r, errors.New("Old password provided is incorrect."), http.StatusForbidden)
+		return
+	}
+
+	if err = validateUpdate("Password", newPassword, &AccountDTO{}); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	passwordHash, err := services.NewPasswordHash(newPassword)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	var account *services.Account
+	if account, err = passwordHash.SetOnAccountByID(id); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	outAccount := dtoFromAccount(account)
+	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
 
 func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +150,7 @@ func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	// TODO(ericm): Add email verification.
 	serviceAccount := &services.Account{
 		Email:        account.Email,
 		Type:         accountType,
@@ -68,11 +160,7 @@ func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	outAccount := &AccountDTO{
-		ID:    serviceAccount.ID.String(),
-		Email: serviceAccount.Email,
-		Type:  string(serviceAccount.Type),
-	}
+	outAccount := dtoFromAccount(serviceAccount)
 	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return

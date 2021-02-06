@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"strings"
@@ -19,7 +20,10 @@ func (e AccountError) Error() string {
 }
 
 const (
-	AccountErrorProfileExists AccountError = "a profile already exists for this account"
+	AccountErrorProfileExists        AccountError = "A profile already exists for this account."
+	AccountErrorAccountDoesNotExist  AccountError = "This account does not exist."
+	AccountErrorProfileDoesNotExists AccountError = "A profile does not exist for this account."
+	AccountErrorEntryDoesNotExists   AccountError = "This Entry does not exist."
 )
 
 // AccountType is the type of account.
@@ -119,6 +123,22 @@ func ReadTutorByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, e
 	return account, nil
 }
 
+// UpdateAccountField will update a single account field belonging to the provided account ID.
+func UpdateAccountField(id uuid.UUID, key string, value interface{}) (*Account, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var account *Account
+	return account, conn.Transaction(func(tx *gorm.DB) error {
+		account, err = ReadAccountByID(id, tx)
+		if err != nil {
+			return err
+		}
+		return tx.Model(account).Update(key, value).Error
+	})
+}
+
 func ReadStudentByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
 	account, err := ReadAccountByID(id, conn, preloads...)
 	if err != nil {
@@ -138,13 +158,24 @@ type PasswordHash struct {
 	Hash      []byte    `gorm:"type:text"`
 }
 
-// NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.
-func NewPasswordHash(password string) (*PasswordHash, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost) // Salt embedded in hash
+// SetOnAccountID will delete the previous password hash and set it to the new one.
+func (p PasswordHash) SetOnAccountByID(id uuid.UUID) (*Account, error) {
+	conn, err := database.Open()
 	if err != nil {
 		return nil, err
 	}
-	return &PasswordHash{Hash: hash}, nil
+	var account *Account
+	return account, conn.Transaction(func(tx *gorm.DB) error {
+		account, err = ReadAccountByID(id, tx, "PasswordHash")
+		if err != nil {
+			return err
+		}
+		if err = tx.Delete(&account.PasswordHash).Error; err != nil {
+			return err
+		}
+		account.PasswordHash = p
+		return tx.Save(account).Error
+	})
 }
 
 func (p *PasswordHash) ValidMatch(match string) bool {
@@ -175,6 +206,71 @@ func ReadPasswordHashByAccountID(id uuid.UUID) (*PasswordHash, error) {
 	return &hash, nil
 }
 
+// NewPasswordHash will generate a password hash object. Storage should be done via CreateAccount.
+func NewPasswordHash(password string) (*PasswordHash, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost) // Salt embedded in hash
+	if err != nil {
+		return nil, err
+	}
+	return &PasswordHash{Hash: hash}, nil
+}
+
+// AvailabilityLength length of slice.
+const AvailabilityLength = 336
+
+// Availability for tutors.
+type Availability []bool
+
+// Scan scan value into availability, implements sql.Scanner interface.
+func (a *Availability) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	text, ok := value.(string)
+	if !ok {
+		return errors.New("Invalid value for availability.")
+	}
+	if len(text) < (AvailabilityLength*2)-1 {
+		return errors.New("Invalid availability length.")
+	}
+	out := make(Availability, 0)
+	text = text[1 : len(text)-1]
+	for i := 0; i < len(text); i += 2 {
+		switch text[i] {
+		case '0':
+			out = append(out, false)
+		case '1':
+			out = append(out, true)
+		}
+	}
+	*a = out
+	return nil
+}
+
+// Value return availability value, implement driver.Valuer interface.
+func (a *Availability) Value() (driver.Value, error) {
+	if a != nil {
+		out := []int{}
+		for _, val := range *a {
+			switch val {
+			case false:
+				out = append(out, 0)
+			case true:
+				out = append(out, 1)
+			}
+		}
+		return out, nil
+	}
+	return nil, nil
+}
+
+func (a *Availability) Get() []bool {
+	if a != nil {
+		return *a
+	}
+	return make([]bool, AvailabilityLength)
+}
+
 // Profile model.
 type Profile struct {
 	database.Model
@@ -190,7 +286,78 @@ type Profile struct {
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
 	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
-	Availability []bool `gorm:"type:text"`
+	Availability *Availability `gorm:"type:int[]"`
+}
+
+// FilterVerifiedFields will filter qualifications and work experience for verified in-place.
+func (p *Profile) FilterVerifiedFields() {
+	qualifications := make([]Qualification, 0)
+	workExperience := make([]WorkExperience, 0)
+	for _, val := range p.Qualifications {
+		if val.Verified {
+			qualifications = append(qualifications, val)
+		}
+	}
+	for _, val := range p.WorkExperience {
+		if val.Verified {
+			workExperience = append(workExperience, val)
+		}
+	}
+	p.Qualifications = qualifications
+	p.WorkExperience = workExperience
+}
+
+// IsAccountType checks the account type of the given profile.
+func (p *Profile) IsAccountType(accountType AccountType) (bool, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return false, err
+	}
+	account := &Account{}
+	if err := conn.First(account, p.AccountID).Error; err != nil {
+		return false, err
+	}
+	return account.Type == accountType, nil
+}
+
+// RemoveQualificationByID removes qualification inplace and in the DB.
+func (p *Profile) RemoveQualificationByID(qualificationID uuid.UUID) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
+		for i, val := range p.Qualifications {
+			if val.ID == qualificationID {
+				p.Qualifications = append(p.Qualifications[:i], p.Qualifications[i+1:]...)
+				if err = tx.Delete(&val).Error; err != nil {
+					return err
+				}
+				return tx.Save(p).Error
+			}
+		}
+		return AccountErrorEntryDoesNotExists
+	})
+}
+
+// RemoveWorkExperienceByID removes work experience inplace and in the DB.
+func (p *Profile) RemoveWorkExperienceByID(expID uuid.UUID) error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
+		for i, val := range p.WorkExperience {
+			if val.ID == expID {
+				p.WorkExperience = append(p.WorkExperience[:i], p.WorkExperience[i+1:]...)
+				if err = tx.Delete(&val).Error; err != nil {
+					return err
+				}
+				return tx.Save(p).Error
+			}
+		}
+		return AccountErrorEntryDoesNotExists
+	})
 }
 
 // CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
@@ -221,7 +388,26 @@ func CreateProfile(p *Profile) error {
 		p.Slug = slug
 
 		account.Profile = p
-		return conn.Save(account).Error
+		return tx.Save(account).Error
+	})
+}
+
+// UpdateProfileField will update a single profile field belonging to the provided account ID.
+func UpdateProfileField(id uuid.UUID, key string, value interface{}) (*Profile, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		account, err := ReadAccountByID(id, tx, "Profile")
+		if err != nil {
+			return err
+		}
+		if profile = account.Profile; profile == nil {
+			return AccountErrorProfileDoesNotExists
+		}
+		return tx.Model(profile).Update(key, value).Error
 	})
 }
 
@@ -242,6 +428,10 @@ func ReadProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
 // ReadProfileByAccountID queries the DB by account ID.
 // conn is optional.
 func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+	return readProfileByAccountID(id, conn, "Qualifications", "WorkExperience")
+}
+
+func readProfileByAccountID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Profile, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
@@ -249,11 +439,20 @@ func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
 			return nil, err
 		}
 	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
 	profile := &Profile{}
 	return profile, conn.First(profile, "account_id = ?", id).Error
 }
 
+// Settable on Profile.
+type Settable interface {
+	SetOnProfileByAccountID(id uuid.UUID) (*Profile, error)
+}
+
 type Qualification struct {
+	database.Model
 	ProfileID uuid.UUID `gorm:"type:uuid"`
 	Field     string
 	Degree    string
@@ -262,11 +461,50 @@ type Qualification struct {
 	// SupportingDocuments
 }
 
+// SetOnProfileByAccountID will set the qualification on the profile matching the
+// provided account ID.
+func (q *Qualification) SetOnProfileByAccountID(id uuid.UUID) (*Profile, error) {
+	var err error
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		profile, err = ReadProfileByAccountID(id, tx)
+		if err != nil {
+			return err
+		}
+		profile.Qualifications = append(profile.Qualifications, *q)
+		return tx.Save(profile).Error
+	})
+}
+
 type WorkExperience struct {
+	database.Model
 	ProfileID   uuid.UUID `gorm:"type:uuid"`
 	Role        string
-	YearsExp    string
+	YearsExp    int
 	Description string
 	Verified    bool
 	// Supporting Documents
+}
+
+// SetOnProfileByAccountID will set the work experience on the profile matching the
+// provided account ID.
+func (w *WorkExperience) SetOnProfileByAccountID(id uuid.UUID) (*Profile, error) {
+	var err error
+	conn, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+	var profile *Profile
+	return profile, conn.Transaction(func(tx *gorm.DB) error {
+		profile, err = ReadProfileByAccountID(id, tx)
+		if err != nil {
+			return err
+		}
+		profile.WorkExperience = append(profile.WorkExperience, *w)
+		return tx.Save(profile).Error
+	})
 }
