@@ -28,7 +28,6 @@ services:
     depends_on:
       - db
   db:
-    container_name: "pg.grindsapp.localhost"
     image: postgres:13.1-alpine
     restart: on-failure
     environment:
@@ -44,8 +43,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: "grindsapp"
     ports:
       - "8082:80"
+    volumes:
+      - "./pgadmin4/servers.json:/pgadmin4/servers.json"
     restart: unless-stopped
     depends_on:
       - db
-    logging:
+    logging: 
       driver: none

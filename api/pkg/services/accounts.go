@@ -53,18 +53,27 @@ type Account struct {
 	Profile       *Profile     `gorm:"foreignKey:AccountID"`
 }
 
+func (a *Account) IsStudent() bool {
+	return a.Type == Student
+}
+
+func (a *Account) IsTutor() bool {
+	return a.Type == Tutor
+}
+
 // CreateAccount will create an account entry in the DB.
 func CreateAccount(a *Account) error {
 	conn, err := database.Open()
 	if err != nil {
 		return err
 	}
+
 	return conn.Create(a).Error
 }
 
-// GetAccountByID queries the DB by account ID.
+// ReadAccountByID queries the DB by account ID.
 // conn is optional.
-func GetAccounteByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
+func ReadAccountByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
@@ -77,6 +86,50 @@ func GetAccounteByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account,
 	}
 	account := &Account{}
 	return account, conn.First(account, id).Error
+}
+
+func ReadAccountByEmail(email string, conn *gorm.DB, preloads ...string) (*Account, error) {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, preload := range preloads {
+		conn = conn.Preload(preload)
+	}
+
+	account := &Account{}
+	return account, conn.Where(
+		&Account{Email: email},
+	).First(&account).Error
+}
+
+func ReadTutorByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
+	account, err := ReadAccountByID(id, conn, preloads...)
+	if err != nil {
+		return nil, err
+	}
+
+	if !account.IsTutor() {
+		return nil, errors.New("the specified account is not a tutor")
+	}
+
+	return account, nil
+}
+
+func ReadStudentByID(id uuid.UUID, conn *gorm.DB, preloads ...string) (*Account, error) {
+	account, err := ReadAccountByID(id, conn, preloads...)
+	if err != nil {
+		return nil, err
+	}
+
+	if !account.IsStudent() {
+		return nil, errors.New("the specified account is not a student")
+	}
+
+	return account, nil
 }
 
 type PasswordHash struct {
@@ -92,6 +145,34 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 		return nil, err
 	}
 	return &PasswordHash{Hash: hash}, nil
+}
+
+func (p *PasswordHash) ValidMatch(match string) bool {
+	res := bcrypt.CompareHashAndPassword(p.Hash, []byte(match))
+
+	if res == nil {
+		return true
+	}
+
+	return false
+}
+
+func ReadPasswordHashByAccountID(id uuid.UUID) (*PasswordHash, error) {
+	db, err := database.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	var hash PasswordHash
+	err = db.Where(&PasswordHash{
+		AccountID: id,
+	}).Find(&hash).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &hash, nil
 }
 
 // Profile model.
@@ -119,7 +200,7 @@ func CreateProfile(p *Profile) error {
 		return err
 	}
 	return conn.Transaction(func(tx *gorm.DB) error {
-		account, err := GetAccounteByID(p.AccountID, tx, "Profile")
+		account, err := ReadAccountByID(p.AccountID, tx, "Profile")
 		if err != nil {
 			return err
 		}
@@ -129,12 +210,12 @@ func CreateProfile(p *Profile) error {
 
 		// Generate slug
 		name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
-		_, slugErr := GetProfileBySlug(name, tx)
+		_, slugErr := ReadProfileBySlug(name, tx)
 		i := 1
 		slug := name
 		for !errors.Is(slugErr, gorm.ErrRecordNotFound) {
 			slug = fmt.Sprintf("%s-%d", name, i)
-			_, slugErr = GetProfileBySlug(slug, tx)
+			_, slugErr = ReadProfileBySlug(slug, tx)
 			i++
 		}
 		p.Slug = slug
@@ -144,9 +225,9 @@ func CreateProfile(p *Profile) error {
 	})
 }
 
-// GetProfileByAccountSlug queries the DB by slug.
+// ReadProfileBySlug queries the DB by slug.
 // conn is optional.
-func GetProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
+func ReadProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
@@ -158,9 +239,9 @@ func GetProfileBySlug(slug string, conn *gorm.DB) (*Profile, error) {
 	return profile, conn.First(profile, "slug = ?", slug).Error
 }
 
-// GetProfileByAccountID queries the DB by account ID.
+// ReadProfileByAccountID queries the DB by account ID.
 // conn is optional.
-func GetProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
+func ReadProfileByAccountID(id uuid.UUID, conn *gorm.DB) (*Profile, error) {
 	if conn == nil {
 		var err error
 		conn, err = database.Open()
