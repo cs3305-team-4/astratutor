@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 
 import AccountProfile from '../components/AccountProfile'
+import CreateProfileForm from '../components/CreateProfileForm'
 import { AuthContext } from '../api/auth';
 
 
@@ -38,18 +39,11 @@ const StyledSider = styled(Sider)`
   background-color: rgba(233,233,233);
 `
 
-export default function Landing() {
+export default function Account() {
   const history = useHistory()
   let { path, url } = useRouteMatch()
 
   const location = useLocation()
-
-  console.log(path, location, location.pathname.substr(path.length))
-
-
-  const goto = (menu: string) => {
-
-  }
 
   return (
     <StyledLayout>
@@ -68,24 +62,31 @@ export default function Landing() {
       </StyledSider>
       <Content style={{minHeight: "calc(100vh - 72px)"}}>
         <Switch>
-          <Route path={`${path}/profile`}>
+          <Route exact path={`${path}/profile/create`}>
             <Row>
               <Col md={9} sm={6} xs={0}/>
               <Col md={24} sm={24} xs={24} style={{padding: "0.5rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
                 <AuthContext.Consumer>
-                  {auth => auth.isLoggedIn() ? <AccountProfile uuid={auth.claims.sub} type={auth.account.type}/> : <></>}
+                  {auth => auth.isLoggedIn() ? <CreateProfileForm uuid={auth.claims.sub} type={auth.account.type}/> : <></>}
                 </AuthContext.Consumer>
               </Col>
               <Col md={9} sm={6} xs={0}/>
             </Row>
           </Route>
-          <Route path={`${path}/billing`}>
+          <Route exact path={`${path}/profile`}>
             <Row>
-              <Col md={9} sm={6} xs={0}/>
+              <Col md={24} sm={24} xs={24} style={{padding: "0.5rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
+                <AuthContext.Consumer>
+                  {auth => auth.isLoggedIn() ? <AccountProfile uuid={auth.claims.sub} type={auth.account.type}/> : <></>}
+                </AuthContext.Consumer>
+              </Col>
+            </Row>
+          </Route>
+          <Route exact path={`${path}/billing`}>
+            <Row>
               <Col md={24} sm={10} xs={24} style={{padding: "1rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
                 Billing
               </Col>
-              <Col md={9} sm={6} xs={0}/>
             </Row>
           </Route>
         </Switch>
