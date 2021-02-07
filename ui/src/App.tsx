@@ -23,9 +23,11 @@ import {
   useHistory
 } from "react-router-dom";
 
-import Landing from "./views/Landing";
-import Login from "./views/Login";
-import Register from "./views/Register";
+import Account from './views/Account'
+import Landing from "./views/Landing"
+import Login from "./views/Login"
+
+import Register from "./views/Register"
 import './App.css';
 
 import { AuthContext, useAuthValues, PrivateRoute } from './api/auth'
@@ -60,7 +62,7 @@ function App() {
       <Link to="/lessons" key="lessons">
         <Button type="text">My Lessons</Button>
       </Link>,
-      <Link to="/account" key="profile">
+      <Link to="/account/general" key="account">
         <Button type="primary">
           <UserOutlined />
           Account
@@ -106,8 +108,7 @@ function App() {
               <Route path="/" exact={true}>
                 <Landing />
               </Route>
-              <PrivateRoute path="/account"/>
-              <PrivateRoute path="/account/profile"/>
+              <PrivateRoute path="/account" component={Account}/>
               <Route path="/subjects">
               </Route>
               <Route path="/subjects/:subject_slug/tutors">

@@ -90,5 +90,9 @@ export function PrivateRoute(props: PrivateRouteProps) {
   const { ...rest } = props;
   const auth = useContext(AuthContext)
 
-  return (!auth.isLoggedIn() ? <Redirect to="/login"/> : <Route {...rest} />)
+  // TODO(ocanty) need to do login redirect
+  return <Route {...rest} />
+  // return (<AuthContext.Consumer>
+  //   <Route children="" {...rest}/>
+  // </AuthContext.Consumer>)
 }
