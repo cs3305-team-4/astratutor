@@ -263,6 +263,14 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+	if err = profile.GenerateNewSlug(nil); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if err = profile.Save(); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 	if ok, err := profile.IsAccountType(t); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
@@ -293,6 +301,14 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "last_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if err = profile.GenerateNewSlug(nil); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if err = profile.Save(); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 	if ok, err := profile.IsAccountType(t); err != nil {

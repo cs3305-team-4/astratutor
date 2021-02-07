@@ -360,6 +360,15 @@ func (p *Profile) RemoveWorkExperienceByID(expID uuid.UUID) error {
 	})
 }
 
+// Save the current profile in the DB.
+func (p *Profile) Save() error {
+	conn, err := database.Open()
+	if err != nil {
+		return err
+	}
+	return conn.Save(p).Error
+}
+
 // CreateProfile will create a profile entry in the DB relating to the Account from AccountID.
 func CreateProfile(p *Profile) error {
 	conn, err := database.Open()
@@ -376,6 +385,25 @@ func CreateProfile(p *Profile) error {
 		}
 
 		// Generate slug
+		if err = p.GenerateNewSlug(tx); err != nil {
+			return err
+		}
+
+		account.Profile = p
+		return tx.Save(account).Error
+	})
+}
+
+// GenerateNewSlug for account
+func (p *Profile) GenerateNewSlug(conn *gorm.DB) error {
+	if conn == nil {
+		var err error
+		conn, err = database.Open()
+		if err != nil {
+			return err
+		}
+	}
+	return conn.Transaction(func(tx *gorm.DB) error {
 		name := fmt.Sprintf("%s-%s", strings.ToLower(p.FirstName), strings.ToLower(p.LastName))
 		_, slugErr := ReadProfileBySlug(name, tx)
 		i := 1
@@ -386,9 +414,7 @@ func CreateProfile(p *Profile) error {
 			i++
 		}
 		p.Slug = slug
-
-		account.Profile = p
-		return tx.Save(account).Error
+		return nil
 	})
 }
 
