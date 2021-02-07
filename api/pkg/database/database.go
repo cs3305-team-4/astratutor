@@ -17,18 +17,23 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-func Open() (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		viper.GetString("database.user"),
-		viper.GetString("database.password"),
-		viper.GetString("database.host"),
-		viper.GetString("database.port"),
-		viper.GetString("database.database"),
-	)
+var db *gorm.DB
 
+func Open() (*gorm.DB, error) {
 	var err error
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	if db == nil {
+		dsn := fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			viper.GetString("database.user"),
+			viper.GetString("database.password"),
+			viper.GetString("database.host"),
+			viper.GetString("database.port"),
+			viper.GetString("database.database"),
+		)
+
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	}
 
 	return db, err
 }
