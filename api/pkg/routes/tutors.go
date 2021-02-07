@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -63,10 +62,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Request) {
@@ -97,10 +93,7 @@ func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request) {
@@ -131,10 +124,7 @@ func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileWorkExperienceDelete(w http.ResponseWriter, r *http.Request) {
@@ -165,10 +155,7 @@ func handleTutorProfileWorkExperienceDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 // UpdateAvailabilityDTO DTO.
@@ -203,9 +190,6 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	WriteBody(w, r, profileDto)
 }
