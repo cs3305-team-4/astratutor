@@ -24,8 +24,8 @@ func InjectAuthRoutes(subrouter *mux.Router) {
 
 type LoginDTO struct {
 	ID       string `json:"id" validate:"len=0"`
-	Email    string `json:"email" validate:"nonzero"`
-	Password string `json:"password,omitempty"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password,omitempty" validate:"required"`
 }
 
 type LoginResponseDTO struct {
@@ -142,27 +142,36 @@ const (
 	authContextKey AuthContextKeyType = "routes.auth.context"
 )
 
-func ReadRequestAuthContext(r *http.Request) (*AuthContext, error) {
+func ParseRequestAuth(r *http.Request) (*AuthContext, error) {
 	val := r.Context().Value(authContextKey)
 	if val == nil {
-		return nil, errors.New("auth context not present on request")
+		return nil, nil
 	}
-
 	if context, ok := val.(*AuthContext); ok {
 		return context, nil
 	}
-
 	return nil, errors.New("auth context not valid type")
+}
+
+func ReadRequestAuthContext(r *http.Request) (*AuthContext, error) {
+	val, err := ParseRequestAuth(r)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, errors.New("auth context not present on request")
+	}
+	return val, nil
 }
 
 func authRequired(next http.Handler) http.Handler {
 	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
 		// The auth middleware pulls their account and checks if it's suspended, so we don't need to do any checking ere
 		return nil
-	})(next)
+	}, true)(next)
 }
 
-func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error) func(next http.Handler) http.Handler {
+func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error, required bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// First we need to check if they used this middleware multiple times (i.e an AuthContext is already present on the request)
@@ -237,8 +246,11 @@ func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *
 				return
 			}
 
-			restError(w, r, errors.New("endpoint requires authorization header"), http.StatusForbidden)
-			return
+			if required {
+				restError(w, r, errors.New("endpoint requires authorization header"), http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authContextKey, nil)))
 		})
 	}
 }

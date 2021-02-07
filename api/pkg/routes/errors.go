@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
+	"github.com/go-playground/validator/v10"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type returnDetail struct {
@@ -45,6 +48,21 @@ func customErrors(in error, code int) (out error, codeOut int) {
 	switch {
 	case errors.Is(in, services.AccountErrorProfileExists):
 		codeOut = http.StatusBadRequest
+	case errors.Is(in, services.AccountErrorProfileDoesNotExists):
+		codeOut = http.StatusNotFound
+	case errors.Is(in, services.AccountErrorAccountDoesNotExist):
+		codeOut = http.StatusNotFound
+	case errors.Is(in, services.AccountErrorEntryDoesNotExists):
+		codeOut = http.StatusNotFound
+	case errors.Is(in, gorm.ErrRecordNotFound):
+		codeOut = http.StatusNotFound
+		out = errors.New("No record matching provided ID found.")
+	case errors.Is(in, io.EOF):
+		fallthrough
+	case errors.Is(in, &json.SyntaxError{}):
+		codeOut = http.StatusBadRequest
+		out = errors.New("Validation failed for body: invalid format.")
+
 	case strings.Contains(in.Error(), sqlDuplicate):
 		re, e := regexp.Compile("_([a-z]+)_key")
 		if e != nil {
@@ -56,6 +74,18 @@ func customErrors(in error, code int) (out error, codeOut int) {
 			out = fmt.Errorf("%s already exists", match[1])
 		}
 		codeOut = http.StatusBadRequest
+	}
+
+	// Validation error
+	if errs, ok := in.(validator.ValidationErrors); ok {
+		outs := "Validation failed for "
+		for _, err := range errs {
+			field := err.Field()
+			kind := err.ActualTag()
+			outs += fmt.Sprintf("('%s' on field '%s') ", kind, field)
+		}
+		codeOut = http.StatusBadRequest
+		out = errors.New(outs)
 	}
 	return
 }
