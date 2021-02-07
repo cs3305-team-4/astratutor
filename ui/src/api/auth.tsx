@@ -10,6 +10,10 @@ from "react-router-dom";
 
 import jwt_decode from 'jwt-decode'
 
+import Config from "../config"
+import { fetchRest } from "../api/rest"
+import { AccountDTO } from "../api/definitions"
+
 export interface AuthClaims {
     iss: string;
     sub: string;
@@ -21,11 +25,21 @@ export interface AuthClaims {
     email: string;
 }
 
+
 export interface AuthContextValues {
   claims: AuthClaims | undefined;
+  account: AccountDTO | undefined;
+
   isLoggedIn(): boolean;
-  loginFromLocalStorage(): void;
-  loginFromJwt(jwt: string): void ;
+  loginFromJwt(jwt: string);
+
+  // Tries to login from browser cache
+  loginSilent(): void 
+
+  // Returns true if an autologin attempt has finished
+  // This does not mean successful, use isLoggedIn to check that
+  loginSilentFinished(): boolean;
+
   logout(): void;
 }
 
@@ -33,41 +47,102 @@ export interface AuthContextValues {
 export function useAuthValues() : AuthContextValues {
   const [authValues, setAuthValues] = React.useState<AuthContextValues>({
     claims: undefined,
-    isLoggedIn: () => false,
-  
-    loginFromLocalStorage() {
-      if (window.localStorage.getItem("auth-jwt") !== null) {
-        let claims = jwt_decode(window.localStorage.getItem("auth-jwt") as string) as AuthClaims;
+    account: undefined,
+    isLoggedIn() {
+      return false
+    },
 
-        setAuthValues((prev: AuthContextValues) => {
-          return {
-            claims,
+    loginSilent() {
+      const jwt = window.localStorage.getItem("auth-jwt") 
+      if (jwt !== null) {
+        try {
+          let claims = jwt_decode(jwt) as AuthClaims;
+          
+          // Test by getting the users account info
+          fetchRest(`${Config.apiUrl}/accounts/${claims.sub}`, {
+            headers: {
+              "Authorization": `Bearer ${jwt}`
+            }
+          })
+          .then(res => res.json())
+          .then((account: AccountDTO) => {
+            window.localStorage.setItem("auth-jwt", jwt)
+
+            setAuthValues({
+              claims,
+              account,
+              loginSilent: authValues.loginSilent,
+              loginSilentFinished: () => true,
+              isLoggedIn: () => true,
+              loginFromJwt: authValues.loginFromJwt,
+              logout: authValues.logout
+            })
+          })
+        } catch(e) {
+          setAuthValues({
+            claims: undefined,
+            account: undefined,
+            loginSilent: authValues.loginSilent,
+            loginSilentFinished: () => true,
             isLoggedIn: () => true,
-            loginFromLocalStorage: prev.loginFromLocalStorage,
-            loginFromJwt: prev.loginFromJwt,
-            logout: prev.logout
-          }
+            loginFromJwt: authValues.loginFromJwt,
+            logout: authValues.logout
+          })
+        }
+      } else {
+        setAuthValues({
+          claims: undefined,
+          account: undefined,
+          loginSilent: authValues.loginSilent,
+          loginSilentFinished: () => true,
+          isLoggedIn: () => false,
+          loginFromJwt: authValues.loginFromJwt,
+          logout: authValues.logout
         })
       }
+    },
+
+    loginSilentFinished() {
+      return false
     },
     
     loginFromJwt(jwt: string) {
       try {
         let claims = jwt_decode(jwt) as AuthClaims;
 
-        setAuthValues((prev: AuthContextValues) => {
-          window.localStorage.setItem("auth-jwt", jwt)
-
-          return {
-            claims,
-            isLoggedIn: () => true,
-            loginFromLocalStorage: prev.loginFromLocalStorage,
-            loginFromJwt: prev.loginFromJwt,
-            logout: prev.logout
+        fetchRest(`${Config.apiUrl}/accounts/${claims.sub}`, {
+          headers: {
+            "Authorization": `Bearer ${jwt}`
           }
         })
+        .then(res => res.json())
+        .then((account: AccountDTO) => {
+          window.localStorage.setItem("auth-jwt", jwt)
+
+          const newAuthValues = {
+            claims,
+            account,
+            loginSilent: authValues.loginSilent,
+            loginSilentFinished: () => true,
+            isLoggedIn: () => true,
+            loginFromJwt: authValues.loginFromJwt,
+            logout: authValues.logout
+          }
+
+          setAuthValues(newAuthValues)
+        })
       } catch (e) {
-        throw new Error(`issue with token: ${e}`)
+        setAuthValues({
+          claims: undefined,
+          account: undefined,
+          loginSilent: authValues.loginSilent,
+          loginSilentFinished: () => true,
+          isLoggedIn: () => true,
+          loginFromJwt: authValues.loginFromJwt,
+          logout: authValues.logout
+        })
+
+        throw new Error(`error logging in with jwt: ${e}`)
       }
     },
   
@@ -76,6 +151,10 @@ export function useAuthValues() : AuthContextValues {
       window.location.href = "/"
     }
   })
+
+  React.useEffect(() => {
+
+  }, [authValues])
 
   return authValues
 }
@@ -90,9 +169,9 @@ export function PrivateRoute(props: PrivateRouteProps) {
   const { ...rest } = props;
   const auth = useContext(AuthContext)
 
-  // TODO(ocanty) need to do login redirect
-  return <Route {...rest} />
-  // return (<AuthContext.Consumer>
-  //   <Route children="" {...rest}/>
-  // </AuthContext.Consumer>)
+  if (auth.isLoggedIn()) {
+    return <Route {...rest} />
+  } else {
+    return <Redirect to="/login"/>
+  }
 }

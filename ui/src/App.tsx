@@ -41,11 +41,18 @@ function App() {
 
   React.useEffect(() => {
     try {
-      auth.loginFromLocalStorage()
+      console.log("hi")
+      auth.loginSilent()
     } catch (e) {
       console.error(`error attempting to login from localStorage ${e}`)
     }
   }, [])
+
+  // Don't render the page until the silent login attempt is finished
+  if (!auth.loginSilentFinished()) return (
+    <AuthContext.Provider value={auth}>
+    </AuthContext.Provider>
+  )
 
   let headerLinks = []
   if (auth.isLoggedIn()) {
@@ -62,7 +69,7 @@ function App() {
       <Link to="/lessons" key="lessons">
         <Button type="text">My Lessons</Button>
       </Link>,
-      <Link to="/account/general" key="account">
+      <Link to="/account/profile" key="account">
         <Button type="primary">
           <UserOutlined />
           Account
