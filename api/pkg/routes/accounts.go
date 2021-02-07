@@ -31,11 +31,11 @@ type AccountResponseDTO struct {
 	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 
-// AccountCreateDTO request DTO.
+// AccountRequestDTO request DTO.
 type AccountRequestDTO struct {
 	Email        string `json:"email" validate:"required,email"`
 	Type         string `json:"type" validate:"required"`
-	Password     string `json:"password,omitempty" validate:"required,passwd"`
+	Password     string `json:"password" validate:"required,passwd"`
 	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 

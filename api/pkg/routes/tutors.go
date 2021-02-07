@@ -40,7 +40,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	dto := &QualificationsDTO{}
+	dto := &QualificationsRequestDTO{}
 	if !ParseBody(w, r, dto) {
 		return
 	}
@@ -48,7 +48,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		Field:    dto.Field,
 		Degree:   dto.Degree,
 		School:   dto.School,
-		Verified: dto.Verified,
+		Verified: false,
 	}
 	profile, err := qualifications.SetOnProfileByAccountID(userID)
 	if err != nil {
@@ -109,7 +109,7 @@ func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	dto := &WorkExperienceDTO{}
+	dto := &WorkExperienceRequestDTO{}
 	if !ParseBody(w, r, dto) {
 		return
 	}
@@ -187,7 +187,7 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	value := services.Availability(update.Value)
-	if err := validateUpdate("Availability", value, &TutorDTO{}); err != nil {
+	if err := validateUpdate("Availability", value, &TutorResponseDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}

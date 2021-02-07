@@ -216,7 +216,7 @@ func NewPasswordHash(password string) (*PasswordHash, error) {
 }
 
 // AvailabilityLength length of slice.
-const AvailabilityLength = 336
+const AvailabilityLength = 168
 
 // Availability for tutors.
 type Availability []bool
