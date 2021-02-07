@@ -13,50 +13,83 @@ import {
   Col,
   Avatar,
   PageHeader,
+  Input,
   Button,
-  Image
+  Statistic,
+  Form,
+  Upload
 } from "antd";
 
+import ImgCrop from 'antd-img-crop'
+
 import {
-  EditOutlined
+  EditOutlined, UserAddOutlined, UserOutlined
 } from "@ant-design/icons"
 
 import config from '../config'
 import { fetchRest } from "../api/rest"
-import { ProfileDTO } from  "../api/definitions"
+import { AccountType, CreateProfileDTO, ReadProfileDTO } from  "../api/definitions"
+import { UploadFile } from 'antd/lib/upload/interface';
+import DefaultAvatar from "../assets/default_avatar.png"
+
+import { AuthContext } from "../api/auth"
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
+const { TextArea } = Input
 
 export interface ProfileProps {
   uuid: string
-  type: string
+  type: AccountType
 }
 
 export default function AccountProfile(props: ProfileProps) {
-  const [profile, setProfile] = React.useState<ProfileDTO | undefined>(undefined)
+  const [profile, setProfile] = React.useState<ReadProfileDTO | undefined>(undefined)
   const [error, setError] = React.useState<string>("")
+
+  const [editDesc, setEditDesc] = React.useState<boolean>()
+  const [newDesc, setNewDesc] = React.useState<string>()
+
+  const auth = React.useContext(AuthContext)
+
+  React.useState(() => {
+    const commitDesc = async (newDesc: string) => {
+      try {
+        const res = await fetchRest(`${config.apiUrl}/${props.type}s/${props.uuid}/profile`)
+        const profile = await res.json() as ReadProfileDTO
+        setProfile(profile)
+      } catch(e) {
+        setError(`could not load profile ${e}`)
+      }
+    }
+  })
 
   useAsync(async () => {
     try {
-      const res = await fetchRest(`${config.apiUrl}/${props.type}/${props.uuid}/profile`)
-      const profile = await res.json() as ProfileDTO
+      const res = await fetchRest(
+        `${config.apiUrl}/${props.type}s/${props.uuid}/profile`, {
+          headers: {
+            'Authoriziation': `Bearer ${auth.bearerToken}`
+          }
+        }
+      )
+      const profile = await res.json() as ReadProfileDTO
       setProfile(profile)
     } catch(e) {
       setError(`could not load profile ${e}`)
     }
   }, [])
 
-  // if (profile == undefined) {
-  //   return (
-  //     <Layout>
-  //     </Layout>
-  //   )
-  // }
+  if (profile === undefined) {
+    return <h1>{error}</h1>
+  }
 
   return (
     <PageHeader
-      title="Oisin Canty"
+      title={
+        <>
+          {profile.first_name + " " + profile.last_name}
+        </>}
       className="site-page-header"
       subTitle={<>
         <Text type="secondary">
@@ -66,20 +99,27 @@ export default function AccountProfile(props: ProfileProps) {
           <EditOutlined/>
         </Button>
       </>}
-      avatar={{ size: 64, src: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png' }}
+      avatar={{ size: 64, src: profile.avatar }}
     >
-      <Content>
-        <Row>
+      <Content>        
+        <Row gutter={4}>
           <Col md={12} sm={24} xs={24}>
             <Title level={5}>
               Description
               <Button size="small" style={{margin: "4px"}}>
-                <EditOutlined/>
+                <EditOutlined onClick={()=>setEditDesc(!editDesc)}/>
               </Button>
             </Title>
-            <Paragraph>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis id tortor lectus. Nullam eu nisi et est pretium hendrerit. Etiam sed bibendum metus. Etiam ut lacinia lorem. Quisque fermentum tristique eros, ac lacinia diam consequat ac. Aenean eros ipsum, interdum non massa nec, laoreet iaculis odio. Nam volutpat justo vitae orci lacinia, sed mattis justo gravida. Aliquam consequat placerat libero, ac imperdiet mi pellentesque commodo. Aliquam finibus diam iaculis ipsum pharetra vehicula. Aliquam non nulla eu mi pharetra facilisis fermentum ut lorem. Proin tincidunt turpis et placerat gravida. Nulla eget posuere nulla, non euismod enim. Donec ex nisl, ultricies cursus odio id, sollicitudin dictum dui. Nunc pharetra iaculis tellus. Donec finibus urna semper, convallis velit at, condimentum mauris.
-            </Paragraph>
+            {
+              !editDesc 
+                ? 
+              (<Paragraph>{ profile.description }</Paragraph>) 
+                : 
+              (<>
+                <TextArea placeholder="textarea with clear icon" allowClear onChange={onChange} />
+                <EditOutlined onClick={()=>setEditDesc(!editDesc)}/>
+              </>)
+            }
           </Col>
           <Col md={12} sm={24} xs={24}>
             <Title level={5}>
@@ -92,8 +132,6 @@ export default function AccountProfile(props: ProfileProps) {
               MIT
             </Paragraph>
           </Col>
-        </Row>
-        <Row>
           <Col md={12} sm={24} xs={24}>
             <Title level={5}>
               Qualifications
