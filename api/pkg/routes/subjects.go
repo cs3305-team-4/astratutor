@@ -16,9 +16,10 @@ func InjectSubjectsRoutes(subrouter *mux.Router) {
 
 //Subject DTO represents an existing subject
 type Subject struct {
-	Name string    `json:"name"`
-	Slug string    `json:"slug"`
-	ID   uuid.UUID `json:"subject_id"`
+	Name  string    `json:"name"`
+	Slug  string    `json:"slug"`
+	ID    uuid.UUID `json:"subject_id"`
+	Image string
 }
 
 //TutorSubjectDTO
@@ -30,6 +31,7 @@ type TutorSubject struct {
 	TutorAccountID uuid.UUID `json:"tutor_id"`
 	Price          uint      `json:"price"`
 	Description    string    `json:"description"`
+	Image          string    `json:"image"`
 }
 
 func SingleTutorSubjectToDTO(subjectTaught *services.SubjectTaught) *TutorSubject {
@@ -55,9 +57,10 @@ func TutorSubjectsToDTO(tutorSubjects []services.SubjectTaught) []TutorSubject {
 
 func SingleSubjectToDTO(subject *services.Subject) *Subject {
 	return &Subject{
-		Name: subject.Name,
-		Slug: subject.Slug,
-		ID:   subject.ID,
+		Name:  subject.Name,
+		Slug:  subject.Slug,
+		ID:    subject.ID,
+		Image: subject.Image,
 	}
 
 }
@@ -91,14 +94,12 @@ func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
 func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
-	services.CreateSubjectTestAccounts()
 	if filter != "" {
 		filtered, err := services.GetSubjectByName(filter, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		services.CreateSubjectTestAccounts()
 		tutors, err := services.GetTutorsBySubjectID(filtered.ID, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)

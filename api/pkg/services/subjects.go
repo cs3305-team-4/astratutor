@@ -11,8 +11,9 @@ import (
 //Subject contains information about a single subject
 type Subject struct {
 	database.Model
-	Name string `gorm:"unique;not null;"`
-	Slug string
+	Name  string `gorm:"unique;not null;"`
+	Slug  string
+	Image string
 }
 
 type SubjectTaughtError string
@@ -173,6 +174,9 @@ func updateDescription(stid uuid.UUID, description string, db *gorm.DB) (*Subjec
 	})
 }
 
+/*
+
+
 func CreateSubjectTestAccounts() error {
 	db, err := database.Open()
 	db.Create(&Subject{Name: "English"})
@@ -245,3 +249,4 @@ func CreateSubjectTestAccounts() error {
 
 	return nil
 }
+*/
