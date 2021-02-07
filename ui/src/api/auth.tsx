@@ -29,9 +29,10 @@ export interface AuthClaims {
 export interface AuthContextValues {
   claims: AuthClaims | undefined;
   account: AccountDTO | undefined;
+  bearerToken: string | undefined;
 
   isLoggedIn(): boolean;
-  loginFromJwt(jwt: string);
+  loginFromJwt(jwt: string): void;
 
   // Tries to login from browser cache
   loginSilent(): void 
@@ -48,6 +49,7 @@ export function useAuthValues() : AuthContextValues {
   const [authValues, setAuthValues] = React.useState<AuthContextValues>({
     claims: undefined,
     account: undefined,
+    bearerToken: undefined,
     isLoggedIn() {
       return false
     },
@@ -71,6 +73,7 @@ export function useAuthValues() : AuthContextValues {
             setAuthValues({
               claims,
               account,
+              bearerToken: jwt,
               loginSilent: authValues.loginSilent,
               loginSilentFinished: () => true,
               isLoggedIn: () => true,
@@ -82,6 +85,7 @@ export function useAuthValues() : AuthContextValues {
           setAuthValues({
             claims: undefined,
             account: undefined,
+            bearerToken: undefined,
             loginSilent: authValues.loginSilent,
             loginSilentFinished: () => true,
             isLoggedIn: () => true,
@@ -93,6 +97,7 @@ export function useAuthValues() : AuthContextValues {
         setAuthValues({
           claims: undefined,
           account: undefined,
+          bearerToken: undefined,
           loginSilent: authValues.loginSilent,
           loginSilentFinished: () => true,
           isLoggedIn: () => false,
