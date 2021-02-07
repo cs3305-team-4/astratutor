@@ -15,6 +15,7 @@
     "@types/react-dom": "^16.9.10",
     "@types/styled-components": "^5.1.7",
     "antd": "^4.11.2",
+    "antd-img-crop": "^3.13.2",
     "craco-less": "^1.17.1",
     "jwt-decode": "^3.1.2",
     "less-loader": "^7.3.0",
