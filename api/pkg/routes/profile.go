@@ -76,7 +76,7 @@ type WorkExperienceResponseDTO struct {
 	Role        string `json:"role" validate:"required"`
 	YearsExp    int    `json:"years_exp" validate:"required"`
 	Description string `json:"description" validate:"required,lte=1000"`
-	Verified    bool   `json:"verified" validate:"eq=false"`
+	Verified    bool   `json:"verified" validate:"required"`
 }
 
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) interface{} {
