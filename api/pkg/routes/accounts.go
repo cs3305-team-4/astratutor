@@ -23,17 +23,24 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 	accountResource.HandleFunc("/lessons", handleAccountsLessonsGet).Methods("GET")
 }
 
-// Account DTO.
-type AccountDTO struct {
-	ID           string `json:"id" validate:"len=0"`
+// AccountDTO return DTO.
+type AccountResponseDTO struct {
+	ID           string `json:"id" validate:"required,uuid"`
+	Email        string `json:"email" validate:"required,email"`
+	Type         string `json:"type" validate:"required"`
+	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
+}
+
+// AccountCreateDTO request DTO.
+type AccountRequestDTO struct {
 	Email        string `json:"email" validate:"required,email"`
 	Type         string `json:"type" validate:"required"`
 	Password     string `json:"password,omitempty" validate:"required,passwd"`
 	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 
-func dtoFromAccount(a *services.Account) *AccountDTO {
-	return &AccountDTO{
+func dtoFromAccount(a *services.Account) *AccountResponseDTO {
+	return &AccountResponseDTO{
 		ID:    a.ID.String(),
 		Email: a.Email,
 		Type:  string(a.Type),
@@ -52,10 +59,7 @@ func handleAccountsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outAccount := dtoFromAccount(serviceAccount)
-	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outAccount)
 }
 
 func handleAccountsUpdateEmail(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +70,7 @@ func handleAccountsUpdateEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO(ericm): Add email verification.
 	field := ParseUpdateString(w, r)
-	if err = validateUpdate("Email", field, &AccountDTO{}); err != nil {
+	if err = validateUpdate("Email", field, &AccountRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -76,10 +80,7 @@ func handleAccountsUpdateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outAccount := dtoFromAccount(account)
-	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outAccount)
 }
 
 // UpdateDTO used for single field update route posts.
@@ -114,7 +115,7 @@ func handleAccountsUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = validateUpdate("Password", newPassword, &AccountDTO{}); err != nil {
+	if err = validateUpdate("Password", newPassword, &AccountResponseDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -129,14 +130,11 @@ func handleAccountsUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outAccount := dtoFromAccount(account)
-	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outAccount)
 }
 
 func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
-	account := &AccountDTO{}
+	account := &AccountRequestDTO{}
 	if !ParseBody(w, r, account) {
 		return
 	}
@@ -161,10 +159,7 @@ func handleAccountsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outAccount := dtoFromAccount(serviceAccount)
-	if err = json.NewEncoder(w).Encode(outAccount); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outAccount)
 }
 
 func handleAccountsVerify(w http.ResponseWriter, r *http.Request) {
