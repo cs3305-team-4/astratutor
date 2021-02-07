@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -40,7 +39,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	dto := &QualificationsDTO{}
+	dto := &QualificationsRequestDTO{}
 	if !ParseBody(w, r, dto) {
 		return
 	}
@@ -48,7 +47,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		Field:    dto.Field,
 		Degree:   dto.Degree,
 		School:   dto.School,
-		Verified: dto.Verified,
+		Verified: false,
 	}
 	profile, err := qualifications.SetOnProfileByAccountID(userID)
 	if err != nil {
@@ -63,10 +62,7 @@ func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Request) {
@@ -97,10 +93,7 @@ func handleTutorProfileQualificationsDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +102,7 @@ func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	dto := &WorkExperienceDTO{}
+	dto := &WorkExperienceRequestDTO{}
 	if !ParseBody(w, r, dto) {
 		return
 	}
@@ -131,10 +124,7 @@ func handleTutorProfileWorkExperiencePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 func handleTutorProfileWorkExperienceDelete(w http.ResponseWriter, r *http.Request) {
@@ -165,10 +155,7 @@ func handleTutorProfileWorkExperienceDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(profileDto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, profileDto)
 }
 
 // UpdateAvailabilityDTO DTO.
@@ -187,7 +174,7 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	value := services.Availability(update.Value)
-	if err := validateUpdate("Availability", value, &TutorDTO{}); err != nil {
+	if err := validateUpdate("Availability", value, &TutorResponseDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -203,9 +190,6 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, services.Tutor)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	profileDto := dtoFromProfile(profile, services.Tutor)
+	WriteBody(w, r, profileDto)
 }

@@ -99,6 +99,19 @@ func ParseBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
 	return true
 }
 
+// WriteBody writes to the http writer.
+func WriteBody(w http.ResponseWriter, r *http.Request, i interface{}) bool {
+	if err := validateStruct(i); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return false
+	}
+	if err := json.NewEncoder(w).Encode(i); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return false
+	}
+	return true
+}
+
 // validateUpdate will ensure that the value provided will follow the DTO's validation tags.
 //
 // field is case sensitive and should match the field in the struct.
