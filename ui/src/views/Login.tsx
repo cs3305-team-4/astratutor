@@ -17,6 +17,7 @@ import {
   Button, 
   Checkbox
 } from "antd";
+
 import {
   LockOutlined,
   MailOutlined,
@@ -97,7 +98,7 @@ const Login: React.FunctionComponent = () => {
           justify="center"
         >
           <Col md={9} sm={6} xs={0}/>
-          <Col md={6} sm={10} xs={24} style={{padding: "1rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
+          <Col md={6} sm={10} xs={24} style={{padding: "2rem 4rem", backgroundColor: "rgba(255,255,255,0.8)"}}>
             <Form
               layout="vertical"
               name="login"
