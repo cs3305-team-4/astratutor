@@ -136,6 +136,10 @@ type AuthContext struct {
 	Account *services.Account
 }
 
+func (ac *AuthContext) Authenticated() bool {
+	return ac.Claims != nil && ac.Account != nil
+}
+
 type AuthContextKeyType string
 
 const (
@@ -144,9 +148,6 @@ const (
 
 func ParseRequestAuth(r *http.Request) (*AuthContext, error) {
 	val := r.Context().Value(authContextKey)
-	if val == nil {
-		return nil, nil
-	}
 	if context, ok := val.(*AuthContext); ok {
 		return context, nil
 	}
@@ -161,12 +162,15 @@ func ReadRequestAuthContext(r *http.Request) (*AuthContext, error) {
 	if val == nil {
 		return nil, errors.New("auth context not present on request")
 	}
+	if !val.Authenticated() {
+		return nil, errors.New("auth context not authenticated")
+	}
 	return val, nil
 }
 
 func authRequired(next http.Handler) http.Handler {
 	return authMiddleware(func(w http.ResponseWriter, r *http.Request, ac *AuthContext) error {
-		// The auth middleware pulls their account and checks if it's suspended, so we don't need to do any checking ere
+		// The auth middleware pulls their account and checks if it's suspended, so we don't need to do any checking here.
 		return nil
 	}, true)(next)
 }
@@ -250,7 +254,7 @@ func authMiddleware(userSuppliedAuthCtxValidator func(w http.ResponseWriter, r *
 				restError(w, r, errors.New("endpoint requires authorization header"), http.StatusForbidden)
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authContextKey, nil)))
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authContextKey, &AuthContext{})))
 		})
 	}
 }

@@ -163,7 +163,7 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	if auth == nil || auth.Account.ID != id {
+	if !auth.Authenticated() || auth.Account.ID != id {
 		serviceProfile.FilterVerifiedFields()
 	}
 	outProfile := dtoFromProfile(serviceProfile, t)
