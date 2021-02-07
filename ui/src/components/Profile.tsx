@@ -8,11 +8,11 @@ const { Header, Footer, Sider, Content } = Layout;
 
 const Hero = styled(Content)``;
 export default function AccountProfile() {
-    return (
-        <Layout>
-            <Typography>
-                <Title>Profile</Title>
-            </Typography>
-        </Layout>
-    );
+  return (
+    <Layout>
+      <Typography>
+        <Title>Profile</Title>
+      </Typography>
+    </Layout>
+  );
 }
