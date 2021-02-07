@@ -1,13 +1,13 @@
 export interface Detail {
-  msg: string;
+    msg: string;
 }
 
 export interface RESTError {
-  detail: Detail;
+    detail: Detail;
 }
 
 export interface RESTInfo {
-  detail: Detail;
+    detail: Detail;
 }
 
 /**
@@ -17,35 +17,33 @@ export interface RESTInfo {
  * @param expectedStatuses Throw an exception if the returned status code is not in this array
  */
 export async function fetchRest(
-  input: RequestInfo,
-  init?: RequestInit | undefined,
-  expectedStatuses: number[] = [200, 201, 202, 203, 204, 205, 206]
+    input: RequestInfo,
+    init?: RequestInit | undefined,
+    expectedStatuses: number[] = [200, 201, 202, 203, 204, 205, 206],
 ): Promise<Response> {
-  try {
-    const res = await fetch(input, init);
+    try {
+        const res = await fetch(input, init);
 
-    if (!expectedStatuses.includes(res.status)) {
-      let msg = `${res.status}: ${res.statusText}`;
+        if (!expectedStatuses.includes(res.status)) {
+            let msg = `${res.status}: ${res.statusText}`;
 
-      // Test if the error returned has a rest error payload
-      try {
-        const err: RESTError = await res.json();
+            // Test if the error returned has a rest error payload
+            try {
+                const err: RESTError = await res.json();
 
-        if (err?.detail?.msg) {
-          msg = err.detail.msg;
-        } else {
-          msg = `${res.status}: ${res.statusText}`;
+                if (err?.detail?.msg) {
+                    msg = err.detail.msg;
+                } else {
+                    msg = `${res.status}: ${res.statusText}`;
+                }
+            } catch {}
+
+            // Throw message
+            throw new Error(msg);
         }
-      } catch {}
 
-      // Throw message
-      throw new Error(msg);
+        return res;
+    } catch (e) {
+        throw new Error(`${e}`);
     }
-
-    return res;
-  } catch (e) {
-    throw new Error(
-      `${e}`
-    );
-  }
 }
