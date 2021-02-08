@@ -12,7 +12,7 @@ import (
 type Subject struct {
 	database.Model
 	Name  string `gorm:"unique;not null;"`
-	Slug  string
+	Slug  string `gorm:"unique;not null;"`
 	Image string
 }
 
@@ -64,8 +64,8 @@ func GetSubjects(db *gorm.DB) ([]Subject, error) {
 	return subject, db.Find(&subject).Error
 }
 
-// returns a subject when given a subject name
-func GetSubjectByName(name string, db *gorm.DB) (*Subject, error) {
+// returns a subject when given a subjects slug
+func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -73,10 +73,18 @@ func GetSubjectByName(name string, db *gorm.DB) (*Subject, error) {
 			return nil, err
 		}
 	}
-	subject := &Subject{}
-	return subject, db.Where("Name = ?", name).Find(&subject).Error
+	var subject Subject
+	var err error
+	err = db.Where(&Subject{Slug: slug}).Find(&subject).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &subject, nil
 }
 
+//returns a subject when given its ID
 func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 	if db == nil {
 		var err error
@@ -90,8 +98,8 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-
 func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
+
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -100,7 +108,12 @@ func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 		}
 	}
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{Subject: Subject{Model: database.Model{ID: sid}}}).Find(&subjectTaught).Error
+	var err error
+	err = db.Where(&SubjectTaught{SubjectID: sid}).Find(&subjectTaught).Error
+	if err != nil {
+		return nil, err
+	}
+	return subjectTaught, nil
 }
 
 //Quries the DB for SubjectTaught where the ID matches the SubjectTaught ID
@@ -129,8 +142,7 @@ func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
 	return subjectTaught, db.Find(&subjectTaught).Error
 }
 
-//Returns subjectTaught for specific Tutors
-
+//Returns subjectTaught for specific tutors using their ID
 func GetSubjectsByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 	if db == nil {
 		var err error
@@ -140,9 +152,10 @@ func GetSubjectsByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 		}
 	}
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{Tutor: Account{Model: database.Model{ID: tid}}}).Find(&subjectTaught).Error
+	return subjectTaught, db.Where(&SubjectTaught{TutorID: tid}).Find(&subjectTaught).Error
 }
 
+//creats a StudentTaught based on the subject and tutor with a set price description.
 func teachSubject(subject *Subject, tutor *Account, description string, price uint, db *gorm.DB) error {
 	db, err := database.Open()
 	if err != nil {
@@ -181,6 +194,7 @@ func teachSubject(subject *Subject, tutor *Account, description string, price ui
 
 }
 
+//updates the price of a subjecttaught by the tutors id
 func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
@@ -199,6 +213,7 @@ func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error)
 	})
 }
 
+//updates the description of a subjecttaught by the tutors id
 func UpdateDescription(stid uuid.UUID, description string, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
@@ -217,20 +232,20 @@ func UpdateDescription(stid uuid.UUID, description string, db *gorm.DB) (*Subjec
 	})
 }
 
-/*
+//function used to create data for tests
 func CreateSubjectTestAccounts() error {
-	 db, err := database.Open()
+	db, err := database.Open()
 	if err != nil {
 		return err
 	}
-
+	db.Create(&Subject{Name: "English", Slug: "English"})
+	db.Create(&Subject{Name: "Math", Slug: "Math"})
 	hash, err := NewPasswordHash("grindshub")
 	if err != nil {
 		return err
 	}
 
-	english, err := GetSubjectByName("French", nil)
-	teachSubject(english, &Account{Model: database.Model{ID: uuid.MustParse("deadlamb-cafe-badd-c0de-facadebadbad")},
+	John := &Account{Model: database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
 		Email:         "tutor3@grindshub.localhost",
 		EmailVerified: true,
 		Type:          Tutor,
@@ -247,11 +262,20 @@ func CreateSubjectTestAccounts() error {
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
 		},
-	}, "I hate gorm more", 67, nil)
+	}
+
+	french, err := GetSubjectBySlug("English", nil)
+	teachSubject(french, John, "I teach Emglish", 67, nil)
+
+	if err != nil {
+		return err
+	}
+
+	english, err := GetSubjectBySlug("Math", nil)
+	teachSubject(english, John, "I teach maths", 59, nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-*/
