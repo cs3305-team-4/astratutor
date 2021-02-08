@@ -1,6 +1,6 @@
 import { CameraFilled, CameraOutlined, PhoneFilled } from '@ant-design/icons';
 import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { RouteComponentProps, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -9,7 +9,7 @@ const { Option } = Select;
 
 const StyledLayout = styled(Layout)`
   background-color: rgb(21 20 20);
-  padding: 30vh 30vw;
+  padding: 5em 30vw;
   color: #fff;
 `;
 
@@ -36,6 +36,8 @@ export default function LessonLobby(): ReactElement {
   const location = useLocation();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  const display = useRef<HTMLVideoElement>();
+  const [selectedWeb, setSelectedWeb] = useState<string>('');
   useAsync(async () => {
     await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -54,6 +56,13 @@ export default function LessonLobby(): ReactElement {
       setMicrophones(mic);
     }
   }, []);
+  useAsync(async () => {
+    if (display.current) {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWeb } });
+      display.current.srcObject = stream;
+      display.current.play();
+    }
+  }, [selectedWeb]);
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <StyledLayout>
@@ -82,7 +91,6 @@ export default function LessonLobby(): ReactElement {
             {(() => {
               const opts: ReactElement[] = [];
               for (const dev of webcams) {
-                console.log(dev);
                 opts.push(<Option value={dev.deviceId}>{dev.label}</Option>);
               }
               return opts;
@@ -94,11 +102,15 @@ export default function LessonLobby(): ReactElement {
       <Row align="middle" justify="center">
         <Col>
           <PhoneFilled />
-          <StyledSelect placeholder="Select a Microphone">
+          <StyledSelect
+            onSelect={(id) => {
+              setSelectedWeb(id as string);
+            }}
+            placeholder="Select a Microphone"
+          >
             {(() => {
               const opts: ReactElement[] = [];
               for (const dev of microphones) {
-                console.log(dev);
                 opts.push(<Option value={dev.deviceId}>{dev.label}</Option>);
               }
               return opts;
@@ -106,6 +118,15 @@ export default function LessonLobby(): ReactElement {
           </StyledSelect>
         </Col>
       </Row>
+      <br />
+      <video
+        style={{
+          height: 300,
+        }}
+        ref={(r) => {
+          display.current = r ?? undefined;
+        }}
+      ></video>
       <StyledDivider />
       <Button style={{ width: '50%', margin: 'auto' }} ghost type="primary">
         Join
