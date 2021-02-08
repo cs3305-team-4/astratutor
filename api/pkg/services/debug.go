@@ -35,7 +35,7 @@ func CreateDebugData() error {
 			Description:    "A student",
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
-			Availability:   &Availability{},
+			Availability:   nil,
 		},
 	}).Error
 	if err != nil {
@@ -61,7 +61,7 @@ func CreateDebugData() error {
 			Description:    "A tutor",
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
-			Availability:   &Availability{},
+			Availability:   nil,
 		},
 	}).Error
 	if err != nil {

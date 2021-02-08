@@ -9,7 +9,7 @@ import {
 import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
-import { RouteComponentProps, useLocation, useParams } from 'react-router-dom';
+import { RouteComponentProps, useLocation, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { ReactMic } from 'react-mic';
 
@@ -192,7 +192,7 @@ export default function LessonLobby(): ReactElement {
       ></video>
       <StyledDivider />
       <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-        Join
+        <Link to={`/lessons/${lid}/classroom`}>Join</Link>
       </Button>
     </StyledLayout>
   );
