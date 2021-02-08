@@ -11,6 +11,7 @@ import Account from './views/Account';
 import Landing from './views/Landing';
 import Login from './views/Login';
 import Register from './views/Register';
+import Subjects from './views/Subjects';
 import './App.css';
 
 import config from './config';
@@ -129,7 +130,9 @@ function App() {
             </Route>
             <PrivateRoute path="/account" component={Account} />
 
-            <Route path="/subjects"></Route>
+            <Route exact path="/subjects">
+              <Subjects />
+            </Route>
             <Route path="/subjects/:subject_slug/tutors"></Route>
             <Route path="/tutors/:slug"></Route>
             <Route path="/tutors/:slug/profile"></Route>

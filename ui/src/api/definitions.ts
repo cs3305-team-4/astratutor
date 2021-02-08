@@ -52,3 +52,13 @@ export interface AccountDTO {
   type: AccountType;
   parents_email?: string;
 }
+
+export interface SubjectDTO {
+  name: string;
+  image: string;
+  slug: string;
+}
+
+export interface ReadSubjectsDTO {
+  subjects: SubjectDTO[];
+}
