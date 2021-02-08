@@ -4,6 +4,7 @@ import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { RouteComponentProps, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { ReactMic } from 'react-mic';
 
 const { Option } = Select;
 
@@ -38,6 +39,7 @@ export default function LessonLobby(): ReactElement {
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const display = useRef<HTMLVideoElement>();
   const [selectedWeb, setSelectedWeb] = useState<string>('');
+  const [selectedMic, setSelectedMic] = useState<string>('');
   useAsync(async () => {
     await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -61,6 +63,7 @@ export default function LessonLobby(): ReactElement {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWeb } });
       display.current.srcObject = stream;
       display.current.play();
+      navigator.mediaDevices.getSupportedConstraints();
     }
   }, [selectedWeb]);
   const [title, setTitle] = useState('Mathematics 101');
@@ -87,7 +90,13 @@ export default function LessonLobby(): ReactElement {
       <Row align="middle" justify="center">
         <Col>
           <CameraFilled />
-          <StyledSelect placeholder="Select a Camera">
+          <StyledSelect
+            value={selectedWeb || (webcams.length ? webcams[0].deviceId : undefined)}
+            onSelect={(id) => {
+              setSelectedWeb(id as string);
+            }}
+            placeholder="Select a Camera"
+          >
             {(() => {
               const opts: ReactElement[] = [];
               for (const dev of webcams) {
@@ -103,8 +112,9 @@ export default function LessonLobby(): ReactElement {
         <Col>
           <PhoneFilled />
           <StyledSelect
+            value={selectedMic || (microphones.length ? microphones[0].deviceId : undefined)}
             onSelect={(id) => {
-              setSelectedWeb(id as string);
+              setSelectedMic(id as string);
             }}
             placeholder="Select a Microphone"
           >
