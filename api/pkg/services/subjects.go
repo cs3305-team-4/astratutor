@@ -26,6 +26,15 @@ const (
 	SubjectTaughtErrorDoesNotExist SubjectTaughtError = "This tutor subject relation does not exist"
 )
 
+func CreateSubject(name string, image string, slug string, db *gorm.DB) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	return db.Create(&Subject{Name: name, Image: image, Slug: slug}).Error
+}
+
 //Contains information on
 type SubjectTaught struct {
 	database.Model
@@ -33,11 +42,9 @@ type SubjectTaught struct {
 	//Contains Subject bring taught
 	Subject   Subject `gorm:"foreignKey:SubjectID"`
 	SubjectID uuid.UUID
-
 	//
 	Tutor   Account `gorm:"foreignKey:TutorID"`
 	TutorID uuid.UUID
-
 	//Price that the Tutor wishes to charge per lesson
 	Price uint
 	//Description given by the tutor
@@ -70,7 +77,20 @@ func GetSubjectByName(name string, db *gorm.DB) (*Subject, error) {
 	return subject, db.Where("Name = ?", name).Find(&subject).Error
 }
 
+func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
+	if db == nil {
+		var err error
+		db, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	subject := &Subject{}
+	return subject, db.Where("ID = ?", id).Find(&subject).Error
+}
+
 //Quries the DB for SubjectTaught where the subject ID is a match
+
 func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 	if db == nil {
 		var err error
@@ -110,6 +130,7 @@ func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
 }
 
 //Returns subjectTaught for specific Tutors
+
 func GetSubjectsByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 	if db == nil {
 		var err error
@@ -134,11 +155,33 @@ func teachSubject(subject *Subject, tutor *Account, description string, price ui
 		return fmt.Errorf("there must be a subject to teach")
 	}
 
-	return db.Create(&SubjectTaught{Subject: *subject, Tutor: *tutor, Price: price, Description: description}).Error
+	err = db.Transaction(func(tx *gorm.DB) error {
+		err = tx.Exec(`set transaction isolation level repeatable read`).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Create(&SubjectTaught{
+			Subject:     *subject,
+			Tutor:       *tutor,
+			Description: description,
+			Price:       price,
+		}).Error
+
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 
 }
 
-func updateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error) {
+func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
@@ -156,7 +199,7 @@ func updateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error)
 	})
 }
 
-func updateDescription(stid uuid.UUID, description string, db *gorm.DB) (*SubjectTaught, error) {
+func UpdateDescription(stid uuid.UUID, description string, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
@@ -175,12 +218,8 @@ func updateDescription(stid uuid.UUID, description string, db *gorm.DB) (*Subjec
 }
 
 /*
-
-
 func CreateSubjectTestAccounts() error {
-	db, err := database.Open()
-	db.Create(&Subject{Name: "English"})
-	db.Create(&Subject{Name: "Maths"})
+	 db, err := database.Open()
 	if err != nil {
 		return err
 	}
@@ -190,18 +229,16 @@ func CreateSubjectTestAccounts() error {
 		return err
 	}
 
-	db.FirstOrCreate(&Account{
-		Model: database.Model{
-			ID: uuid.MustParse("deadbeef-cafe-badd-c0de-facadebadbad"),
-		},
-		Email:         "tutor@grindshub.localhost",
+	english, err := GetSubjectByName("French", nil)
+	teachSubject(english, &Account{Model: database.Model{ID: uuid.MustParse("deadlamb-cafe-badd-c0de-facadebadbad")},
+		Email:         "tutor3@grindshub.localhost",
 		EmailVerified: true,
 		Type:          Tutor,
 		Suspended:     false,
 		PasswordHash:  *hash,
 		Profile: &Profile{
 			Avatar:         "",
-			Slug:           "Mike-tutor",
+			Slug:           "mike-tutor",
 			FirstName:      "Mike",
 			LastName:       "Tutor",
 			City:           "Cork",
@@ -210,42 +247,10 @@ func CreateSubjectTestAccounts() error {
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
 		},
-	})
+	}, "I hate gorm more", 67, nil)
 	if err != nil {
 		return err
 	}
-
-	db.FirstOrCreate(&Account{
-		Model: database.Model{
-			ID: uuid.MustParse("deadbeef-cafe-badd-c0de-facadebadbad"),
-		},
-		Email:         "tutor2@grindshub.localhost",
-		EmailVerified: true,
-		Type:          Tutor,
-		Suspended:     false,
-		PasswordHash:  *hash,
-		Profile: &Profile{
-			Avatar:         "",
-			Slug:           "john-tutor",
-			FirstName:      "John",
-			LastName:       "Tutor",
-			City:           "Cork",
-			Country:        "Ireland",
-			Description:    "A tutor",
-			Qualifications: []Qualification{},
-			WorkExperience: []WorkExperience{},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	John, err := ReadAccountByEmail("tutor@grindshub.localhost2", nil)
-	Mike, err := ReadAccountByEmail("tutor@grindshub.localhost", nil)
-	English, err := GetSubjectByName("English", nil)
-	Maths, err := GetSubjectByName("Maths", nil)
-	teachSubject(Maths, John, "John teaches stuff", 70, nil)
-	teachSubject(English, Mike, "Mike teaches better stuff", 75, nil)
 
 	return nil
 }

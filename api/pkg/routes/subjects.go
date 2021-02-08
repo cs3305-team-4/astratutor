@@ -15,48 +15,60 @@ func InjectSubjectsRoutes(subrouter *mux.Router) {
 }
 
 //Subject DTO represents an existing subject
-type Subject struct {
+type SubjectDTO struct {
 	Name  string    `json:"name"`
 	Slug  string    `json:"slug"`
 	ID    uuid.UUID `json:"subject_id"`
-	Image string
+	Image string    `json:"image"`
 }
 
 //TutorSubjectDTO
-type TutorSubject struct {
-	SubjectName    string    `json:"subject_name"`
-	SubjectID      uuid.UUID `json:"subject_id"`
-	TutorFirstName string    `json:"tutor_first_name"`
-	TutorLastName  string    `json:"tutor_last_name"`
-	TutorAccountID uuid.UUID `json:"tutor_id"`
-	Price          uint      `json:"price"`
-	Description    string    `json:"description"`
-	Image          string    `json:"image"`
+type TutorSubjectDTO struct {
+	SubjectTaughtID uuid.UUID `json:"subject_taught_id"`
+	SubjectName     string    `json:"subject_name"`
+	SubjectID       uuid.UUID `json:"subject_id"`
+	TutorFirstName  string    `json:"tutor_first_name"`
+	TutorLastName   string    `json:"tutor_last_name"`
+	TutorAvatar     string    `json:"tutor_avatar"`
+	TutorAccountID  uuid.UUID `json:"tutor_id"`
+	Price           uint      `json:"price"`
+	Description     string    `json:"description"`
 }
 
-func SingleTutorSubjectToDTO(subjectTaught *services.SubjectTaught) *TutorSubject {
-	return &TutorSubject{
-		SubjectName:    subjectTaught.Subject.Name,
-		SubjectID:      subjectTaught.Subject.ID,
-		Price:          subjectTaught.Price,
-		Description:    subjectTaught.Description,
-		TutorFirstName: subjectTaught.Tutor.Profile.FirstName,
-		TutorLastName:  subjectTaught.Tutor.Profile.LastName,
-		TutorAccountID: subjectTaught.Tutor.ID,
+func SingleTutorSubjectToDTO(subjectTaught *services.SubjectTaught) *TutorSubjectDTO {
+
+	tutor, err := services.ReadProfileByAccountID(subjectTaught.TutorID, nil)
+	if err != nil {
+		return nil
+	}
+	subject, err := services.GetSubjectByID(subjectTaught.SubjectID, nil)
+	if err != nil {
+		return nil
+	}
+	return &TutorSubjectDTO{
+		SubjectName:     subject.Name,
+		SubjectTaughtID: subjectTaught.ID,
+		SubjectID:       subjectTaught.SubjectID,
+		Price:           subjectTaught.Price,
+		Description:     subjectTaught.Description,
+		TutorFirstName:  tutor.FirstName,
+		TutorLastName:   tutor.LastName,
+		TutorAvatar:     tutor.Avatar,
+		TutorAccountID:  subjectTaught.TutorID,
 	}
 
 }
 
-func TutorSubjectsToDTO(tutorSubjects []services.SubjectTaught) []TutorSubject {
-	tutorSubjectsDTO := []TutorSubject{}
+func TutorSubjectsToDTO(tutorSubjects []services.SubjectTaught) []TutorSubjectDTO {
+	tutorSubjectsDTO := []TutorSubjectDTO{}
 	for _, item := range tutorSubjects {
 		tutorSubjectsDTO = append(tutorSubjectsDTO, *SingleTutorSubjectToDTO(&item))
 	}
 	return tutorSubjectsDTO
 }
 
-func SingleSubjectToDTO(subject *services.Subject) *Subject {
-	return &Subject{
+func SingleSubjectToDTO(subject *services.Subject) *SubjectDTO {
+	return &SubjectDTO{
 		Name:  subject.Name,
 		Slug:  subject.Slug,
 		ID:    subject.ID,
@@ -65,8 +77,8 @@ func SingleSubjectToDTO(subject *services.Subject) *Subject {
 
 }
 
-func SubjectsToDTO(subjects []services.Subject) []Subject {
-	SubjectsDTO := []Subject{}
+func SubjectsToDTO(subjects []services.Subject) []SubjectDTO {
+	SubjectsDTO := []SubjectDTO{}
 	for _, subject := range subjects {
 		SubjectsDTO = append(SubjectsDTO, *SingleSubjectToDTO(&subject))
 	}
@@ -95,6 +107,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
 	if filter != "" {
+
 		filtered, err := services.GetSubjectByName(filter, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
