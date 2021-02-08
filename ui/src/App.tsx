@@ -134,10 +134,9 @@ function App() {
             <Route path="/subjects/:subject_slug/tutors"></Route>
             <Route path="/tutors/:slug/profile"></Route>
             <Route path="/tutors/:slug"></Route>
-            <PrivateRoute path="/lessons/:lid/lobby">
+            <PrivateRoute path={['/lessons/:lid/lobby', '/lessons/:lid/classroom']}>
               <LessonLobby />
             </PrivateRoute>
-            <PrivateRoute path="/lessons/:lid/classroom" />
             <PrivateRoute path="/lessons/:lid" />
             <PrivateRoute path="/lessons" />
             <Route path="/login" component={Login} />
