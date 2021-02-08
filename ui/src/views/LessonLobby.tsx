@@ -1,4 +1,11 @@
-import { CameraFilled, CameraOutlined, PhoneFilled } from '@ant-design/icons';
+import {
+  CameraFilled,
+  CameraOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
+  PhoneFilled,
+  StepBackwardOutlined,
+} from '@ant-design/icons';
 import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
@@ -10,7 +17,23 @@ const { Option } = Select;
 
 const StyledLayout = styled(Layout)`
   background-color: rgb(21 20 20);
-  padding: 5em 30vw;
+  padding: 5em 35vw;
+  color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+`;
+
+const StyledNav = styled.nav`
+  position: fixed;
+  right: 0;
+  top: 5px;
+  z-index: 200;
   color: #fff;
 `;
 
@@ -34,12 +57,12 @@ const StyledSelect = styled(Select)`
 
 export default function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
-  const location = useLocation();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const display = useRef<HTMLVideoElement>();
   const [selectedWeb, setSelectedWeb] = useState<string>('');
   const [selectedMic, setSelectedMic] = useState<string>('');
+  const [fullscreen, setFullscreen] = useState(document.fullscreenElement !== null);
   useAsync(async () => {
     await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -69,6 +92,36 @@ export default function LessonLobby(): ReactElement {
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <StyledLayout>
+      <StyledNav>
+        <Button
+          type="link"
+          ghost
+          onClick={() => {
+            window.history.back();
+          }}
+        >
+          <StepBackwardOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
+        </Button>
+        <Button
+          type="link"
+          ghost
+          onClick={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen();
+              setFullscreen(false);
+            } else {
+              document.documentElement.requestFullscreen();
+              setFullscreen(true);
+            }
+          }}
+        >
+          {fullscreen ? (
+            <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+          ) : (
+            <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+          )}
+        </Button>
+      </StyledNav>
       <Typography>
         <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
           Joining your {title} classroom!
@@ -138,7 +191,7 @@ export default function LessonLobby(): ReactElement {
         }}
       ></video>
       <StyledDivider />
-      <Button style={{ width: '50%', margin: 'auto' }} ghost type="primary">
+      <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
         Join
       </Button>
     </StyledLayout>
