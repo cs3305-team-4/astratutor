@@ -8,7 +8,7 @@ import { AuthContext } from '../api/auth';
 import { GetProfile } from '../services/profile';
 import { UserAvatar } from '../components/UserAvatar';
 import Messaging from '../components/Messaging';
-import { CameraFilled, PhoneFilled, PhoneOutlined, SettingFilled } from '@ant-design/icons';
+import { CameraFilled, PhoneFilled, PhoneOutlined, SettingFilled, VideoCameraOutlined } from '@ant-design/icons';
 import { useHistory, useParams } from 'react-router-dom';
 
 interface IWebcam {
@@ -85,10 +85,15 @@ export default function LessonClassroom(): ReactElement {
   const auth = useContext(AuthContext);
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [webcamEnabled, setWebcamEnabled] = React.useState(true);
 
   const addWebcam = (web: IWebcam) => {
-    const other = webcamDisplays.find((v) => v.ref.key === web.ref.key);
-    if (!other) {
+    const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
+    if (other > -1) {
+      const temp = webcamDisplays;
+      temp[other] = web;
+      setWebcamDisplays(temp);
+    } else {
       setWebcamDisplays(webcamDisplays.concat(web));
     }
   };
@@ -102,7 +107,7 @@ export default function LessonClassroom(): ReactElement {
         ref={(ref) => {
           if (ref) {
             ref.srcObject = stream;
-            ref.play();
+            webcamEnabled && ref.play();
             navigator.mediaDevices.getSupportedConstraints();
           }
         }}
@@ -110,7 +115,7 @@ export default function LessonClassroom(): ReactElement {
     );
     const web: IWebcam = { profile: await GetProfile(auth), ref: video };
     addWebcam(web);
-  }, [settings.selectedWebcam]);
+  }, [settings.selectedWebcam, webcamEnabled]);
 
   const hangup = () => {
     history.push(`/lessons/${lid}/goodbye`);
@@ -196,6 +201,17 @@ export default function LessonClassroom(): ReactElement {
         </StyledSider>
         <Layout.Content></Layout.Content>
         <StyledTools>
+          <Tooltip title="Toggle Webcam">
+            <Button
+              ghost={!webcamEnabled}
+              onClick={() => setWebcamEnabled(!webcamEnabled)}
+              size={'large'}
+              shape="circle"
+              style={{ margin: '0 10px' }}
+            >
+              <VideoCameraOutlined size={20} style={{ color: webcamEnabled ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
           <Tooltip title="Hang Up">
             <Button
               onClick={hangup}

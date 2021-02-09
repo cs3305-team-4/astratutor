@@ -10,7 +10,7 @@ import {
 import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
-import { RouteComponentProps, useLocation, useParams, Link, Switch, Route } from 'react-router-dom';
+import { RouteComponentProps, useLocation, useParams, Link, Switch, Route, useHistory } from 'react-router-dom';
 import styled from 'styled-components';
 import { ISettings, SettingsCTX } from '../services/classroom';
 import LessonClassroom from './LessonClassroom';
@@ -58,12 +58,18 @@ const StyledSelect = styled(Select)`
 
 export default function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
+  const history = useHistory();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const display = useRef<HTMLVideoElement>();
   const [selectedWebcam, setSelectedWebcam] = useState<string>('');
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
   const [fullscreen, setFullscreen] = useState(document.fullscreenElement !== null);
+  const [joined, setJoined] = useState(false);
+
+  if (!joined && !history.location.pathname.endsWith('lobby')) {
+    history.push(`/lessons/${lid}/lobby`);
+  }
 
   const settingsValue: ISettings = {
     fullscreen,
@@ -103,7 +109,7 @@ export default function LessonLobby(): ReactElement {
       display.current.play();
       navigator.mediaDevices.getSupportedConstraints();
     }
-  }, [selectedWebcam]);
+  }, [selectedWebcam, display]);
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
@@ -227,7 +233,9 @@ export default function LessonLobby(): ReactElement {
             ></video>
             <StyledDivider />
             <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-              <Link to={`/lessons/${lid}/classroom`}>Join</Link>
+              <Link onClick={() => setJoined(true)} to={`/lessons/${lid}/classroom`}>
+                Join
+              </Link>
             </Button>
           </StyledLayout>
         </Route>
