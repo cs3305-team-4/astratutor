@@ -197,7 +197,7 @@ export default function LessonClassroom(): ReactElement {
               </div>
             </StyledWebcam>
           ))}
-          <Messaging height={window.innerHeight - webcamDisplays.length * webcamHeight} />
+          <Messaging height={webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content></Layout.Content>
         <StyledTools>

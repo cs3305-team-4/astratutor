@@ -108,7 +108,7 @@ export default function Messaging(props: MessagingProps): JSX.Element {
     }
   };
   return (
-    <StyledLayout style={{ height: props.height }}>
+    <StyledLayout style={{ height: `calc(100vh - ${props.height}px)` }}>
       <StyledMessages>
         {messages.map((v, i) => {
           if (v.profile) {
