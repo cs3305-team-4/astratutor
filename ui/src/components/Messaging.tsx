@@ -3,6 +3,7 @@ import { Layout, Input } from 'antd';
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ReadProfileDTO } from '../api/definitions';
+import { format } from 'date-and-time';
 
 const StyledLayout = styled(Layout)`
   width: 100%;
@@ -54,18 +55,25 @@ const StyledTextArea = styled(Search)`
 const StyledMessage = styled.div<{ self: boolean }>`
   background: ${(props) => (props.self ? '#2d2d2d' : '#1890ff')};
   border-radius: 0.3em;
-  padding: 0.3em 1em;
+  padding: 0.1em 1em;
   max-width: 80%;
   width: fit-content;
   margin-bottom: 1em;
   display: block;
   clear: both;
-  ${(props) => (props.self ? 'align-self: flex-end;' : 'align-self: flex-start;')}
+  ${(props) => (props.self ? 'align-self: flex-end; text-align: right;' : 'align-self: flex-start;')}
   color: #fff;
+  & span {
+    color: #818181;
+    display: block;
+    text-align: right;
+    font-size: 0.7em;
+  }
 `;
 
 interface Message {
   profile?: ReadProfileDTO;
+  date: Date;
   text: string;
 }
 
@@ -78,7 +86,7 @@ export default function Messaging(props: MessagingProps): JSX.Element {
   const [text, setText] = useState('');
   const sendMessage = () => {
     if (text) {
-      setMessages(messages.concat({ text }));
+      setMessages(messages.concat({ text, date: new Date() }));
       setText('');
     }
   };
@@ -88,6 +96,7 @@ export default function Messaging(props: MessagingProps): JSX.Element {
         {messages.map((v, i) => (
           <StyledMessage key={i} self={!v.profile}>
             {v.text}
+            <span>{format(v.date, 'h:mm A')}</span>
           </StyledMessage>
         ))}
       </StyledMessages>
