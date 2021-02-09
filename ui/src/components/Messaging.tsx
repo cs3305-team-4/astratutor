@@ -14,6 +14,7 @@ const StyledLayout = styled(Layout)`
 const StyledMessages = styled.div`
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   height: calc(100% - 32px);
   padding: 1em;
   overflow-y: scroll;
@@ -57,7 +58,7 @@ const StyledMessage = styled.div<{ self: boolean }>`
   background: ${(props) => (props.self ? '#2d2d2d' : '#1890ff')};
   border-radius: 0.3em;
   padding: 0.1em 1em;
-  max-width: 80%;
+  max-width: ${(props) => (props.self ? '80%' : '60%')};
   width: fit-content;
   margin-bottom: 1em;
   display: block;
