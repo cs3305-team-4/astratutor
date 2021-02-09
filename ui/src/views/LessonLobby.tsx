@@ -102,42 +102,42 @@ export default function LessonLobby(): ReactElement {
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
+      <StyledNav>
+        <Button
+          type="link"
+          ghost
+          onClick={() => {
+            window.history.back();
+          }}
+        >
+          <StepBackwardOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
+        </Button>
+        <Button
+          type="link"
+          ghost
+          onClick={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen();
+              setFullscreen(false);
+            } else {
+              document.documentElement.requestFullscreen();
+              setFullscreen(true);
+            }
+          }}
+        >
+          {fullscreen ? (
+            <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+          ) : (
+            <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+          )}
+        </Button>
+      </StyledNav>
       <Switch>
         <Route path="/lessons/:lid/classroom">
           <LessonClassroom />
         </Route>
         <Route path="/lessons/:lid/lobby">
           <StyledLayout>
-            <StyledNav>
-              <Button
-                type="link"
-                ghost
-                onClick={() => {
-                  window.history.back();
-                }}
-              >
-                <StepBackwardOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
-              </Button>
-              <Button
-                type="link"
-                ghost
-                onClick={() => {
-                  if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                    setFullscreen(false);
-                  } else {
-                    document.documentElement.requestFullscreen();
-                    setFullscreen(true);
-                  }
-                }}
-              >
-                {fullscreen ? (
-                  <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-                ) : (
-                  <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-                )}
-              </Button>
-            </StyledNav>
             <Typography>
               <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
                 Joining your {title} classroom!

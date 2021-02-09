@@ -2,25 +2,19 @@ import React, { ReactElement, useContext } from 'react';
 import styled from 'styled-components';
 import { Button, Layout, Typography } from 'antd';
 import { SettingsCTX } from '../services/classroom';
-import { FullscreenExitOutlined, FullscreenOutlined, StepBackwardOutlined } from '@ant-design/icons';
 import { useAsync } from 'react-async-hook';
 import { ReadProfileDTO } from '../api/definitions';
 import { AuthContext } from '../api/auth';
 import { GetProfile } from '../services/profile';
 import { UserAvatar } from '../components/UserAvatar';
+import Messaging from '../components/Messaging';
 
 interface IWebcam {
   profile: ReadProfileDTO;
   ref: JSX.Element;
 }
 
-const StyledNav = styled.nav`
-  position: fixed;
-  right: 0;
-  top: 5px;
-  z-index: 200;
-  color: #fff;
-`;
+const webcamHeight = 200;
 
 const StyledLayout = styled(Layout)`
   background-color: rgb(21 20 20);
@@ -42,6 +36,10 @@ const StyledSider = styled(Layout.Sider)`
 
 const StyledWebcam = styled.div`
   width: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  height: ${webcamHeight}px;
   & .ant-typography {
     padding-left: 10px;
     color: #fff;
@@ -53,8 +51,9 @@ const StyledWebcam = styled.div`
     background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(0, 0, 0, 1) 100%);
     padding: 5px 10px;
     height: 42px;
-    position: relative;
-    top: -47px;
+    position: absolute;
+    width: 100%;
+    top: 158px;
   }
 `;
 
@@ -90,36 +89,6 @@ export default function LessonClassroom(): ReactElement {
   }, []);
   return (
     <StyledLayout>
-      <StyledNav>
-        <Button
-          type="link"
-          ghost
-          onClick={() => {
-            window.history.back();
-          }}
-        >
-          <StepBackwardOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
-        </Button>
-        <Button
-          type="link"
-          ghost
-          onClick={() => {
-            if (document.fullscreenElement) {
-              document.exitFullscreen();
-              settings.setFullscreen(false);
-            } else {
-              document.documentElement.requestFullscreen();
-              settings.setFullscreen(true);
-            }
-          }}
-        >
-          {settings.fullscreen ? (
-            <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-          ) : (
-            <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-          )}
-        </Button>
-      </StyledNav>
       <StyledLayout>
         <StyledSider width={300}>
           {webcamDisplays.map((v) => (
@@ -133,6 +102,7 @@ export default function LessonClassroom(): ReactElement {
               </div>
             </StyledWebcam>
           ))}
+          <Messaging height={window.innerHeight - webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content></Layout.Content>
       </StyledLayout>
