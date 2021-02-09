@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ReadProfileDTO } from '../api/definitions';
 import { format } from 'date-and-time';
+import { UserAvatar } from './UserAvatar';
 
 const StyledLayout = styled(Layout)`
   width: 100%;
@@ -64,7 +65,7 @@ const StyledMessage = styled.div<{ self: boolean }>`
   ${(props) => (props.self ? 'align-self: flex-end; text-align: right;' : 'align-self: flex-start;')}
   color: #fff;
   & span {
-    color: #818181;
+    color: ${(props) => (props.self ? '#818181' : '#e2e2e2')};
     display: block;
     text-align: right;
     font-size: 0.7em;
@@ -82,7 +83,22 @@ interface MessagingProps {
 }
 
 export default function Messaging(props: MessagingProps): JSX.Element {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      profile: {
+        avatar: '',
+        slug: '/',
+        first_name: 'Gamer',
+        last_name: 'Jones',
+        city: 'Cark',
+        country: 'Ireland',
+        subtitle: 'Gamer',
+        description: 'Gamer',
+      },
+      date: new Date(),
+      text: 'Hello fellow gamer',
+    },
+  ]);
   const [text, setText] = useState('');
   const sendMessage = () => {
     if (text) {
@@ -93,12 +109,25 @@ export default function Messaging(props: MessagingProps): JSX.Element {
   return (
     <StyledLayout style={{ height: props.height }}>
       <StyledMessages>
-        {messages.map((v, i) => (
-          <StyledMessage key={i} self={!v.profile}>
-            {v.text}
-            <span>{format(v.date, 'h:mm A')}</span>
-          </StyledMessage>
-        ))}
+        {messages.map((v, i) => {
+          if (v.profile) {
+            return (
+              <div key={i} style={{ display: 'flex' }}>
+                {v.profile && <UserAvatar profile={v.profile} props={{ style: { float: 'left' } }}></UserAvatar>}
+                <StyledMessage self={!v.profile} style={{ float: 'left', marginLeft: '1em' }}>
+                  {v.text}
+                  <span>{format(v.date, 'h:mm A')}</span>
+                </StyledMessage>
+              </div>
+            );
+          }
+          return (
+            <StyledMessage key={i} self={!v.profile}>
+              {v.text}
+              <span>{format(v.date, 'h:mm A')}</span>
+            </StyledMessage>
+          );
+        })}
       </StyledMessages>
       <StyledTextArea
         placeholder="Send a Message"
