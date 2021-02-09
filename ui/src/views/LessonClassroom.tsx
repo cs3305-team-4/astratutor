@@ -1,6 +1,6 @@
 import React, { ReactElement, useContext } from 'react';
 import styled from 'styled-components';
-import { Button, Col, Layout, Modal, Row, Select, Typography } from 'antd';
+import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
 import { SettingsCTX } from '../services/classroom';
 import { useAsync } from 'react-async-hook';
 import { ReadProfileDTO } from '../api/definitions';
@@ -8,7 +8,8 @@ import { AuthContext } from '../api/auth';
 import { GetProfile } from '../services/profile';
 import { UserAvatar } from '../components/UserAvatar';
 import Messaging from '../components/Messaging';
-import { CameraFilled, PhoneFilled, SettingFilled } from '@ant-design/icons';
+import { CameraFilled, PhoneFilled, PhoneOutlined, SettingFilled } from '@ant-design/icons';
+import { useHistory, useParams } from 'react-router-dom';
 
 interface IWebcam {
   profile: ReadProfileDTO;
@@ -67,8 +68,20 @@ const StyledIcon = styled(SettingFilled)`
   cursor: pointer;
 `;
 
+const StyledTools = styled(Layout.Footer)`
+  background-color: rgb(5 5 5);
+  position: absolute;
+  bottom: 0;
+  left: 300px;
+  width: calc(100% - 300px);
+  text-align: center;
+  vertical-align: middle;
+`;
+
 export default function LessonClassroom(): ReactElement {
+  const { lid } = useParams<{ lid: string }>();
   const settings = useContext(SettingsCTX);
+  const history = useHistory();
   const auth = useContext(AuthContext);
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -98,6 +111,11 @@ export default function LessonClassroom(): ReactElement {
     const web: IWebcam = { profile: await GetProfile(auth), ref: video };
     addWebcam(web);
   }, [settings.selectedWebcam]);
+
+  const hangup = () => {
+    history.push(`/lessons/${lid}/goodbye`);
+  };
+
   return (
     <StyledLayout>
       <StyledLayout>
@@ -177,6 +195,18 @@ export default function LessonClassroom(): ReactElement {
           <Messaging height={window.innerHeight - webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content></Layout.Content>
+        <StyledTools>
+          <Tooltip title="Hang Up">
+            <Button
+              onClick={hangup}
+              size={'large'}
+              shape="circle"
+              style={{ backgroundColor: '#c50505', margin: '0 10px' }}
+            >
+              <PhoneFilled size={20} rotate={225} style={{ color: '#fff' }} />
+            </Button>
+          </Tooltip>
+        </StyledTools>
       </StyledLayout>
     </StyledLayout>
   );

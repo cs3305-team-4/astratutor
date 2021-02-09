@@ -138,6 +138,20 @@ export default function LessonLobby(): ReactElement {
         </Button>
       </StyledNav>
       <Switch>
+        <Route path="/lessons/:lid/goodbye">
+          <StyledLayout>
+            <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
+              Thanks for attending {title}!
+            </Typography.Title>
+            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="link">
+              Schedule my next lesson
+            </Button>
+            <StyledDivider />
+            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+              <Link to={`/lessons`}>Go back to my lessons</Link>
+            </Button>
+          </StyledLayout>
+        </Route>
         <Route path="/lessons/:lid/classroom">
           <LessonClassroom />
         </Route>
