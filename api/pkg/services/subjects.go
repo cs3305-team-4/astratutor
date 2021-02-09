@@ -204,7 +204,7 @@ func teachSubject(subject *Subject, tutor *Account, description string, price ui
 
 }
 
-//updates the price of a subjecttaught by the tutors id
+//updates the price of a subjecttaught by the sid
 func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
@@ -223,7 +223,7 @@ func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error)
 	})
 }
 
-//updates the description of a subjecttaught by the tutors id
+//updates the description of a subjecttaught by the sid
 func UpdateDescription(stid uuid.UUID, description string, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
