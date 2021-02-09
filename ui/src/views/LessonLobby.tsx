@@ -4,6 +4,7 @@ import {
   FullscreenExitOutlined,
   FullscreenOutlined,
   PhoneFilled,
+  SettingFilled,
   StepBackwardOutlined,
 } from '@ant-design/icons';
 import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
@@ -67,6 +68,10 @@ export default function LessonLobby(): ReactElement {
   const settingsValue: ISettings = {
     fullscreen,
     setFullscreen,
+    webcams,
+    setWebcams,
+    microphones,
+    setMicrophones,
     selectedWebcam,
     setSelectedWebcam,
     selectedMicrophone,

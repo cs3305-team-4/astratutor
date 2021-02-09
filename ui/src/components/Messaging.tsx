@@ -1,4 +1,4 @@
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined, SettingFilled } from '@ant-design/icons';
 import { Layout, Input } from 'antd';
 import React, { useState } from 'react';
 import styled from 'styled-components';
