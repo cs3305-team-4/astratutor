@@ -1,22 +1,22 @@
-import React, { ReactElement, useContext } from 'react';
-import styled from 'styled-components';
-import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
-import { SettingsCTX } from '../services/classroom';
-import { useAsync } from 'react-async-hook';
-import { ReadProfileDTO } from '../api/definitions';
-import { AuthContext } from '../api/auth';
-import { GetProfile } from '../services/profile';
-import { UserAvatar } from '../components/UserAvatar';
-import Messaging from '../components/Messaging';
 import {
+  AudioOutlined,
   CameraFilled,
   DesktopOutlined,
   PhoneFilled,
-  PhoneOutlined,
   SettingFilled,
   VideoCameraOutlined,
 } from '@ant-design/icons';
+import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
+import React, { ReactElement, useContext } from 'react';
+import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
+import styled from 'styled-components';
+import { AuthContext } from '../api/auth';
+import { ReadProfileDTO } from '../api/definitions';
+import Messaging from '../components/Messaging';
+import { UserAvatar } from '../components/UserAvatar';
+import { SettingsCTX } from '../services/classroom';
+import { GetProfile } from '../services/profile';
 
 interface IWebcam {
   profile: ReadProfileDTO;
@@ -94,6 +94,7 @@ export default function LessonClassroom(): ReactElement {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
+  const [micEnabled, setMicEnabled] = React.useState(true);
 
   const addWebcam = (web: IWebcam) => {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
@@ -209,6 +210,17 @@ export default function LessonClassroom(): ReactElement {
         </StyledSider>
         <Layout.Content></Layout.Content>
         <StyledTools>
+          <Tooltip title="Toggle Mute">
+            <Button
+              ghost={!micEnabled}
+              onClick={() => setMicEnabled(!micEnabled)}
+              size={'large'}
+              shape="circle"
+              style={{ margin: '0 10px' }}
+            >
+              <AudioOutlined size={20} style={{ color: micEnabled ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
           <Tooltip title="Toggle Webcam">
             <Button
               ghost={!webcamEnabled}

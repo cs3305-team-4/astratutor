@@ -1,16 +1,15 @@
 import {
+  ArrowLeftOutlined,
+  AudioOutlined,
   CameraFilled,
-  CameraOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   PhoneFilled,
-  SettingFilled,
-  StepBackwardOutlined,
 } from '@ant-design/icons';
-import { Layout, Button, Typography, Avatar, Tooltip, Col, Row, Divider, Select } from 'antd';
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import { Avatar, Button, Col, Divider, Layout, Row, Select, Tooltip, Typography } from 'antd';
+import React, { ReactElement, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
-import { RouteComponentProps, useLocation, useParams, Link, Switch, Route, useHistory } from 'react-router-dom';
+import { Link, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ISettings, SettingsCTX } from '../services/classroom';
 import LessonClassroom from './LessonClassroom';
@@ -113,38 +112,29 @@ export default function LessonLobby(): ReactElement {
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
-      <StyledNav>
-        <Button
-          type="link"
-          ghost
-          onClick={() => {
-            window.history.back();
-          }}
-        >
-          <StepBackwardOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
-        </Button>
-        <Button
-          type="link"
-          ghost
-          onClick={() => {
-            if (document.fullscreenElement) {
-              document.exitFullscreen();
-              setFullscreen(false);
-            } else {
-              document.documentElement.requestFullscreen();
-              setFullscreen(true);
-            }
-          }}
-        >
-          {fullscreen ? (
-            <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-          ) : (
-            <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
-          )}
-        </Button>
-      </StyledNav>
       <Switch>
         <Route path="/lessons/:lid/goodbye">
+          <StyledNav>
+            <Button
+              type="link"
+              ghost
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                  setFullscreen(false);
+                } else {
+                  document.documentElement.requestFullscreen();
+                  setFullscreen(true);
+                }
+              }}
+            >
+              {fullscreen ? (
+                <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              ) : (
+                <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              )}
+            </Button>
+          </StyledNav>
           <StyledLayout>
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
               Thanks for attending {title}!
@@ -159,9 +149,60 @@ export default function LessonLobby(): ReactElement {
           </StyledLayout>
         </Route>
         <Route path="/lessons/:lid/classroom">
+          <StyledNav>
+            <Button
+              type="link"
+              ghost
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                  setFullscreen(false);
+                } else {
+                  document.documentElement.requestFullscreen();
+                  setFullscreen(true);
+                }
+              }}
+            >
+              {fullscreen ? (
+                <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              ) : (
+                <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              )}
+            </Button>
+          </StyledNav>
           <LessonClassroom />
         </Route>
         <Route path="/lessons/:lid/lobby">
+          <StyledNav>
+            <Button
+              type="link"
+              ghost
+              onClick={() => {
+                window.history.back();
+              }}
+            >
+              <ArrowLeftOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
+            </Button>
+            <Button
+              type="link"
+              ghost
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                  setFullscreen(false);
+                } else {
+                  document.documentElement.requestFullscreen();
+                  setFullscreen(true);
+                }
+              }}
+            >
+              {fullscreen ? (
+                <FullscreenExitOutlined title="Exit Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              ) : (
+                <FullscreenOutlined title="Fullscreen" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              )}
+            </Button>
+          </StyledNav>
           <StyledLayout>
             <Typography>
               <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
@@ -204,7 +245,7 @@ export default function LessonLobby(): ReactElement {
             <br />
             <Row align="middle" justify="center">
               <Col>
-                <PhoneFilled />
+                <AudioOutlined />
                 <StyledSelect
                   value={selectedMicrophone || (microphones.length ? microphones[0].deviceId : undefined)}
                   onSelect={(id) => {
