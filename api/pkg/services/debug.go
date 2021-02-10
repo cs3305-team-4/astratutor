@@ -36,6 +36,7 @@ func CreateDebugData() error {
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
 			Availability:   nil,
+			Color:          "#56847a",
 		},
 	}).Error
 	if err != nil {
@@ -62,6 +63,7 @@ func CreateDebugData() error {
 			Qualifications: []Qualification{},
 			WorkExperience: []WorkExperience{},
 			Availability:   nil,
+			Color:          "#56847a",
 		},
 	}).Error
 	if err != nil {

@@ -37,6 +37,7 @@ type ProfileResponseDTO struct {
 	City        string `json:"city" validate:"required"`
 	Country     string `json:"country" validate:"required"`
 	Description string `json:"description" validate:"omitempty,lte=1000"`
+	Color       string `json:"color" validate:"required"`
 }
 
 // TutorResponseDTO return DTO.
@@ -92,6 +93,7 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 			City:        p.City,
 			Country:     p.Country,
 			Description: p.Description,
+			Color:       p.Color,
 		}
 	case services.Tutor:
 		qualifications := make([]QualificationsResponseDTO, 0)
@@ -125,6 +127,7 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 				City:        p.City,
 				Country:     p.Country,
 				Description: p.Description,
+				Color:       p.Color,
 			},
 			Availability:   p.Availability.Get(),
 			Qualifications: qualifications,
