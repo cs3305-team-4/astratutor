@@ -8,7 +8,14 @@ import { AuthContext } from '../api/auth';
 import { GetProfile } from '../services/profile';
 import { UserAvatar } from '../components/UserAvatar';
 import Messaging from '../components/Messaging';
-import { CameraFilled, PhoneFilled, PhoneOutlined, SettingFilled, VideoCameraOutlined } from '@ant-design/icons';
+import {
+  CameraFilled,
+  DesktopOutlined,
+  PhoneFilled,
+  PhoneOutlined,
+  SettingFilled,
+  VideoCameraOutlined,
+} from '@ant-design/icons';
 import { useHistory, useParams } from 'react-router-dom';
 
 interface IWebcam {
@@ -86,6 +93,7 @@ export default function LessonClassroom(): ReactElement {
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
+  const [screenEnabled, setScreenEnabled] = React.useState(false);
 
   const addWebcam = (web: IWebcam) => {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
@@ -220,6 +228,17 @@ export default function LessonClassroom(): ReactElement {
               style={{ backgroundColor: '#c50505', margin: '0 10px' }}
             >
               <PhoneFilled size={20} rotate={225} style={{ color: '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Share Screen">
+            <Button
+              ghost={!screenEnabled}
+              onClick={() => setScreenEnabled(!screenEnabled)}
+              size={'large'}
+              shape="circle"
+              style={{ margin: '0 10px' }}
+            >
+              <DesktopOutlined size={20} style={{ color: screenEnabled ? '#000' : '#fff' }} />
             </Button>
           </Tooltip>
         </StyledTools>
