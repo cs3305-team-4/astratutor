@@ -169,7 +169,7 @@ export default function LessonClassroom(): ReactElement {
             <br />
             <Row align="middle" justify="center">
               <Col>
-                <PhoneFilled />
+                <AudioOutlined />
                 <Select
                   style={{ width: 300, marginLeft: 10 }}
                   value={
