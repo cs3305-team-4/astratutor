@@ -19,6 +19,8 @@ export default function Tutors(): ReactElement {
   const [showRequestModal, setShowRequestModal] = useState<boolean>(false);
   const [requestedTutor, setRequestedTutor] = useState<SubjectTaughtDTO | undefined>(undefined);
 
+  const [requestForm] = Form.useForm();
+
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
 
@@ -89,29 +91,31 @@ export default function Tutors(): ReactElement {
     setShowRequestModal(true);
   };
 
-  const onRequestSubmit = () => {
+  const onRequestSubmit = (e) => {
     setShowRequestModal(false);
     // TODO: submit request to tutor backend
+    requestForm.resetFields();
   };
 
   const onRequestCancel = () => {
     setShowRequestModal(false);
+    requestForm.resetFields();
   };
 
   return (
     <Content style={{ padding: '2em 0' }}>
       <Modal
         visible={showRequestModal}
-        title={`Request Tutor with ${requestedTutor.tutor_first_name} for ${requestedTutor.subject_name}`}
+        title={`Request Tutor with ${requestedTutor?.tutor_first_name} for ${requestedTutor?.subject_name}`}
         okText="Request"
         onOk={onRequestSubmit}
         onCancel={onRequestCancel}
       >
-        <Form layout="vertical">
-          <Form.Item label="Request a time">
+        <Form layout="vertical" form={requestForm}>
+          <Form.Item name="datetime" label="Request a time">
             <DatePicker format="YYYY-MM-DD HH:mm" showTime={{ defaultValue: moment('00:00', 'HH:mm') }} />
           </Form.Item>
-          <Form.Item label="Description">
+          <Form.Item name="description" label="Description">
             <Input.TextArea allowClear placeholder="Description of what you need out of this lesson" />
           </Form.Item>
         </Form>
