@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -17,49 +16,73 @@ func getAccountType(r *http.Request) (services.AccountType, error) {
 	return "", errors.New("invalid account type")
 }
 
-// Profile DTO.
-type ProfileDTO struct {
-	AccountID   string `json:"account_id" validate:"len=0"`
-	ID          string `json:"id" validate:"len=0"`
+// ProfileRequestDTO create DTO.
+type ProfileRequestDTO struct {
 	Avatar      string `json:"avatar" validate:"omitempty,base64"`
-	Slug        string `json:"slug" validate:"len=0"`
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
 	Country     string `json:"country" validate:"required"`
-	Description string `json:"description"`
+	Description string `json:"description" validate:"omitempty,lte=1000"`
 }
 
-// TutorDTO DTO.
-type TutorDTO struct {
-	ProfileDTO
-	Qualifications []QualificationsDTO `json:"qualifications" validate:"len=0"`
-	WorkExperience []WorkExperienceDTO `json:"work_experience" validate:"len=0"`
-	Availability   []bool              `json:"availability" validate:"omitempty,len=336"`
+// ProfileResponseDTO return DTO.
+type ProfileResponseDTO struct {
+	AccountID   string `json:"account_id" validate:"required,uuid"`
+	ID          string `json:"id" validate:"required,uuid"`
+	Avatar      string `json:"avatar" validate:"omitempty,base64"`
+	Slug        string `json:"slug" validate:"required"`
+	FirstName   string `json:"first_name" validate:"required"`
+	LastName    string `json:"last_name" validate:"required"`
+	City        string `json:"city" validate:"required"`
+	Country     string `json:"country" validate:"required"`
+	Description string `json:"description" validate:"omitempty,lte=1000"`
 }
 
-// QualificationsDTO DTO.
-type QualificationsDTO struct {
-	ID       string `json:"id" validate:"len=0"`
+// TutorResponseDTO return DTO.
+type TutorResponseDTO struct {
+	ProfileResponseDTO
+	Qualifications []QualificationsResponseDTO `json:"qualifications"`
+	WorkExperience []WorkExperienceResponseDTO `json:"work_experience"`
+	Availability   []bool                      `json:"availability" validate:"required,len=168"`
+}
+
+// QualificationsRequestDTO create DTO.
+type QualificationsRequestDTO struct {
+	Field  string `json:"field" validate:"required"`
+	Degree string `json:"degree" validate:"required"`
+	School string `json:"school" validate:"required"`
+}
+
+// QualificationsResponseDTO return DTO.
+type QualificationsResponseDTO struct {
+	ID       string `json:"id" validate:"required,uuid"`
 	Field    string `json:"field" validate:"required"`
 	Degree   string `json:"degree" validate:"required"`
 	School   string `json:"school" validate:"required"`
-	Verified bool   `json:"verified" validate:"eq=false"`
+	Verified bool   `json:"verified" validate:"required"`
 }
 
-// WorkExperienceDTO DTO.
-type WorkExperienceDTO struct {
-	ID          string `json:"id" validate:"len=0"`
+// WorkExperienceRequestDTO create DTO.
+type WorkExperienceRequestDTO struct {
 	Role        string `json:"role" validate:"required"`
 	YearsExp    int    `json:"years_exp" validate:"required"`
-	Description string `json:"description"`
-	Verified    bool   `json:"verified" validate:"eq=false"`
+	Description string `json:"description" validate:"required,lte=1000"`
+}
+
+// WorkExperienceResponseDTO return DTO.
+type WorkExperienceResponseDTO struct {
+	ID          string `json:"id" validate:"required,uuid"`
+	Role        string `json:"role" validate:"required"`
+	YearsExp    int    `json:"years_exp" validate:"required"`
+	Description string `json:"description" validate:"required,lte=1000"`
+	Verified    bool   `json:"verified" validate:"required"`
 }
 
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) interface{} {
 	switch accountType {
 	case services.Student:
-		return &ProfileDTO{
+		return &ProfileResponseDTO{
 			AccountID:   p.AccountID.String(),
 			ID:          p.ID.String(),
 			Avatar:      p.Avatar,
@@ -71,9 +94,9 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 			Description: p.Description,
 		}
 	case services.Tutor:
-		qualifications := make([]QualificationsDTO, 0)
+		qualifications := make([]QualificationsResponseDTO, 0)
 		for _, val := range p.Qualifications {
-			qualifications = append(qualifications, QualificationsDTO{
+			qualifications = append(qualifications, QualificationsResponseDTO{
 				ID:       val.ID.String(),
 				Field:    val.Field,
 				Degree:   val.Degree,
@@ -81,9 +104,9 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 				Verified: val.Verified,
 			})
 		}
-		workExperience := make([]WorkExperienceDTO, 0)
+		workExperience := make([]WorkExperienceResponseDTO, 0)
 		for _, val := range p.WorkExperience {
-			workExperience = append(workExperience, WorkExperienceDTO{
+			workExperience = append(workExperience, WorkExperienceResponseDTO{
 				ID:          val.ID.String(),
 				Role:        val.Role,
 				YearsExp:    val.YearsExp,
@@ -91,8 +114,8 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 				Verified:    val.Verified,
 			})
 		}
-		return &TutorDTO{
-			ProfileDTO: ProfileDTO{
+		return &TutorResponseDTO{
+			ProfileResponseDTO: ProfileResponseDTO{
 				AccountID:   p.AccountID.String(),
 				ID:          p.ID.String(),
 				Avatar:      p.Avatar,
@@ -140,14 +163,11 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
-	if auth == nil || auth.Account.ID != id {
+	if !auth.Authenticated() || auth.Account.ID != id {
 		serviceProfile.FilterVerifiedFields()
 	}
 	outProfile := dtoFromProfile(serviceProfile, t)
-	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfilePost(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +181,7 @@ func handleProfilePost(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	profile := &ProfileDTO{}
+	profile := &ProfileRequestDTO{}
 	if !ParseBody(w, r, profile) {
 		return
 	}
@@ -169,7 +189,6 @@ func handleProfilePost(w http.ResponseWriter, r *http.Request) {
 	serviceProfile := &services.Profile{
 		AccountID:   id,
 		Avatar:      profile.Avatar,
-		Slug:        profile.Slug,
 		FirstName:   profile.FirstName,
 		LastName:    profile.LastName,
 		City:        profile.City,
@@ -188,10 +207,7 @@ func handleProfilePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outProfile := dtoFromProfile(serviceProfile, t)
-	if err = json.NewEncoder(w).Encode(outProfile); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateAvatar(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +222,7 @@ func handleProfileUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("Avatar", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("Avatar", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -222,11 +238,8 @@ func handleProfileUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
@@ -241,13 +254,21 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("FirstName", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("FirstName", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "first_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if err = profile.GenerateNewSlug(nil); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if err = profile.Save(); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 	if ok, err := profile.IsAccountType(t); err != nil {
@@ -257,11 +278,8 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
@@ -276,13 +294,21 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("LastName", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("LastName", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	var profile *services.Profile
 	if profile, err = services.UpdateProfileField(id, "last_name", value); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	if err = profile.GenerateNewSlug(nil); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if err = profile.Save(); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 	if ok, err := profile.IsAccountType(t); err != nil {
@@ -292,11 +318,8 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +334,7 @@ func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("City", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("City", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -327,11 +350,8 @@ func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +366,7 @@ func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("Country", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("Country", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -362,11 +382,8 @@ func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
 
 func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
@@ -381,7 +398,7 @@ func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := ParseUpdateString(w, r)
-	if err := validateUpdate("Description", value, &ProfileDTO{}); err != nil {
+	if err := validateUpdate("Description", value, &ProfileRequestDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
@@ -397,9 +414,6 @@ func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
-	dto := dtoFromProfile(profile, t)
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
-		restError(w, r, err, http.StatusInternalServerError)
-		return
-	}
+	outProfile := dtoFromProfile(profile, t)
+	WriteBody(w, r, outProfile)
 }
