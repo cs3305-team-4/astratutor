@@ -148,7 +148,7 @@ func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
 }
 
 //Returns subjectTaught for specific tutors using their ID
-func GetSubjectsByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
+func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 	if tid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
 		return nil, err
@@ -166,7 +166,7 @@ func GetSubjectsByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 }
 
 //creats a StudentTaught based on the subject and tutor with a set price description.
-func teachSubject(subject *Subject, tutor *Account, description string, price uint, db *gorm.DB) error {
+func TeachSubject(subject *Subject, tutor *Account, description string, price uint, db *gorm.DB) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -248,23 +248,23 @@ func CreateSubjectTestAccounts() error {
 	if err != nil {
 		return err
 	}
-	db.Create(&Subject{Name: "English", Slug: "English"})
-	db.Create(&Subject{Name: "Math", Slug: "Math"})
+	db.Create(&Subject{Name: "French", Slug: "french"})
+	db.Create(&Subject{Name: "Irish", Slug: "irish"})
 	hash, err := NewPasswordHash("grindshub")
 	if err != nil {
 		return err
 	}
 
-	John := &Account{Model: database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
-		Email:         "tutor3@grindshub.localhost",
+	John := &Account{Model: database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
+		Email:         "tutor4@grindshub.localhost",
 		EmailVerified: true,
 		Type:          Tutor,
 		Suspended:     false,
 		PasswordHash:  *hash,
 		Profile: &Profile{
 			Avatar:         "",
-			Slug:           "mike-tutor",
-			FirstName:      "Mike",
+			Slug:           "john-tutor",
+			FirstName:      "John",
 			LastName:       "Tutor",
 			City:           "Cork",
 			Country:        "Ireland",
@@ -274,15 +274,15 @@ func CreateSubjectTestAccounts() error {
 		},
 	}
 
-	french, err := GetSubjectBySlug("English", nil)
-	teachSubject(french, John, "I teach Emglish", 67, nil)
+	irish, err := GetSubjectBySlug("irish", nil)
+	TeachSubject(irish, John, "I teach irish", 67, nil)
 
 	if err != nil {
 		return err
 	}
 
-	english, err := GetSubjectBySlug("Math", nil)
-	teachSubject(english, John, "I teach maths", 59, nil)
+	french, err := GetSubjectBySlug("", nil)
+	TeachSubject(french, John, "I teach French", 59, nil)
 	if err != nil {
 		return err
 	}
