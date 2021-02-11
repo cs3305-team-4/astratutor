@@ -19,6 +19,7 @@ import { fetchRest } from './api/rest';
 import { AuthContext, useAuthValues, PrivateRoute } from './api/auth';
 import { AuthClaims } from './api/auth';
 import { useAsync } from 'react-async-hook';
+import Tutors from './views/Tutors';
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -133,7 +134,9 @@ function App() {
             <Route exact path="/subjects">
               <Subjects />
             </Route>
-            <Route path="/subjects/:subject_slug/tutors"></Route>
+            <Route path="/subjects/tutors">
+              <Tutors />
+            </Route>
             <Route path="/tutors/:slug"></Route>
             <Route path="/tutors/:slug/profile"></Route>
             <PrivateRoute path="/lessons" />

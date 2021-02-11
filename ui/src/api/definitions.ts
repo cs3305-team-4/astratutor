@@ -62,3 +62,17 @@ export interface SubjectDTO {
 export interface ReadSubjectsDTO {
   subjects: SubjectDTO[];
 }
+
+export interface SubjectTaughtDTO {
+  subject_taught_id: string;
+
+  subject_id: string;
+  subject_name: string;
+
+  tutor_first_name: string;
+  tutor_last_name: string;
+  tutor_avatar: string;
+
+  price: number;
+  description: string;
+}
