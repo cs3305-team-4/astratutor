@@ -3,10 +3,10 @@ import styled from 'styled-components';
 
 import { SubjectDTO, SubjectTaughtDTO } from '../api/definitions';
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, PageHeader, Button, Input, Select, Space } from 'antd';
-import Item from 'antd/lib/list/Item';
+import moment from 'moment';
+import { Typography, Layout, Card, Row, Col, List, Modal, Button, Input, Select, Space, Form, DatePicker } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -16,7 +16,11 @@ export default function Tutors(): ReactElement {
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
 
+  const [showRequestModal, setShowRequestModal] = useState<boolean>(false);
+  const [requestedTutor, setRequestedTutor] = useState<SubjectTaughtDTO | undefined>(undefined);
+
   const query = new URLSearchParams(useLocation().search);
+  const history = useHistory();
 
   useEffect(() => {
     setTutors([
@@ -70,7 +74,7 @@ export default function Tutors(): ReactElement {
   }, []);
 
   const onFiltersChange = (e: string[]) => {
-    window.history.pushState({}, '', e.length > 0 ? `/subjects/tutors?filter=${e.join(',')}` : '/subjects/tutors');
+    history.push(e.length > 0 ? `/subjects/tutors?filter=${e.join(',')}` : '/subjects/tutors');
     setFilters(e);
     // TODO: Query tutors with filter
   };
@@ -80,8 +84,38 @@ export default function Tutors(): ReactElement {
     // TODO: Add search functionality to /subjects/tutors endpoint
   };
 
+  const onRequestTutor = (tutor: SubjectTaughtDTO) => {
+    setRequestedTutor(tutor);
+    setShowRequestModal(true);
+  };
+
+  const onRequestSubmit = () => {
+    setShowRequestModal(false);
+    // TODO: submit request to tutor backend
+  };
+
+  const onRequestCancel = () => {
+    setShowRequestModal(false);
+  };
+
   return (
     <Content style={{ padding: '2em 0' }}>
+      <Modal
+        visible={showRequestModal}
+        title={`Request Tutor with ${requestedTutor.tutor_first_name} for ${requestedTutor.subject_name}`}
+        okText="Request"
+        onOk={onRequestSubmit}
+        onCancel={onRequestCancel}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Request a time">
+            <DatePicker format="YYYY-MM-DD HH:mm" showTime={{ defaultValue: moment('00:00', 'HH:mm') }} />
+          </Form.Item>
+          <Form.Item label="Description">
+            <Input.TextArea allowClear placeholder="Description of what you need out of this lesson" />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Row>
         <Col xl={{ offset: 4, span: 16 }} lg={{ offset: 2, span: 20 }} span={24}>
           <Row justify="space-between">
@@ -116,9 +150,9 @@ export default function Tutors(): ReactElement {
                   key={tutor.subject_taught_id}
                   extra={<img width={200} src={tutor.tutor_avatar} alt="" />}
                   actions={[
-                    <Link key="1" to="#">
-                      <Button type="primary">Request</Button>
-                    </Link>,
+                    <Button key="1" type="primary" onClick={() => onRequestTutor(tutor)}>
+                      Request
+                    </Button>,
                   ]}
                 >
                   <List.Item.Meta
