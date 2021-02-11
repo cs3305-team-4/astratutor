@@ -85,6 +85,11 @@ const StyledTools = styled(Layout.Footer)`
   vertical-align: middle;
 `;
 
+const StyledVideo = styled.video`
+  width: 100%;
+  height: calc(100% - 88px);
+`;
+
 export default function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   const settings = useContext(SettingsCTX);
@@ -220,7 +225,13 @@ export default function LessonClassroom(): ReactElement {
           ))}
           <Messaging height={webcamDisplays.length * webcamHeight} />
         </StyledSider>
-        <Layout.Content></Layout.Content>
+        <Layout.Content>
+          <StyledVideo
+            autoPlay
+            loop
+            src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4"
+          />
+        </Layout.Content>
         <StyledTools>
           <Tooltip title="Toggle Mute">
             <Button
