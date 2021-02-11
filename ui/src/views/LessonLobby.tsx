@@ -7,7 +7,7 @@ import {
   PhoneFilled,
 } from '@ant-design/icons';
 import { Avatar, Button, Col, Divider, Layout, Row, Select, Tooltip, Typography } from 'antd';
-import React, { ReactElement, useRef, useState } from 'react';
+import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { Link, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -65,6 +65,7 @@ export default function LessonLobby(): ReactElement {
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
   const [fullscreen, setFullscreen] = useState(document.fullscreenElement !== null);
   const [joined, setJoined] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -81,10 +82,12 @@ export default function LessonLobby(): ReactElement {
     setSelectedWebcam,
     selectedMicrophone,
     setSelectedMicrophone,
+    webcamStream,
+    setWebcamStream,
   };
 
   useAsync(async () => {
-    await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    await navigator.mediaDevices.getUserMedia({ video: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
     const vid: MediaDeviceInfo[] = [];
     const mic: MediaDeviceInfo[] = [];
@@ -102,13 +105,23 @@ export default function LessonLobby(): ReactElement {
     }
   }, []);
   useAsync(async () => {
-    if (display.current) {
+    if (!webcamStream) {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const dev = devices.filter((v) => v.kind === 'videoinput');
+      const id = dev.length ? dev[0].deviceId : '';
+      setSelectedWebcam(id);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWebcam } });
-      display.current.srcObject = stream;
-      display.current.play();
-      navigator.mediaDevices.getSupportedConstraints();
+      setWebcamStream(stream);
     }
-  }, [selectedWebcam, display]);
+  }, []);
+
+  useAsync(async () => {
+    if (webcamStream) {
+      webcamStream.getVideoTracks().forEach((v) => v.stop());
+      setWebcamStream(await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWebcam } }));
+    }
+  }, [selectedWebcam]);
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
@@ -269,7 +282,10 @@ export default function LessonLobby(): ReactElement {
                 height: 300,
               }}
               ref={(r) => {
-                display.current = r ?? undefined;
+                if (r && webcamStream) {
+                  r.srcObject = webcamStream;
+                  r.play();
+                }
               }}
             ></video>
             <StyledDivider />

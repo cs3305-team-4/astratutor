@@ -20,7 +20,7 @@ import { GetProfile } from '../services/profile';
 
 interface IWebcam {
   profile: ReadProfileDTO;
-  ref: JSX.Element;
+  ref: React.ReactElement<HTMLVideoElement>;
 }
 
 const webcamHeight = 200;
@@ -100,6 +100,7 @@ export default function LessonClassroom(): ReactElement {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
     if (other > -1) {
       const temp = webcamDisplays;
+      delete temp[other];
       temp[other] = web;
       setWebcamDisplays(temp);
     } else {
@@ -109,13 +110,21 @@ export default function LessonClassroom(): ReactElement {
 
   useAsync(async () => {
     // Get Self Profile
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: settings.selectedWebcam } });
+    if (!webcamEnabled) {
+      settings.webcamStream?.getVideoTracks().forEach((v) => {
+        v.enabled = false;
+      });
+    } else {
+      settings.webcamStream?.getVideoTracks().forEach((v) => {
+        v.enabled = true;
+      });
+    }
     const video = (
       <video
         key={'self'}
         ref={(ref) => {
           if (ref) {
-            ref.srcObject = stream;
+            ref.srcObject = webcamEnabled ? settings.webcamStream : null;
             webcamEnabled && ref.play();
             navigator.mediaDevices.getSupportedConstraints();
           }
@@ -124,9 +133,12 @@ export default function LessonClassroom(): ReactElement {
     );
     const web: IWebcam = { profile: await GetProfile(auth), ref: video };
     addWebcam(web);
-  }, [settings.selectedWebcam, webcamEnabled]);
+  }, [settings.webcamStream, webcamEnabled]);
 
   const hangup = () => {
+    settings.webcamStream?.getVideoTracks().forEach((v) => {
+      v.stop();
+    });
     history.push(`/lessons/${lid}/goodbye`);
   };
 
@@ -232,16 +244,6 @@ export default function LessonClassroom(): ReactElement {
               <VideoCameraOutlined size={20} style={{ color: webcamEnabled ? '#000' : '#fff' }} />
             </Button>
           </Tooltip>
-          <Tooltip title="Hang Up">
-            <Button
-              onClick={hangup}
-              size={'large'}
-              shape="circle"
-              style={{ backgroundColor: '#c50505', margin: '0 10px' }}
-            >
-              <PhoneFilled size={20} rotate={225} style={{ color: '#fff' }} />
-            </Button>
-          </Tooltip>
           <Tooltip title="Share Screen">
             <Button
               ghost={!screenEnabled}
@@ -251,6 +253,16 @@ export default function LessonClassroom(): ReactElement {
               style={{ margin: '0 10px' }}
             >
               <DesktopOutlined size={20} style={{ color: screenEnabled ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Hang Up">
+            <Button
+              onClick={hangup}
+              size={'large'}
+              shape="circle"
+              style={{ backgroundColor: '#c50505', margin: '0 10px' }}
+            >
+              <PhoneFilled size={20} rotate={225} style={{ color: '#fff' }} />
             </Button>
           </Tooltip>
         </StyledTools>

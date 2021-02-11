@@ -11,6 +11,8 @@ export interface ISettings {
   setSelectedWebcam: (v: string) => void;
   selectedMicrophone: string;
   setSelectedMicrophone: (v: string) => void;
+  webcamStream: MediaStream | null;
+  setWebcamStream: (v: MediaStream) => void;
 }
 
 export const SettingsCTX = React.createContext<ISettings>({
@@ -24,4 +26,6 @@ export const SettingsCTX = React.createContext<ISettings>({
   setSelectedWebcam: (v) => null,
   selectedMicrophone: '',
   setSelectedMicrophone: (v) => null,
+  webcamStream: null,
+  setWebcamStream: (v) => null,
 });
