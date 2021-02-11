@@ -150,7 +150,7 @@ export default function LessonClassroom(): ReactElement {
   return (
     <StyledLayout>
       <StyledLayout>
-        <StyledIcon onClick={() => setSettingsOpen(true)} title="Settings" />
+        <StyledIcon style={{ zIndex: 1000 }} onClick={() => setSettingsOpen(true)} title="Settings" />
         <Modal
           title="Settings"
           visible={settingsOpen}
