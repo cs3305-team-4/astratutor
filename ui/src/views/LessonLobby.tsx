@@ -11,6 +11,7 @@ import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { Link, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { UserAvatar } from '../components/UserAvatar';
 import { ISettings, SettingsCTX } from '../services/classroom';
 import LessonClassroom from './LessonClassroom';
 
@@ -229,7 +230,19 @@ export default function LessonLobby(): ReactElement {
               <Col>
                 <Avatar.Group size="default">
                   <Tooltip title="Gamer">
-                    <Avatar style={{ backgroundColor: '#f56a00' }}>G</Avatar>
+                    <UserAvatar
+                      profile={{
+                        avatar: '',
+                        slug: '/',
+                        first_name: 'Gamer',
+                        last_name: 'Jones',
+                        city: 'Cark',
+                        country: 'Ireland',
+                        subtitle: 'Gamer',
+                        description: 'Gamer',
+                        color: '#199a4c',
+                      }}
+                    />
                   </Tooltip>
                 </Avatar.Group>
               </Col>

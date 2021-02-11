@@ -95,6 +95,7 @@ export default function Messaging(props: MessagingProps): JSX.Element {
         country: 'Ireland',
         subtitle: 'Gamer',
         description: 'Gamer',
+        color: '#199a4c',
       },
       date: new Date(),
       text: 'Hello fellow gamer',
