@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/database"
@@ -282,6 +283,7 @@ type Profile struct {
 	City           string
 	Country        string
 	Description    string
+	Color          string
 	Qualifications []Qualification  `gorm:"foreignKey:ProfileID"`
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
@@ -388,10 +390,19 @@ func CreateProfile(p *Profile) error {
 		if err = p.GenerateNewSlug(tx); err != nil {
 			return err
 		}
+		p.GenerateNewColor()
 
 		account.Profile = p
 		return tx.Save(account).Error
 	})
+}
+
+// GenerateNewColor for sample avatar.
+func (p *Profile) GenerateNewColor() {
+	r := rand.Intn(255)
+	g := rand.Intn(255)
+	b := rand.Intn(255)
+	p.Color = fmt.Sprintf("#%x%x%x", r, g, b)
 }
 
 // GenerateNewSlug for account

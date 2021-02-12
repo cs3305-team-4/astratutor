@@ -19,6 +19,7 @@ export interface ReadProfileDTO {
   qualifications?: QualificationDTO[];
   work_experience?: WorkExperienceDTO[];
   availability?: boolean[];
+  color: string;
 }
 
 export interface CreateProfileDTO {

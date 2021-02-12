@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { ReactElement, useContext } from 'react';
 
 import { Route, Redirect, RouteProps } from 'react-router-dom';
 
@@ -160,7 +160,7 @@ export const AuthContext = React.createContext<AuthContextValues>({} as AuthCont
 
 type PrivateRouteProps = RouteProps;
 
-export function PrivateRoute(props: PrivateRouteProps) {
+export function PrivateRoute(props: PrivateRouteProps): ReactElement {
   const { ...rest } = props;
   const auth = useContext(AuthContext);
 

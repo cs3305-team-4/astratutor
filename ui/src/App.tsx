@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { ReactElement, useContext } from 'react';
 
 import 'antd/dist/antd.css';
 import { Layout, PageHeader, Button, Divider, Row, Col, Typography } from 'antd';
@@ -18,6 +18,7 @@ import { fetchRest } from './api/rest';
 import { AuthContext, useAuthValues, PrivateRoute } from './api/auth';
 import { AuthClaims } from './api/auth';
 import { useAsync } from 'react-async-hook';
+import LessonLobby from './views/LessonLobby';
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -42,7 +43,7 @@ function App() {
       // Check if the user has a profile
       try {
         const res = await fetchRest(
-          `${config.apiUrl}/${auth.account.type}s/${auth.claims.sub}/profile`,
+          `${config.apiUrl}/${auth?.account?.type}s/${auth?.claims?.sub}/profile`,
           {
             headers: {
               Authorization: `Bearer ${auth.bearerToken}`,
@@ -65,7 +66,7 @@ function App() {
   // Don't render the page until the silent login attempt is finished
   if (!auth.loginSilentFinished()) return <AuthContext.Provider value={auth}></AuthContext.Provider>;
 
-  let headerLinks = [];
+  let headerLinks: ReactElement[] = [];
   if (auth.isLoggedIn()) {
     headerLinks = [
       <Link to="/" key="home">
@@ -131,12 +132,13 @@ function App() {
 
             <Route path="/subjects"></Route>
             <Route path="/subjects/:subject_slug/tutors"></Route>
-            <Route path="/tutors/:slug"></Route>
             <Route path="/tutors/:slug/profile"></Route>
-            <PrivateRoute path="/lessons" />
+            <Route path="/tutors/:slug"></Route>
+            <PrivateRoute path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
+              <LessonLobby />
+            </PrivateRoute>
             <PrivateRoute path="/lessons/:lid" />
-            <PrivateRoute path="/lessons/:lid/lobby" />
-            <PrivateRoute path="/lessons/:lid/classroom" />
+            <PrivateRoute path="/lessons" />
             <Route path="/login" component={Login} />
             <Route path="/register" component={Register} />
           </Switch>
