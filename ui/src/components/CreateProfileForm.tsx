@@ -3,57 +3,59 @@ import styled from 'styled-components';
 
 import { useAsync } from 'react-async-hook';
 
-import { Typography, Layout, Row, Col, Avatar, PageHeader, Input, Button, Statistic, Form, Upload } from 'antd';
-
-import ImgCrop from 'antd-img-crop';
+import { Typography, Layout, Row, Col, Avatar, PageHeader, Input, Button, Statistic, Form, Upload, Modal } from 'antd';
 
 import { EditOutlined, UserAddOutlined, UserOutlined } from '@ant-design/icons';
 
-import config from '../config';
-import { fetchRest } from '../api/rest';
-import { AccountType, CreateProfileDTO, ReadProfileDTO } from '../api/definitions';
-import { UploadFile } from 'antd/lib/upload/interface';
+import { AccountType, ProfileRequestDTO } from '../api/definitions';
+import { APIContext } from '../api/api';
 import DefaultAvatar from '../assets/default_avatar.png';
 
-import { AuthContext } from '../api/auth';
 import { Redirect, useHistory } from 'react-router-dom';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
 const { TextArea } = Input;
 
-export interface ProfileProps {
-  uuid: string;
-  type: AccountType;
-}
-
-export default function CreateProfileForm(props: ProfileProps) {
+export function CreateProfileForm(): React.ReactElement {
   const [error, setError] = React.useState<string>('');
-  const auth = React.useContext(AuthContext);
+  const api = React.useContext(APIContext);
   const history = useHistory();
 
-  const [createProfile, setCreateProfile] = React.useState<CreateProfileDTO>({
-    first_name: '',
-    last_name: '',
-    avatar: '',
-    city: '',
-    country: '',
-  });
+  const onFinish = (values: ProfileRequestDTO): Promise<void> => {
+    return new Promise<void>((resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) => {
+      try {
+        const img = new Image();
+        img.onload = async (e) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const onSubmitCreateProfile = async (values: CreateProfileDTO) => {
-    try {
-      const res = await fetchRest(`${config.apiUrl}/${props.type}s/${props.uuid}/profile`, {
-        method: 'POST',
-        body: JSON.stringify(values),
-        headers: {
-          Authorization: `Bearer ${auth.bearerToken}`,
-        },
-      });
+          await api.services.createProfileByAccount(api.account, {
+            ...values,
+            avatar: canvas.toDataURL('image/jpeg', 0.8),
+          });
 
-      history.push('/account');
-    } catch (e) {
-      setError(`could not create profile: ${e}`);
-    }
+          history.push('/account/profile');
+        };
+
+        img.src = DefaultAvatar;
+
+        img.onerror = (e: string | Event) => {
+          Modal.error({
+            title: 'Error',
+            content: `Could not create profile: ${e}`,
+          });
+        };
+      } catch (e) {
+        Modal.error({
+          title: 'Error',
+          content: `Could not create profile: ${e}`,
+        });
+      }
+    });
   };
 
   return (
@@ -70,7 +72,7 @@ export default function CreateProfileForm(props: ProfileProps) {
       <Content>
         <Row gutter={4}>
           <Col md={12} sm={24} xs={24}>
-            <Form layout="vertical" name="create-profile" onFinish={onSubmitCreateProfile}>
+            <Form layout="vertical" name="create-profile" onFinish={onFinish}>
               <UserAddOutlined
                 style={{
                   display: 'block',
