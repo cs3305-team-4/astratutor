@@ -14,9 +14,9 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 
-import AccountProfile from '../components/AccountProfile';
-import CreateProfileForm from '../components/CreateProfileForm';
-import { AuthContext } from '../api/auth';
+import { Profile } from '../components/Profile';
+import { CreateProfileForm } from '../components/CreateProfileForm';
+import { APIContext } from '../api/api';
 
 const { SubMenu } = Menu;
 const { Title, Paragraph, Text } = Typography;
@@ -30,7 +30,7 @@ const StyledSider = styled(Sider)`
   background-color: rgba(233, 233, 233);
 `;
 
-export default function Account() {
+export function Account(): React.ReactElement {
   const history = useHistory();
   const { path, url } = useRouteMatch();
 
@@ -54,11 +54,11 @@ export default function Account() {
             <Row>
               <Col md={9} sm={6} xs={0} />
               <Col md={24} sm={24} xs={24} style={{ padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                <AuthContext.Consumer>
-                  {(auth) =>
-                    auth.isLoggedIn() ? <CreateProfileForm uuid={auth.claims.sub} type={auth.account.type} /> : <></>
+                <APIContext.Consumer>
+                  {(api) =>
+                    api.isLoggedIn() ? <CreateProfileForm uuid={api.claims.sub} type={api.account.type} /> : <></>
                   }
-                </AuthContext.Consumer>
+                </APIContext.Consumer>
               </Col>
               <Col md={9} sm={6} xs={0} />
             </Row>
@@ -66,11 +66,11 @@ export default function Account() {
           <Route exact path={`${path}/profile`}>
             <Row>
               <Col md={24} sm={24} xs={24} style={{ padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                <AuthContext.Consumer>
-                  {(auth) =>
-                    auth.isLoggedIn() ? <AccountProfile uuid={auth.claims.sub} type={auth.account.type} /> : <></>
+                <APIContext.Consumer>
+                  {(api) =>
+                    api.isLoggedIn() ? <Profile uuid={api.claims.sub} type={api.account.type} editable={true} /> : <></>
                   }
-                </AuthContext.Consumer>
+                </APIContext.Consumer>
               </Col>
             </Row>
           </Route>
