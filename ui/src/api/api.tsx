@@ -1,13 +1,10 @@
 import React, { useContext } from 'react';
 
-import { API, Services } from './services';
+import { Services } from './services';
 import { AccountResponseDTO } from './definitions';
 import { Route, Redirect, RouteProps } from 'react-router-dom';
 
 import jwt_decode from 'jwt-decode';
-
-import Config from '../config';
-import { fetchRest } from './rest';
 
 export interface AuthClaims {
   iss: string;
@@ -44,7 +41,7 @@ export function useApiValues(): APIContextValues {
     claims: undefined,
     account: undefined,
     bearerToken: undefined,
-    services: undefined,
+    services: new Services(),
     isLoggedIn() {
       return false;
     },
@@ -76,7 +73,7 @@ export function useApiValues(): APIContextValues {
             claims: undefined,
             account: undefined,
             bearerToken: undefined,
-            services: undefined,
+            services: new Services(),
             loginSilent: authValues.loginSilent,
             loginSilentFinished: () => true,
             isLoggedIn: () => true,
@@ -89,7 +86,7 @@ export function useApiValues(): APIContextValues {
           claims: undefined,
           account: undefined,
           bearerToken: undefined,
-          services: undefined,
+          services: new Services(), // fallback to authorization less routes
           loginSilent: authValues.loginSilent,
           loginSilentFinished: () => true,
           isLoggedIn: () => false,
@@ -130,7 +127,7 @@ export function useApiValues(): APIContextValues {
           claims: undefined,
           account: undefined,
           bearerToken: undefined,
-          services: undefined,
+          services: new Services(),
           loginSilent: authValues.loginSilent,
           loginSilentFinished: () => true,
           isLoggedIn: () => true,
