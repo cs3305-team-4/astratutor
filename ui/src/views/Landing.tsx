@@ -10,7 +10,7 @@ const Hero = styled(Content)`
   background-color: rgba(233, 233, 233);
 `;
 
-export default function Landing() {
+export function Landing(): React.ReactElement {
   return (
     <Layout>
       <Hero>
