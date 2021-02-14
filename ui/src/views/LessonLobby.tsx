@@ -107,12 +107,11 @@ export default function LessonLobby(): ReactElement {
   }, []);
   useAsync(async () => {
     if (!webcamStream) {
-      await navigator.mediaDevices.getUserMedia({ video: true });
       const devices = await navigator.mediaDevices.enumerateDevices();
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
-      setSelectedWebcam(id);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWebcam } });
+      setSelectedWebcam(id);
       setWebcamStream(stream);
     }
   }, []);
