@@ -287,6 +287,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 }}
                 size="small"
                 style={{ margin: '0 0.5rem' }}
+                type={editSubtitle ? 'primary' : 'default'}
               >
                 <EditOutlined />
                 {!editSubtitle ? 'Edit' : 'Finish'}
@@ -374,6 +375,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                       }}
                       size="small"
                       style={{ margin: '0 0.5rem' }}
+                      type={editDesc ? 'primary' : 'default'}
                     >
                       <EditOutlined />
                       {!editDesc ? 'Edit' : 'Finish'}
@@ -403,6 +405,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                         }}
                         size="small"
                         style={{ margin: '0 0.5rem' }}
+                        type={editQualis ? 'primary' : 'default'}
                       >
                         <EditOutlined />
                         {!editQualis ? 'Edit' : 'Finish'}
@@ -460,6 +463,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                         }}
                         size="small"
                         style={{ margin: '0 0.5rem' }}
+                        type={editWork ? 'primary' : 'default'}
                       >
                         <EditOutlined />
                         {!editWork ? 'Edit' : 'Finish'}
@@ -516,6 +520,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                       size="small"
                       style={{ margin: '0 0.5rem' }}
                       onClick={() => setEditAvail(!editAvail)}
+                      type={editAvail ? 'primary' : 'default'}
                     >
                       <EditOutlined />
                       {!editAvail ? 'Edit' : 'Finish'}
