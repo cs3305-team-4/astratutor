@@ -104,22 +104,6 @@ export default function Tutors(): ReactElement {
 
   return (
     <Content style={{ padding: '2em 0' }}>
-      <Modal
-        visible={showRequestModal}
-        title={`Request Tutor with ${requestedTutor?.tutor_first_name} for ${requestedTutor?.subject_name}`}
-        okText="Request"
-        onOk={onRequestSubmit}
-        onCancel={onRequestCancel}
-      >
-        <Form layout="vertical" form={requestForm}>
-          <Form.Item name="datetime" label="Request a time">
-            <DatePicker format="YYYY-MM-DD HH:mm" showTime={{ defaultValue: moment('00:00', 'HH:mm') }} />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea allowClear placeholder="Description of what you need out of this lesson" />
-          </Form.Item>
-        </Form>
-      </Modal>
       <Row>
         <Col xl={{ offset: 4, span: 16 }} lg={{ offset: 2, span: 20 }} span={24}>
           <Row justify="space-between">
@@ -154,14 +138,18 @@ export default function Tutors(): ReactElement {
                   key={tutor.subject_taught_id}
                   extra={<img width={200} src={tutor.tutor_avatar} alt="" />}
                   actions={[
-                    <Button key="1" type="primary" onClick={() => onRequestTutor(tutor)}>
-                      Request
+                    <Button
+                      key="1"
+                      type="primary"
+                      onClick={() => history.push('/tutors/11111111-1111-1111-1111-111111111111/profile')}
+                    >
+                      Visit Profile
                     </Button>,
                   ]}
                 >
                   <List.Item.Meta
                     title={
-                      <Link to="#">
+                      <Link to="/tutors/11111111-1111-1111-1111-111111111111/profile">
                         {tutor.tutor_first_name} {tutor.tutor_last_name}
                       </Link>
                     }
