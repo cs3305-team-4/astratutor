@@ -14,6 +14,8 @@ import styled from 'styled-components';
 import { UserAvatar } from '../components/UserAvatar';
 import { ISettings, SettingsCTX } from '../api/classroom';
 import { LessonClassroom } from './LessonClassroom';
+import { Signalling } from '../webrtc/signalling';
+import * as Devices from '../webrtc/devices';
 
 const { Option } = Select;
 
@@ -58,6 +60,8 @@ const StyledSelect = styled(Select)`
 
 export function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
+  // TODO(james): Connect to Websocket in lobby for probing people already in call
+  // const signalling = new Signalling(auth.claims.sub, lid, null)
   const history = useHistory();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
@@ -88,8 +92,8 @@ export function LessonLobby(): ReactElement {
   };
 
   useAsync(async () => {
-    await navigator.mediaDevices.getUserMedia({ video: true });
-    const devices = await navigator.mediaDevices.enumerateDevices();
+    await Devices.devicePermissions();
+    const devices = await Devices.getDevices();
     const vid: MediaDeviceInfo[] = [];
     const mic: MediaDeviceInfo[] = [];
     for (const dev of devices) {
@@ -107,10 +111,11 @@ export function LessonLobby(): ReactElement {
   }, []);
   useAsync(async () => {
     if (!webcamStream) {
-      const devices = await navigator.mediaDevices.enumerateDevices();
+      await Devices.cameraPermission();
+      const devices = await Devices.getDevices();
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWebcam } });
+      const stream = await Devices.cameraStream(selectedWebcam);
       setSelectedWebcam(id);
       setWebcamStream(stream);
     }
@@ -119,7 +124,7 @@ export function LessonLobby(): ReactElement {
   useAsync(async () => {
     if (webcamStream) {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
-      setWebcamStream(await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedWebcam } }));
+      setWebcamStream(await await Devices.cameraStream(selectedWebcam));
     }
   }, [selectedWebcam]);
   const [title, setTitle] = useState('Mathematics 101');
@@ -222,6 +227,7 @@ export function LessonLobby(): ReactElement {
                 Joining your {title} classroom!
               </Typography.Title>
             </Typography>
+            {/* TODO(james): Send probe message to discover users */}
             <Typography style={{ textAlign: 'center' }}>
               <Typography.Text style={{ color: '#fff' }}>Already in this meeting:</Typography.Text>
             </Typography>
@@ -261,7 +267,11 @@ export function LessonLobby(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of webcams) {
-                      opts.push(<Option value={dev.deviceId}>{dev.label}</Option>);
+                      opts.push(
+                        <Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Option>,
+                      );
                     }
                     return opts;
                   })()}
@@ -282,7 +292,11 @@ export function LessonLobby(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of microphones) {
-                      opts.push(<Option value={dev.deviceId}>{dev.label}</Option>);
+                      opts.push(
+                        <Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Option>,
+                      );
                     }
                     return opts;
                   })()}
