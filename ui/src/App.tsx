@@ -1,37 +1,37 @@
 import React, { ReactElement, useContext } from 'react';
 
 import 'antd/dist/antd.css';
-import { Layout, PageHeader, Button, Divider, Row, Col, Typography } from 'antd';
+import { Layout, PageHeader, Button, Divider, Row, Col } from 'antd';
 
 import { UserOutlined } from '@ant-design/icons';
 
 import { Switch, Route, Link, useHistory, useLocation } from 'react-router-dom';
 
-import Account from './views/Account';
-import Landing from './views/Landing';
-import Login from './views/Login';
-import Register from './views/Register';
+import { Account } from './views/Account';
+import { Landing } from './views/Landing';
+import { Login } from './views/Login';
+import { Subjects } from './views/Subjects';
+import { Lessons } from './views/Lessons';
+import { ViewProfile } from './views/ViewProfile';
+import { Register } from './views/Register';
+import { Tutors } from './views/Tutors';
+import { LessonLobby } from './views/LessonLobby';
 import './App.css';
 
-import config from './config';
-import { fetchRest } from './api/rest';
-import { AuthContext, useAuthValues, PrivateRoute } from './api/auth';
-import { AuthClaims } from './api/auth';
+import { APIContext, useApiValues, PrivateRoute } from './api/api';
+
 import { useAsync } from 'react-async-hook';
-import LessonLobby from './views/LessonLobby';
 
-const { Header, Footer, Sider, Content } = Layout;
-const { Title, Paragraph, Text } = Typography;
+const { Footer, Content } = Layout;
 
-function App() {
+function App(): React.ReactElement {
   const history = useHistory();
-  const auth = useAuthValues();
+  const api = useApiValues();
   const location = useLocation();
 
-  React.useEffect(() => {
+  useAsync(async () => {
     try {
-      console.log('hi');
-      auth.loginSilent();
+      await api.loginSilent();
     } catch (e) {
       console.error(`error attempting to login from localStorage ${e}`);
     }
@@ -39,35 +39,21 @@ function App() {
 
   // If login state has changed, check if their profile exists
   useAsync(async () => {
-    if (auth.isLoggedIn()) {
+    if (api.isLoggedIn()) {
       // Check if the user has a profile
-      try {
-        const res = await fetchRest(
-          `${config.apiUrl}/${auth?.account?.type}s/${auth?.claims?.sub}/profile`,
-          {
-            headers: {
-              Authorization: `Bearer ${auth.bearerToken}`,
-            },
-          },
-          [200, 404],
-        );
-
-        // No profile, redirect   them
-        if (res.status === 404 && location.pathname !== '/account/profile/create') {
+      if (!(await api.services.accountHasProfile(api.account.id, api.account.type))) {
+        if (location.pathname !== '/account/profile/create') {
           history.replace('/account/profile/create');
         }
-      } catch (e) {
-        console.log(e);
-        // TODO(ocanty) - errorhandling
       }
     }
-  }, [auth, location.pathname]);
+  }, [api, location.pathname]);
 
   // Don't render the page until the silent login attempt is finished
-  if (!auth.loginSilentFinished()) return <AuthContext.Provider value={auth}></AuthContext.Provider>;
+  if (!api.loginSilentFinished()) return <APIContext.Provider value={api}></APIContext.Provider>;
 
   let headerLinks: ReactElement[] = [];
-  if (auth.isLoggedIn()) {
+  if (api.isLoggedIn()) {
     headerLinks = [
       <Link to="/" key="home">
         <Button type="text">Home</Button>
@@ -87,7 +73,7 @@ function App() {
           Account
         </Button>
       </Link>,
-      <Button key="logout" onClick={() => auth.logout()}>
+      <Button key="logout" onClick={() => api.logout()}>
         Logout
       </Button>,
     ];
@@ -112,49 +98,56 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={auth}>
-      <Layout style={{ minHeight: '100vh' }}>
-        <PageHeader
-          ghost={false}
-          title={
-            <Link to="/" key="logo-home">
-              <span>AstraTutor</span>
-            </Link>
-          }
-          extra={headerLinks}
-        />
-        <Content>
-          <Switch>
-            <Route path="/" exact={true}>
-              <Landing />
-            </Route>
-            <PrivateRoute path="/account" component={Account} />
-
-            <Route path="/subjects"></Route>
-            <Route path="/subjects/:subject_slug/tutors"></Route>
-            <Route path="/tutors/:slug/profile"></Route>
-            <Route path="/tutors/:slug"></Route>
-            <PrivateRoute path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
-              <LessonLobby />
-            </PrivateRoute>
-            <PrivateRoute path="/lessons/:lid" />
-            <PrivateRoute path="/lessons" />
-            <Route path="/login" component={Login} />
-            <Route path="/register" component={Register} />
-          </Switch>
-        </Content>
-        <Footer>
-          <Divider orientation="left">AstraTutor</Divider>
-          <Row>
-            <Col flex={16}>Site Map</Col>
-            <Col flex={24 - 16}>Links</Col>
-          </Row>
-          <Row style={{ margin: '0 auto', textAlign: 'center' }}>
-            <p>Made with love by CS3505 Team 4</p>
-          </Row>
-        </Footer>
-      </Layout>
-    </AuthContext.Provider>
+    <APIContext.Provider value={api}>
+      <APIContext.Provider value={api}>
+        <Layout style={{ minHeight: '100vh' }}>
+          <PageHeader
+            ghost={false}
+            title={
+              <Link to="/" key="logo-home">
+                <span>AstraTutor</span>
+              </Link>
+            }
+            extra={headerLinks}
+            style={{ boxShadow: '0 1px 10px rgba(0,0,0,0.25)' }}
+          />
+          <Content>
+            <Switch>
+              <Route path="/" exact={true}>
+                <Landing />
+              </Route>
+              <PrivateRoute path="/account" component={Account} />
+              <Route exact path="/subjects">
+                <Subjects />
+              </Route>
+              <Route path="/subjects/tutors">
+                <Tutors />
+              </Route>
+              <Route path="/subjects"></Route>
+              <Route path="/subjects/:subject_slug/tutors"></Route>
+              <Route exact path="/tutors/:slug"></Route>
+              <Route exact path="/tutors/:uuid/profile" component={ViewProfile} />
+              <PrivateRoute exact path="/lessons" component={Lessons} />
+              <PrivateRoute exact path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
+                <LessonLobby />
+              </PrivateRoute>
+              <Route path="/login" component={Login} />
+              <Route path="/register" component={Register} />
+            </Switch>
+          </Content>
+          <Footer>
+            <Divider orientation="left">AstraTutor</Divider>
+            <Row>
+              <Col flex={16}>Site Map</Col>
+              <Col flex={24 - 16}>Links</Col>
+            </Row>
+            <Row style={{ margin: '0 auto', textAlign: 'center' }}>
+              <p>Made with love by CS3505 Team 4</p>
+            </Row>
+          </Footer>
+        </Layout>
+      </APIContext.Provider>
+    </APIContext.Provider>
   );
 }
 

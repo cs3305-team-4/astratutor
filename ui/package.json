@@ -20,6 +20,8 @@
     "date-and-time": "^0.14.2",
     "jwt-decode": "^3.1.2",
     "less-loader": "^7.3.0",
+    "marked": "^2.0.0",
+    "moment": "^2.29.1",
     "react": "^17.0.1",
     "react-async-hook": "^3.6.2",
     "react-dom": "^17.0.1",

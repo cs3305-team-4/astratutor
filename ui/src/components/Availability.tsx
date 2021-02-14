@@ -1,98 +1,164 @@
-import React from 'react';
-import { Table } from 'antd';
+import React, { useContext } from 'react';
+import { Button, Switch, Table, Modal } from 'antd';
+
+import { CheckOutlined, StopOutlined } from '@ant-design/icons';
+import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import { useAsync } from 'react-async-hook';
+import { APIContext } from '../api/api';
 
 export interface AvailabilityProps {
-  hours: boolean[];
+  availability: boolean[];
+  hideUnavailable: boolean;
+  editable?: boolean;
+  onChange?(hours: boolean[]): void;
+}
+
+interface AvailabilitySlotProps {
+  available: boolean;
   editable: boolean;
-  onUpdate(hours: boolean[]): void;
+  onChange(available: boolean): void;
 }
 
-interface availabilityRow {
-  mon: boolean;
-  tue: boolean;
-  wed: boolean;
-  thu: boolean;
-  fri: boolean;
-  sat: boolean;
-  sun: boolean;
-}
+const AvailabilitySlot: React.FC<AvailabilitySlotProps> = (props: AvailabilitySlotProps) => {
+  if (props.editable) {
+    return (
+      <Switch
+        style={{ margin: '0 auto' }}
+        size="small"
+        checked={props.available}
+        onChange={(checked: boolean) => {
+          console.log(checked);
+          props.onChange(checked);
+        }}
+      />
+    );
+  } else {
+    if (props.available) {
+      return <CheckOutlined style={{ color: 'green' }} />;
+    } else {
+      return <StopOutlined style={{ color: 'red' }} />;
+    }
+    return <h1>{props.available === true ? 'available' : 'not available'}</h1>;
+  }
+};
 
-function flatHoursToTable(hoursIn: boolean[]) {
-  const hours = [...hoursIn];
+// Takes in an array of hours and pads it to meet the length of 168 (24*7)
+function padHours(hoursOld: boolean[]) {
+  const hours = [...hoursOld];
 
+  // fill in any hours that were missing
   for (let i = 0; i < 24 * 7; i++) {
     if (i > hours.length - 1) {
       hours[i] = false;
     }
   }
 
-  const ret = [];
-  let k = 0;
-  for (let i = 0; i < 7; i++) {
-    ret.push({
-      key: k.toString(),
-      mon: hours[i],
-      tue: hours[24 * 1 + i],
-      wed: hours[24 * 2 + i],
-      thu: hours[24 * 3 + i],
-      fri: hours[24 * 4 + i],
-      sat: hours[24 * 5 + i],
-      sun: hours[24 * 6 + i],
-    });
-
-    k++;
-  }
-
-  return ret;
+  return hours;
 }
 
-export default function Availability() {
+export const Availability: React.FC<AvailabilityProps> = (props: AvailabilityProps) => {
+  const availability = padHours(props.availability);
+
   const columns = [
     {
-      title: 'Monday',
-      dataIndex: '0',
-      key: '0',
+      title: 'Time',
+      dataIndex: 'time',
+      key: 'time',
     },
     {
-      title: 'Tuesday',
-      dataIndex: '1',
+      title: 'Mon',
+      dataIndex: 'mon',
+      key: 'mon',
+    },
+    {
+      title: 'Tue',
+      dataIndex: 'tue',
       key: '1',
     },
     {
-      title: 'Wednesday',
-      dataIndex: '2',
+      title: 'Wed',
+      dataIndex: 'wed',
       key: '2',
     },
     {
-      title: 'Thursday',
-      dataIndex: '3',
+      title: 'Thu',
+      dataIndex: 'thu',
       key: '3',
     },
     {
-      title: 'Friday',
-      dataIndex: '4',
+      title: 'Fri',
+      dataIndex: 'fri',
       key: '4',
     },
     {
-      title: 'Saturday',
-      dataIndex: '5',
+      title: 'Sat',
+      dataIndex: 'sat',
       key: '5',
     },
     {
-      title: 'Sunday',
-      dataIndex: '6',
+      title: 'Sun',
+      dataIndex: 'sun',
       key: '6',
     },
   ];
 
+  // set an hour to be available, merge with existing availability and calls onChange
+  const onChangeAvailSingleHour = async (hour: number, available: boolean) => {
+    const newHours = [...availability];
+    newHours[hour] = available;
+    props.onChange(newHours);
+  };
+
+  // convert flat hours table into table rows
+  const rows = [];
+  let k = 0;
+  for (let i = 8; i < 22; i++) {
+    const row = {
+      key: k.toString(),
+      time: `${i.toString().padStart(2, '0')}:00`,
+    };
+
+    let rowHasAvailable = false;
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    days.forEach((day: string, day_i: number) => {
+      const hour_i = 24 * day_i + i;
+
+      if (availability[hour_i] === true) {
+        rowHasAvailable = true;
+      }
+
+      row[day] = (
+        <AvailabilitySlot
+          editable={props.editable}
+          onChange={(available: boolean) => {
+            onChangeAvailSingleHour(hour_i, available);
+          }}
+          available={availability[hour_i]}
+        />
+      );
+    });
+
+    if (props.hideUnavailable && !props.editable) {
+      if (rowHasAvailable) {
+        rows.push(row);
+      }
+    } else {
+      rows.push(row);
+    }
+
+    k++;
+  }
+
   return (
-    <Table></Table>
-    // <Layout>
-    //   <Typography>
-    //     <Title>
-    //       Profile
-    //     </Title>
-    //   </Typography>
-    // </Layout>
+    <Table
+      style={{ marginBottom: '0.5rem' }}
+      locale={{
+        emptyText: 'No times available',
+      }}
+      size={'small'}
+      pagination={false}
+      columns={columns}
+      dataSource={rows}
+    ></Table>
   );
-}
+};

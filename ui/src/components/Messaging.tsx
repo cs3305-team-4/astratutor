@@ -2,8 +2,7 @@ import { SendOutlined, SettingFilled } from '@ant-design/icons';
 import { Layout, Input } from 'antd';
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { ReadProfileDTO } from '../api/definitions';
-import { format } from 'date-and-time';
+import { ProfileResponseDTO } from '../api/definitions';
 import { UserAvatar } from './UserAvatar';
 
 const StyledLayout = styled(Layout)`
@@ -74,7 +73,7 @@ const StyledMessage = styled.div<{ self: boolean }>`
 `;
 
 interface Message {
-  profile?: ReadProfileDTO;
+  profile?: ProfileResponseDTO;
   date: Date;
   text: string;
 }
@@ -118,7 +117,12 @@ export default function Messaging(props: MessagingProps): JSX.Element {
                 {v.profile && <UserAvatar profile={v.profile} props={{ style: { float: 'left' } }}></UserAvatar>}
                 <StyledMessage self={!v.profile} style={{ float: 'left', marginLeft: '1em' }}>
                   {v.text}
-                  <span>{format(v.date, 'h:mm A')}</span>
+                  <span>
+                    {new Intl.DateTimeFormat('en-IE', {
+                      hour: 'numeric',
+                      minute: 'numeric',
+                    }).format(v.date)}
+                  </span>
                 </StyledMessage>
               </div>
             );
@@ -126,7 +130,12 @@ export default function Messaging(props: MessagingProps): JSX.Element {
           return (
             <StyledMessage key={i} self={!v.profile}>
               {v.text}
-              <span>{format(v.date, 'h:mm A')}</span>
+              <span>
+                {new Intl.DateTimeFormat('en-IE', {
+                  hour: 'numeric',
+                  minute: 'numeric',
+                }).format(v.date)}
+              </span>
             </StyledMessage>
           );
         })}

@@ -1,12 +1,10 @@
 import React, { ReactElement, useContext } from 'react';
 
+import { Services } from './services';
+import { AccountResponseDTO } from './definitions';
 import { Route, Redirect, RouteProps } from 'react-router-dom';
 
 import jwt_decode from 'jwt-decode';
-
-import Config from '../config';
-import { fetchRest } from '../api/rest';
-import { AccountDTO } from '../api/definitions';
 
 export interface AuthClaims {
   iss: string;
@@ -18,17 +16,17 @@ export interface AuthClaims {
 
   email: string;
 }
-
-export interface AuthContextValues {
+export interface APIContextValues {
   claims: AuthClaims | undefined;
-  account: AccountDTO | undefined;
+  account: AccountResponseDTO | undefined;
   bearerToken: string | undefined;
+  services: Services | undefined;
 
   isLoggedIn(): boolean;
-  loginFromJwt(jwt: string): void;
+  loginFromJwt(jwt: string): Promise<void>;
 
   // Tries to login from browser cache
-  loginSilent(): void;
+  loginSilent(): Promise<void>;
 
   // Returns true if an autologin attempt has finished
   // This does not mean successful, use isLoggedIn to check that
@@ -37,48 +35,45 @@ export interface AuthContextValues {
   logout(): void;
 }
 
-// Only to be consumed by the root component, use AuthContext.Consumer to get these values in a child component
-export function useAuthValues(): AuthContextValues {
-  const [authValues, setAuthValues] = React.useState<AuthContextValues>({
+// Only to be consumed by the root component, use APIContext.Consumer to get these values in a child component
+export function useApiValues(): APIContextValues {
+  const [authValues, setAuthValues] = React.useState<APIContextValues>({
     claims: undefined,
     account: undefined,
     bearerToken: undefined,
+    services: new Services(),
     isLoggedIn() {
       return false;
     },
 
-    loginSilent() {
+    async loginSilent(): Promise<void> {
       const jwt = window.localStorage.getItem('auth-jwt');
       if (jwt !== null) {
         try {
           const claims = jwt_decode(jwt) as AuthClaims;
 
-          // Test by getting the users account info
-          fetchRest(`${Config.apiUrl}/accounts/${claims.sub}`, {
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-            },
-          })
-            .then((res) => res.json())
-            .then((account: AccountDTO) => {
-              window.localStorage.setItem('auth-jwt', jwt);
+          const services = new Services(jwt);
+          const account = await services.readAccountByID(claims.sub);
 
-              setAuthValues({
-                claims,
-                account,
-                bearerToken: jwt,
-                loginSilent: authValues.loginSilent,
-                loginSilentFinished: () => true,
-                isLoggedIn: () => true,
-                loginFromJwt: authValues.loginFromJwt,
-                logout: authValues.logout,
-              });
-            });
+          window.localStorage.setItem('auth-jwt', jwt);
+
+          setAuthValues({
+            claims,
+            account,
+            bearerToken: jwt,
+            services,
+            loginSilent: authValues.loginSilent,
+            loginSilentFinished: () => true,
+            isLoggedIn: () => true,
+            loginFromJwt: authValues.loginFromJwt,
+            logout: authValues.logout,
+          });
         } catch (e) {
           setAuthValues({
             claims: undefined,
             account: undefined,
             bearerToken: undefined,
+            services: new Services(),
             loginSilent: authValues.loginSilent,
             loginSilentFinished: () => true,
             isLoggedIn: () => true,
@@ -91,6 +86,7 @@ export function useAuthValues(): AuthContextValues {
           claims: undefined,
           account: undefined,
           bearerToken: undefined,
+          services: new Services(), // fallback to authorization less routes
           loginSilent: authValues.loginSilent,
           loginSilentFinished: () => true,
           isLoggedIn: () => false,
@@ -104,37 +100,34 @@ export function useAuthValues(): AuthContextValues {
       return false;
     },
 
-    loginFromJwt(jwt: string) {
+    async loginFromJwt(jwt: string): Promise<void> {
       try {
         const claims = jwt_decode(jwt) as AuthClaims;
 
-        fetchRest(`${Config.apiUrl}/accounts/${claims.sub}`, {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-          },
-        })
-          .then((res) => res.json())
-          .then((account: AccountDTO) => {
-            window.localStorage.setItem('auth-jwt', jwt);
+        const services = new Services(jwt);
+        const account = await services.readAccountByID(claims.sub);
 
-            const newAuthValues = {
-              claims,
-              account,
-              bearerToken: undefined,
-              loginSilent: authValues.loginSilent,
-              loginSilentFinished: () => true,
-              isLoggedIn: () => true,
-              loginFromJwt: authValues.loginFromJwt,
-              logout: authValues.logout,
-            };
+        window.localStorage.setItem('auth-jwt', jwt);
 
-            setAuthValues(newAuthValues);
-          });
+        const newAuthValues = {
+          claims,
+          account,
+          bearerToken: jwt,
+          services,
+          loginSilent: authValues.loginSilent,
+          loginSilentFinished: () => true,
+          isLoggedIn: () => true,
+          loginFromJwt: authValues.loginFromJwt,
+          logout: authValues.logout,
+        };
+
+        setAuthValues(newAuthValues);
       } catch (e) {
         setAuthValues({
           claims: undefined,
           account: undefined,
           bearerToken: undefined,
+          services: new Services(),
           loginSilent: authValues.loginSilent,
           loginSilentFinished: () => true,
           isLoggedIn: () => true,
@@ -156,13 +149,13 @@ export function useAuthValues(): AuthContextValues {
 }
 
 // default value passed here is irrelevant, will be overriden later
-export const AuthContext = React.createContext<AuthContextValues>({} as AuthContextValues);
+export const APIContext = React.createContext<APIContextValues>({} as APIContextValues);
 
 type PrivateRouteProps = RouteProps;
 
 export function PrivateRoute(props: PrivateRouteProps): ReactElement {
   const { ...rest } = props;
-  const auth = useContext(AuthContext);
+  const auth = useContext(APIContext);
 
   if (auth.isLoggedIn()) {
     return <Route {...rest} />;

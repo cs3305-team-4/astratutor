@@ -11,15 +11,14 @@ import React, { ReactElement, useContext } from 'react';
 import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { AuthContext } from '../api/auth';
-import { ReadProfileDTO } from '../api/definitions';
+import { APIContext } from '../api/api';
+import { ProfileResponseDTO } from '../api/definitions';
 import Messaging from '../components/Messaging';
 import { UserAvatar } from '../components/UserAvatar';
-import { SettingsCTX } from '../services/classroom';
-import { GetProfile } from '../services/profile';
+import { SettingsCTX } from '../api/classroom';
 
 interface IWebcam {
-  profile: ReadProfileDTO;
+  profile: ProfileResponseDTO;
   ref: React.ReactElement<HTMLVideoElement>;
 }
 
@@ -90,11 +89,11 @@ const StyledVideo = styled.video`
   height: calc(100% - 88px);
 `;
 
-export default function LessonClassroom(): ReactElement {
+export function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   const settings = useContext(SettingsCTX);
   const history = useHistory();
-  const auth = useContext(AuthContext);
+  const api = useContext(APIContext);
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
@@ -136,7 +135,7 @@ export default function LessonClassroom(): ReactElement {
         }}
       />
     );
-    const web: IWebcam = { profile: await GetProfile(auth), ref: video };
+    const web: IWebcam = { profile: await api.services.readProfileByAccount(api.account), ref: video };
     addWebcam(web);
   }, [settings.webcamStream, webcamEnabled]);
 

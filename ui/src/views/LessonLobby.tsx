@@ -12,8 +12,8 @@ import { useAsync } from 'react-async-hook';
 import { Link, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { UserAvatar } from '../components/UserAvatar';
-import { ISettings, SettingsCTX } from '../services/classroom';
-import LessonClassroom from './LessonClassroom';
+import { ISettings, SettingsCTX } from '../api/classroom';
+import { LessonClassroom } from './LessonClassroom';
 
 const { Option } = Select;
 
@@ -56,7 +56,7 @@ const StyledSelect = styled(Select)`
   }
 `;
 
-export default function LessonLobby(): ReactElement {
+export function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   const history = useHistory();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);

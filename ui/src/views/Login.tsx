@@ -9,8 +9,8 @@ import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
 
 import Config from '../config';
 import { fetchRest } from '../api/rest';
-import { AuthContext } from '../api/auth';
-import { LoginResponseDTO } from '../api/definitions';
+import { APIContext } from '../api/api';
+import { LoginRequestDTO, LoginResponseDTO } from '../api/definitions';
 import DeskImg from '../assets/stock/desk-medium.jpg';
 
 const { Title, Paragraph, Text } = Typography;
@@ -22,30 +22,23 @@ const StyledLayout = styled(Layout)`
   background-size: cover;
 `;
 
-const Login: React.FunctionComponent = () => {
-  const authContext = React.useContext(AuthContext);
+export const Login: React.FunctionComponent = () => {
+  const api = React.useContext(APIContext);
   const [error, setError] = React.useState('');
   const history = useHistory();
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: LoginRequestDTO) => {
     try {
-      const res = await fetchRest(`${Config.apiUrl}/auth/login`, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-        }),
-      });
+      const res = await api.services.login(values);
+      api.loginFromJwt(res.jwt);
 
-      const resDto: LoginResponseDTO = await res.json();
-      authContext.loginFromJwt(resDto.jwt);
       history.push('/');
     } catch (e) {
       setError(`Login failed: ${e.message}`);
     }
   };
 
-  if (authContext.isLoggedIn()) {
+  if (api.isLoggedIn()) {
     return (
       <StyledLayout>
         <Content>
@@ -78,10 +71,10 @@ const Login: React.FunctionComponent = () => {
                 }}
               />
               <Form.Item name="email" rules={[{ required: true, message: 'Please input your email!' }]}>
-                <Input prefix={<MailOutlined />} placeholder="Email" />
+                <Input size="large" prefix={<MailOutlined />} placeholder="Email" />
               </Form.Item>
               <Form.Item name="password" rules={[{ required: true, message: 'Please input your password!' }]}>
-                <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+                <Input.Password size="large" prefix={<LockOutlined />} placeholder="Password" />
               </Form.Item>
               <Form.Item>
                 <Button style={{ width: '100%' }} type="primary" htmlType="submit">
@@ -97,5 +90,3 @@ const Login: React.FunctionComponent = () => {
     </StyledLayout>
   );
 };
-
-export default Login;

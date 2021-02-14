@@ -18,7 +18,7 @@ func getAccountType(r *http.Request) (services.AccountType, error) {
 
 // ProfileRequestDTO create DTO.
 type ProfileRequestDTO struct {
-	Avatar      string `json:"avatar" validate:"omitempty,base64"`
+	Avatar      string `json:"avatar" validate:"omitempty"`
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
@@ -30,7 +30,7 @@ type ProfileRequestDTO struct {
 type ProfileResponseDTO struct {
 	AccountID   string `json:"account_id" validate:"required,uuid"`
 	ID          string `json:"id" validate:"required,uuid"`
-	Avatar      string `json:"avatar" validate:"omitempty,base64"`
+	Avatar      string `json:"avatar" validate:"omitempty"`
 	Slug        string `json:"slug" validate:"required"`
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
@@ -45,7 +45,7 @@ type TutorResponseDTO struct {
 	ProfileResponseDTO
 	Qualifications []QualificationsResponseDTO `json:"qualifications"`
 	WorkExperience []WorkExperienceResponseDTO `json:"work_experience"`
-	Availability   []bool                      `json:"availability" validate:"required,len=168"`
+	Availability   []bool                      `json:"availability" validate:""`
 }
 
 // QualificationsRequestDTO create DTO.
