@@ -11,6 +11,7 @@ import Account from './views/Account';
 import Landing from './views/Landing';
 import Login from './views/Login';
 import Register from './views/Register';
+import Subjects from './views/Subjects';
 import './App.css';
 
 import config from './config';
@@ -18,6 +19,7 @@ import { fetchRest } from './api/rest';
 import { AuthContext, useAuthValues, PrivateRoute } from './api/auth';
 import { AuthClaims } from './api/auth';
 import { useAsync } from 'react-async-hook';
+import Tutors from './views/Tutors';
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -129,8 +131,12 @@ function App() {
             </Route>
             <PrivateRoute path="/account" component={Account} />
 
-            <Route path="/subjects"></Route>
-            <Route path="/subjects/:subject_slug/tutors"></Route>
+            <Route exact path="/subjects">
+              <Subjects />
+            </Route>
+            <Route path="/subjects/tutors">
+              <Tutors />
+            </Route>
             <Route path="/tutors/:slug"></Route>
             <Route path="/tutors/:slug/profile"></Route>
             <PrivateRoute path="/lessons" />
