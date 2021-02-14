@@ -3,31 +3,9 @@ import moment from 'moment';
 
 import { useHistory } from 'react-router';
 
-import { useAsync } from 'react-async-hook';
+import { Typography, Layout, Row, Col, Avatar, PageHeader, Button, Statistic, Divider } from 'antd';
 
-import {
-  Typography,
-  Layout,
-  Row,
-  Col,
-  Avatar,
-  PageHeader,
-  Input,
-  Button,
-  Statistic,
-  Tag,
-  Form,
-  Upload,
-  Divider,
-} from 'antd';
-
-import {
-  AccountType,
-  LessonResponseDTO,
-  ProfileRequestDTO,
-  ProfileResponseDTO,
-  LessonRequestStage,
-} from '../api/definitions';
+import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
 
 import { APIContext } from '../api/api';
 
