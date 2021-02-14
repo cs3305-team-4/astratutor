@@ -221,7 +221,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   }
 
   return (
-    <>
+    <Typography>
       {isSelf && (
         <Alert
           style={{ margin: '1rem' }}
@@ -611,12 +611,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
         </Content>
       )}
       <RequestLessonModal
-        onOk={() => setRequestLessonVisible(false)}
+        onOk={() => {
+          setRequestLessonVisible(false);
+        }}
         onCancel={() => setRequestLessonVisible(false)}
         visible={requestLessonVisible}
         type={props.type}
         profile={profile}
       />
-    </>
+    </Typography>
   );
 }
