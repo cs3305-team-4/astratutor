@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactElement, useContext } from 'react';
 
 import 'antd/dist/antd.css';
 import { Layout, PageHeader, Button, Divider, Row, Col } from 'antd';
@@ -14,12 +14,13 @@ import { Subjects } from './views/Subjects';
 import { Lessons } from './views/Lessons';
 import { ViewProfile } from './views/ViewProfile';
 import { Register } from './views/Register';
+import { Tutors } from './views/Tutors';
+import { LessonLobby } from './views/LessonLobby';
 import './App.css';
 
 import { APIContext, useApiValues, PrivateRoute } from './api/api';
 
 import { useAsync } from 'react-async-hook';
-import Tutors from './views/Tutors';
 
 const { Footer, Content } = Layout;
 
@@ -51,7 +52,7 @@ function App(): React.ReactElement {
   // Don't render the page until the silent login attempt is finished
   if (!api.loginSilentFinished()) return <APIContext.Provider value={api}></APIContext.Provider>;
 
-  let headerLinks = [];
+  let headerLinks: ReactElement[] = [];
   if (api.isLoggedIn()) {
     headerLinks = [
       <Link to="/" key="home">
@@ -116,7 +117,6 @@ function App(): React.ReactElement {
                 <Landing />
               </Route>
               <PrivateRoute path="/account" component={Account} />
-
               <Route exact path="/subjects">
                 <Subjects />
               </Route>
@@ -127,10 +127,10 @@ function App(): React.ReactElement {
               <Route path="/subjects/:subject_slug/tutors"></Route>
               <Route exact path="/tutors/:slug"></Route>
               <Route exact path="/tutors/:uuid/profile" component={ViewProfile} />
-              <PrivateRoute path="/lessons" component={Lessons} />
-              <PrivateRoute path="/lessons/:lid" />
-              <PrivateRoute path="/lessons/:lid/lobby" />
-              <PrivateRoute path="/lessons/:lid/classroom" />
+              <PrivateRoute exact path="/lessons" component={Lessons} />
+              <PrivateRoute exact path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
+                <LessonLobby />
+              </PrivateRoute>
               <Route path="/login" component={Login} />
               <Route path="/register" component={Register} />
             </Switch>

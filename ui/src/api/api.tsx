@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { ReactElement, useContext } from 'react';
 
 import { Services } from './services';
 import { AccountResponseDTO } from './definitions';
@@ -153,7 +153,7 @@ export const APIContext = React.createContext<APIContextValues>({} as APIContext
 
 type PrivateRouteProps = RouteProps;
 
-export function PrivateRoute(props: PrivateRouteProps) {
+export function PrivateRoute(props: PrivateRouteProps): ReactElement {
   const { ...rest } = props;
   const auth = useContext(APIContext);
 

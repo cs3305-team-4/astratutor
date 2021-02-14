@@ -43,6 +43,7 @@ export interface ProfileResponseDTO {
   qualifications?: QualificationResponseDTO[];
   work_experience?: WorkExperienceResponseDTO[];
   availability?: boolean[];
+  color: string;
 }
 
 export interface ProfileRequestDTO {
