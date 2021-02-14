@@ -5,19 +5,15 @@ import { SubjectDTO, SubjectTaughtDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import moment from 'moment';
-import { Typography, Layout, Card, Row, Col, List, Modal, Button, Input, Select, Space, Form, DatePicker } from 'antd';
+import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Form } from 'antd';
 
-const { Title, Paragraph, Text } = Typography;
-const { Header, Footer, Sider, Content } = Layout;
+const { Title, Paragraph } = Typography;
+const { Content } = Layout;
 
-export default function Tutors(): ReactElement {
+export function Tutors(): ReactElement {
   const [tutors, setTutors] = useState<SubjectTaughtDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
-
-  const [showRequestModal, setShowRequestModal] = useState<boolean>(false);
-  const [requestedTutor, setRequestedTutor] = useState<SubjectTaughtDTO | undefined>(undefined);
 
   const [requestForm] = Form.useForm();
 
@@ -84,22 +80,6 @@ export default function Tutors(): ReactElement {
   const onSearch = (searchVal: string) => {
     console.log(searchVal);
     // TODO: Add search functionality to /subjects/tutors endpoint
-  };
-
-  const onRequestTutor = (tutor: SubjectTaughtDTO) => {
-    setRequestedTutor(tutor);
-    setShowRequestModal(true);
-  };
-
-  const onRequestSubmit = (e) => {
-    setShowRequestModal(false);
-    // TODO: submit request to tutor backend
-    requestForm.resetFields();
-  };
-
-  const onRequestCancel = () => {
-    setShowRequestModal(false);
-    requestForm.resetFields();
   };
 
   return (

@@ -169,10 +169,12 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
+
 	update := &UpdateAvailabilityDTO{}
 	if !ParseBody(w, r, update) {
 		return
 	}
+
 	value := services.Availability(update.Value)
 	if err := validateUpdate("Availability", value, &TutorResponseDTO{}); err != nil {
 		restError(w, r, err, http.StatusBadRequest)

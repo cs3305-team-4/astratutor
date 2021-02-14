@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 
 import { useHistory } from 'react-router';
 
@@ -115,7 +114,17 @@ export default function Lesson(props: LessonProps): React.ReactElement {
             <Statistic title="Subject" value={`L.C. - English`} />
           </Col>
           <Col>
-            <Statistic title="Time" value={`${moment(props.lesson.start_time).format('LLLL')}`} />
+            <Statistic
+              title="Time"
+              value={`${new Intl.DateTimeFormat('en-IE', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'long',
+                hour: 'numeric',
+                minute: 'numeric',
+              }).format(new Date(props.lesson.start_time))}`}
+            />
           </Col>
         </Row>,
         <Row key="buttons" gutter={16} align="top" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
