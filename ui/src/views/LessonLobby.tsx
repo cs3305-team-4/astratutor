@@ -231,6 +231,7 @@ export function LessonLobby(): ReactElement {
                   <Tooltip title="Gamer">
                     <UserAvatar
                       profile={{
+                        account_id: '1',
                         avatar: '',
                         slug: '/',
                         first_name: 'Gamer',
