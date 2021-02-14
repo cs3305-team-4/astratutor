@@ -16,7 +16,7 @@ import config from '../config';
 const { Title, Paragraph, Text } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
 
-export default function Subjects(): ReactElement {
+export function Subjects(): ReactElement {
   const [error, setError] = useState<string | undefined>(undefined);
 
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
