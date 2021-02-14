@@ -7,7 +7,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useEffect, useRef } from 'react';
 import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -16,6 +16,9 @@ import { ProfileResponseDTO } from '../api/definitions';
 import Messaging from '../components/Messaging';
 import { UserAvatar } from '../components/UserAvatar';
 import { SettingsCTX } from '../api/classroom';
+import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
+import { WebRTCHandler } from '../webrtc/webrtc';
+import config from '../config';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
@@ -91,6 +94,7 @@ const StyledVideo = styled.video`
 
 export function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
+  const signalling = useRef(null);
   const settings = useContext(SettingsCTX);
   const history = useHistory();
   const api = useContext(APIContext);
@@ -99,6 +103,28 @@ export function LessonClassroom(): ReactElement {
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [micEnabled, setMicEnabled] = React.useState(true);
+
+  // Temp Websocket integration
+  useEffect(() => {
+    if (signalling.current) return;
+    signalling.current = new Signalling(api.claims.sub, `${config.signallingUrl}/${lid}`, {
+      onopen: onOpen,
+      onclose: undefined,
+      onerror: undefined,
+      onmessage: onMessage,
+    });
+  }, []);
+
+  const onOpen = (_event: Event) => {
+    console.log('Connected to WS: ', lid);
+    signalling.current.send(MESSAGE_TYPE.AHOY_HOY);
+  };
+
+  const onMessage = (event: MessageEvent) => {
+    const message = JSON.parse(event.data);
+    if (message.src === api.claims.sub) return;
+    console.log(event);
+  };
 
   const addWebcam = (web: IWebcam) => {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
@@ -175,7 +201,11 @@ export function LessonClassroom(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of settings.webcams) {
-                      opts.push(<Select.Option value={dev.deviceId}>{dev.label}</Select.Option>);
+                      opts.push(
+                        <Select.Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Select.Option>,
+                      );
                     }
                     return opts;
                   })()}
@@ -200,7 +230,11 @@ export function LessonClassroom(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of settings.microphones) {
-                      opts.push(<Select.Option value={dev.deviceId}>{dev.label}</Select.Option>);
+                      opts.push(
+                        <Select.Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Select.Option>,
+                      );
                     }
                     return opts;
                   })()}
