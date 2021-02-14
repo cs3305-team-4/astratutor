@@ -6,7 +6,7 @@ import { LockOutlined, MailOutlined, UserAddOutlined } from '@ant-design/icons';
 
 import Config from '../config';
 import { fetchRest } from '../api/rest';
-import { AuthContext } from '../api/auth';
+import { APIContext } from '../api/api';
 import DeskImg from '../assets/stock/desk-medium.jpg';
 import { useHistory } from 'react-router-dom';
 import { AccountType } from '../api/definitions';
@@ -20,7 +20,7 @@ const StyledLayout = styled(Layout)`
   background-size: cover;
 `;
 
-const Register: React.FunctionComponent = () => {
+export const Register: React.FunctionComponent = () => {
   const [accountType, setAccountType] = useState<AccountType>(AccountType.Student);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -35,21 +35,18 @@ const Register: React.FunctionComponent = () => {
     console.log('Success:', values);
 
     let mixin = {};
-    if (under16 == true) {
+    if (under16 === true) {
       mixin = {
         parents_email: values.parentsEmail,
       };
     }
 
     try {
-      const res = await fetchRest(`${Config.apiUrl}/accounts`, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          type: accountType,
-          ...mixin,
-        }),
+      await api.services.createAccount({
+        email: values.email,
+        password: values.password,
+        type: accountType,
+        ...mixin,
       });
 
       history.push('/');
@@ -62,13 +59,13 @@ const Register: React.FunctionComponent = () => {
     // All default items in a register form
     const items = [
       <Form.Item name="email" key="email" rules={[{ required: true, message: 'Please input your email!' }]}>
-        <Input prefix={<MailOutlined />} placeholder="Email" />
+        <Input size="large" prefix={<MailOutlined />} placeholder="Email" />
       </Form.Item>,
       <Form.Item name="password" key="password" rules={[{ required: true, message: 'Please enter your password!' }]}>
-        <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+        <Input.Password size="large" prefix={<LockOutlined />} placeholder="Password" />
       </Form.Item>,
       <Form.Item key="confirm-password" rules={[{ required: true, message: 'Please confirm your password!' }]}>
-        <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" />
+        <Input.Password size="large" prefix={<LockOutlined />} placeholder="Confirm Password" />
       </Form.Item>,
     ];
 
@@ -85,7 +82,7 @@ const Register: React.FunctionComponent = () => {
       if (under16) {
         items.push(
           <Form.Item name="parentsEmail">
-            <Input prefix={<MailOutlined />} placeholder="Parents Email" />
+            <Input size="large" prefix={<MailOutlined />} placeholder="Parents Email" />
           </Form.Item>,
         );
       }
@@ -103,8 +100,8 @@ const Register: React.FunctionComponent = () => {
     return items;
   };
 
-  const authContext = React.useContext(AuthContext);
-  if (authContext.isLoggedIn()) {
+  const api = React.useContext(APIContext);
+  if (api.isLoggedIn()) {
     return (
       <StyledLayout>
         <Content>
@@ -163,5 +160,3 @@ const Register: React.FunctionComponent = () => {
     </StyledLayout>
   );
 };
-
-export default Register;

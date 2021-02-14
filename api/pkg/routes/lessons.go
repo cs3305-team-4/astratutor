@@ -17,8 +17,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// LessonDTO represents an existing lesson
-type LessonDTO struct {
+// LessonResponseDTO represents an existing lesson
+type LessonResponseDTO struct {
 	ID uuid.UUID `json:"id"`
 
 	// Time of the lesson
@@ -76,9 +76,9 @@ type LessonRequestDTO struct {
 type LessonStageChangeDTO struct {
 	// The ID of who wants the stage change, can be a teacher or student
 	// i.e if they request the tutors lesson create endpoint, it'l expect RequesterID to be a student
-	RequesterID uuid.UUID `json:"requester_id"`
+	//RequesterID uuid.UUID `json:"requester_id"`
 
-	LessonDetail string `json:"lesson_detail"`
+	StageDetail string `json:"stage_detail"`
 }
 
 func dtoFromResourceMetadata(m *services.ResourceMetadata) *ResourceMetadataDTO {
@@ -88,14 +88,14 @@ func dtoFromResourceMetadata(m *services.ResourceMetadata) *ResourceMetadataDTO 
 	}
 }
 
-func dtoFromLesson(l *services.Lesson) *LessonDTO {
+func dtoFromLesson(l *services.Lesson) *LessonResponseDTO {
 	mds := []ResourceMetadataDTO{}
 
 	for _, md := range l.Resources {
 		mds = append(mds, *dtoFromResourceMetadata(&md))
 	}
 
-	return &LessonDTO{
+	return &LessonResponseDTO{
 		ID:                    l.ID,
 		StartTime:             l.StartTime,
 		TutorID:               l.TutorID,
@@ -109,8 +109,8 @@ func dtoFromLesson(l *services.Lesson) *LessonDTO {
 	}
 }
 
-func dtoFromLessons(lessons []services.Lesson) []LessonDTO {
-	dtoLessons := []LessonDTO{}
+func dtoFromLessons(lessons []services.Lesson) []LessonResponseDTO {
+	dtoLessons := []LessonResponseDTO{}
 
 	for _, l := range lessons {
 		dtoLessons = append(dtoLessons, *dtoFromLesson(&l))
@@ -254,7 +254,7 @@ func handleLessonsRequestStageChange(w http.ResponseWriter, r *http.Request, sta
 		return
 	}
 
-	err = lesson.UpdateRequestStageByAccount(authContext.Account, stage, stageRequest.LessonDetail)
+	err = lesson.UpdateRequestStageByAccount(authContext.Account, stage, stageRequest.StageDetail)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
