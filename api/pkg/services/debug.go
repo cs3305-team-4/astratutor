@@ -1,8 +1,11 @@
 package services
 
 import (
+	"time"
+
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 func CreateDebugData() error {
@@ -44,6 +47,8 @@ func CreateDebugData() error {
 		return err
 	}
 
+	log.Info("Added student account: student@grindsapp.localhost grindsapp")
+
 	// Add Tutor Acccounts
 	err = db.FirstOrCreate(&Account{
 		Model: database.Model{
@@ -72,6 +77,8 @@ func CreateDebugData() error {
 		return err
 	}
 
+	log.Info("Added tutor account: tutor@grindsapp.localhost grindsapp")
+
 	err = db.FirstOrCreate(&Account{
 		Model: database.Model{
 			ID: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
@@ -99,6 +106,8 @@ func CreateDebugData() error {
 		return err
 	}
 
+	log.Info("Added tutor account: jane@grindsapp.localhost grindsapp")
+
 	// Add Subjects
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
@@ -106,60 +115,70 @@ func CreateDebugData() error {
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - English")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
 		Name:  "Leaving Certificate - Irish", Slug: "lc-irish"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Irish")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("33333333-3333-3333-3333-333333333333")},
 		Name:  "Leaving Certificate - Maths", Slug: "lc-maths"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Maths")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("44444444-4444-4444-4444-444444444444")},
 		Name:  "Leaving Certificate - Physics", Slug: "lc-physics"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Physics")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("55555555-5555-5555-5555-555555555555")},
 		Name:  "Leaving Certificate - Chemistry", Slug: "lc-chemistry"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Chemistry")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("66666666-6666-6666-6666-666666666666")},
 		Name:  "Leaving Certificate - Biology", Slug: "lc-biology"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Biology")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("77777777-7777-7777-7777-777777777777")},
 		Name:  "Leaving Certificate - Engineering", Slug: "lc-engineering"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Engineering")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("88888888-8888-8888-8888-888888888888")},
 		Name:  "Leaving Certificate - Construction Studies", Slug: "lc-construction-studies"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Construction Studies")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("99999999-9999-9999-9999-999999999999")},
 		Name:  "Leaving Certificate - Technical Graphics", Slug: "lc-technical-graphics"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Technical Graphics")
 	err = db.FirstOrCreate(&Subject{
 		Model: database.Model{ID: uuid.MustParse("21233124-2222-2222-2222-234235656756")},
 		Name:  "Leaving Certificate - Religion", Slug: "lc-religion"}).Error
 	if err != nil {
 		return err
 	}
+	log.Info("Added subject Leaving Certificate - Religion")
 
 	// Add Tutors to subjects
 	john, err := ReadAccountByID(uuid.MustParse("11111111-1111-1111-1111-111111111111"), nil)
@@ -193,6 +212,7 @@ func CreateDebugData() error {
 	if err != nil {
 		return err
 	}
+	log.Info("John Tutor now teaching Leaving Certificate English")
 	err = db.FirstOrCreate(&SubjectTaught{
 		Model:       database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
 		Subject:     *irish,
@@ -203,6 +223,7 @@ func CreateDebugData() error {
 	if err != nil {
 		return err
 	}
+	log.Info("John Tutor now teaching Leaving Certificate Irish")
 	err = db.FirstOrCreate(&SubjectTaught{
 		Model:       database.Model{ID: uuid.MustParse("33333333-3333-3333-3333-333333333333")},
 		Subject:     *physics,
@@ -213,6 +234,38 @@ func CreateDebugData() error {
 	if err != nil {
 		return err
 	}
+	log.Info("Jane Smith now teaching Leaving Certificate Physics")
+
+	// Add lesson between student and tutor
+	student, err := ReadAccountByID(uuid.MustParse("22222222-2222-2222-2222-222222222222"), nil)
+	if err != nil {
+		return err
+	}
+
+	startTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:00:00")
+	if err != nil {
+		return err
+	}
+	endTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:59:00")
+	if err != nil {
+		return err
+	}
+	err = db.FirstOrCreate(&Lesson{
+		//Model:               database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
+		StartTime:           startTime,
+		EndTime:             endTime,
+		Student:             *student,
+		Tutor:               *john,
+		LessonDetail:        "Quick question",
+		RequestStage:        Accepted,
+		RequestStageDetail:  "",
+		Requester:           *student,
+		RequestStageChanger: *john,
+	}).Error
+	if err != nil {
+		return err
+	}
+	log.Info("John Tutor has lesson with John Student")
 
 	return nil
 }
