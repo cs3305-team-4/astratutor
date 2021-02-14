@@ -1,6 +1,8 @@
 import React from 'react';
 import moment, { Moment } from 'moment';
 
+import { useHistory } from 'react-router';
+
 import { Modal, ModalProps, Button, Form, Select, Input, Typography, DatePicker, TimePicker, Row, Col } from 'antd';
 
 import { Availability } from './Availability';
@@ -19,6 +21,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
   const subjects = ['Leaving Certificate - English', 'Leaving Certificate - Irish'];
 
   const api = React.useContext(APIContext);
+  const history = useHistory();
 
   interface FormModel {
     start_time: Moment;
@@ -45,6 +48,12 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
         tutor_id,
         student_id,
         lesson_detail: values.lesson_detail,
+      });
+
+      Modal.info({
+        title: 'Info',
+        content: 'Your lesson request has been made, you will be notified when the tutor accepts or denies the request',
+        onOk: () => history.push('/lessons'),
       });
 
       props.onOk(null);
