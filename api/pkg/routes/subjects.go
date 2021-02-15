@@ -33,12 +33,13 @@ type SubjectTaughtDTO struct {
 
 // Represents a Tutor and their subjects
 type TutorSubjectsResponseDTO struct {
-	ID        uuid.UUID          `json:"id" validate:"len=0"`
-	FirstName string             `json:"first_name" validate:"required"`
-	LastName  string             `json:"last_name" validate:"required"`
-	Avatar    string             `json:"avatar" validate:"omitempty,base64"`
-	Slug      string             `json:"slug" validate:"len=0"`
-	Subjects  []SubjectTaughtDTO `json:"subjects"`
+	ID          uuid.UUID          `json:"id" validate:"len=0"`
+	FirstName   string             `json:"first_name" validate:"required"`
+	LastName    string             `json:"last_name" validate:"required"`
+	Avatar      string             `json:"avatar" validate:"omitempty,base64"`
+	Slug        string             `json:"slug" validate:"len=0"`
+	Description string             `json:"description"`
+	Subjects    []SubjectTaughtDTO `json:"subjects"`
 }
 
 func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
@@ -56,12 +57,13 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 		}
 
 		tutorSubjectsResponse = append(tutorSubjectsResponse, TutorSubjectsResponseDTO{
-			ID:        profile.AccountID,
-			FirstName: profile.FirstName,
-			LastName:  profile.LastName,
-			Avatar:    profile.Avatar,
-			Slug:      profile.Slug,
-			Subjects:  subjects,
+			ID:          profile.AccountID,
+			FirstName:   profile.FirstName,
+			LastName:    profile.LastName,
+			Avatar:      profile.Avatar,
+			Slug:        profile.Slug,
+			Description: profile.Description,
+			Subjects:    subjects,
 		})
 	}
 
