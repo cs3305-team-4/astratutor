@@ -124,13 +124,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]Profile, error) {
-
-	if sid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
-		var err error
-		return nil, err
-	}
-
+func GetTutorsBySubjects(subjects *[]Subject, db *gorm.DB) ([]Profile, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -150,10 +144,13 @@ func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]Profile, error) {
 
 	for _, profile := range profiles {
 		if len(profile.Subjects) > 0 {
+		exit:
 			for _, subjectTaught := range profile.Subjects {
-				if subjectTaught.SubjectID == sid {
-					profilesWithSubjects = append(profilesWithSubjects, profile)
-					break
+				for _, subject := range *subjects {
+					if subjectTaught.SubjectID == subject.ID {
+						profilesWithSubjects = append(profilesWithSubjects, profile)
+						break exit
+					}
 				}
 			}
 		}

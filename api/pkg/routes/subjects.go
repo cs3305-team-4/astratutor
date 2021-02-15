@@ -113,14 +113,10 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors := []services.Profile{}
-		for _, subject := range *filtered {
-			res, err := services.GetTutorsBySubjectIDs(subject.ID, nil)
-			if err != nil {
-				restError(w, r, err, http.StatusBadRequest)
-				return
-			}
-			tutors = append(tutors, res...)
+		tutors, err := services.GetTutorsBySubjects(filtered, nil)
+		if err != nil {
+			restError(w, r, err, http.StatusBadRequest)
+			return
 		}
 		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
 
