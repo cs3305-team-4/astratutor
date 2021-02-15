@@ -133,6 +133,7 @@ export interface SubjectTaughtDTO {
   subject_id: string;
   subject_name: string;
 
+  tutor_id: string;
   tutor_first_name: string;
   tutor_last_name: string;
   tutor_avatar: string;
