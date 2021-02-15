@@ -33,7 +33,9 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
   }
 
   useAsync(async () => {
-    setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.profile.account_id));
+    if (api.account.type === AccountType.Student) {
+      setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.profile.account_id));
+    }
   }, []);
 
   const onFinish = async (values: FormModel) => {
@@ -85,7 +87,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
     >
       <Form
         onFinish={onFinish}
-        initialValues={{ subject: tutorSubjects ? tutorSubjects[0].id : undefined }}
+        initialValues={{ subject: tutorSubjects !== undefined ? tutorSubjects[0]?.id : undefined }}
         layout="vertical"
         name="request-lesson"
         preserve={false}
