@@ -33,7 +33,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
   }
 
   useAsync(async () => {
-    if (api.account.type === AccountType.Student) {
+    if (props.type === AccountType.Tutor) {
       setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.profile.account_id));
     }
   }, []);
