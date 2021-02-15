@@ -199,8 +199,8 @@ func GetAllTutors(db *gorm.DB) ([]Profile, error) {
 }
 
 //Returns subjectTaught for specific tutors using their ID
-func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
-	if tid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
+func GetSubjectsTaughtByTutorID(tpid uuid.UUID, db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
+	if tpid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
 		return nil, err
 	}
@@ -212,8 +212,13 @@ func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, er
 			return nil, err
 		}
 	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
+	}
+
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{TutorProfileID: tid}).Find(&subjectTaught).Error
+	return subjectTaught, db.Where(&SubjectTaught{TutorProfileID: tpid}).Find(&subjectTaught).Error
 }
 
 //creats a StudentTaught based on the subject and tutor with a set price description.

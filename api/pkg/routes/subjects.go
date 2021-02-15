@@ -13,6 +13,7 @@ import (
 func InjectSubjectsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleSubjectsGet).Methods("GET")
 	subrouter.HandleFunc("/tutors", handleSubjectTutorsGet).Methods("GET")
+	subrouter.HandleFunc("/tutors/{tid}", handleGetSubjectsForTutor).Methods("GET")
 }
 
 //Subject DTO represents an existing subject
@@ -45,17 +46,6 @@ type TutorSubjectsResponseDTO struct {
 func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
 	tutorSubjectsResponse := []TutorSubjectsResponseDTO{}
 	for _, profile := range *profiles {
-		subjects := []SubjectTaughtDTO{}
-		for _, subjectTaught := range profile.Subjects {
-			subjects = append(subjects, SubjectTaughtDTO{
-				ID:          subjectTaught.Subject.ID,
-				Name:        subjectTaught.Subject.Name,
-				Slug:        subjectTaught.Subject.Slug,
-				Description: subjectTaught.Description,
-				Price:       subjectTaught.Price,
-			})
-		}
-
 		tutorSubjectsResponse = append(tutorSubjectsResponse, TutorSubjectsResponseDTO{
 			ID:          profile.AccountID,
 			FirstName:   profile.FirstName,
@@ -63,11 +53,29 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 			Avatar:      profile.Avatar,
 			Slug:        profile.Slug,
 			Description: profile.Description,
-			Subjects:    subjects,
+			Subjects:    SubjectsTuaghtToDTO(&profile.Subjects),
 		})
 	}
 
 	return &tutorSubjectsResponse
+}
+
+func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
+	return &SubjectTaughtDTO{
+		ID:          subjectTaught.Subject.ID,
+		Name:        subjectTaught.Subject.Name,
+		Slug:        subjectTaught.Subject.Slug,
+		Description: subjectTaught.Description,
+		Price:       subjectTaught.Price,
+	}
+}
+
+func SubjectsTuaghtToDTO(subjectsTaught *[]services.SubjectTaught) []SubjectTaughtDTO {
+	subjectsTaughtDto := []SubjectTaughtDTO{}
+	for _, subjectTaught := range *subjectsTaught {
+		subjectsTaughtDto = append(subjectsTaughtDto, *SubjectTaughtToDTO(&subjectTaught))
+	}
+	return subjectsTaughtDto
 }
 
 func SingleSubjectToDTO(subject *services.Subject) *SubjectResponseDTO {
@@ -140,4 +148,29 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+func handleGetSubjectsForTutor(w http.ResponseWriter, r *http.Request) {
+	tid, err := getUUID(r, "tid")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorProfile, err := services.ReadProfileByAccountID(tid, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorSubjects, err := services.GetSubjectsTaughtByTutorID(tutorProfile.ID, nil, "Subject")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(SubjectsTuaghtToDTO(&tutorSubjects)); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }
