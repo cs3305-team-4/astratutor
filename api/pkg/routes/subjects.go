@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/google/uuid"
@@ -109,18 +110,21 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
 	if filter != "" {
-		filtered, err := services.GetSubjectBySlug(filter, nil)
+		filtered, err := services.GetSubjectsBySlugs(strings.Split(filter, ","), nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
 
-		tutors, err := services.GetTutorsBySubjectID(filtered.ID, nil)
-		if err != nil {
-			restError(w, r, err, http.StatusBadRequest)
-			return
+		tutors := []services.SubjectTaught{}
+		for _, subject := range *filtered {
+			res, err := services.GetTutorsBySubjectIDs(subject.ID, nil)
+			if err != nil {
+				restError(w, r, err, http.StatusBadRequest)
+				return
+			}
+			tutors = append(tutors, res...)
 		}
-
 		outTutors := TutorSubjectsToDTO(tutors)
 
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {

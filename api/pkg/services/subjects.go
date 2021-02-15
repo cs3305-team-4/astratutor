@@ -64,7 +64,6 @@ func GetSubjects(db *gorm.DB) ([]Subject, error) {
 	return subject, db.Find(&subject).Error
 }
 
-// returns a subject when given a subjects slug
 func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	if db == nil {
 		var err error
@@ -84,6 +83,26 @@ func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	return &subject, nil
 }
 
+// returns a subject when given a subjects slug
+func GetSubjectsBySlugs(slugs []string, db *gorm.DB) (*[]Subject, error) {
+	if db == nil {
+		var err error
+		db, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	var subjects []Subject
+	var err error
+	err = db.Where("slug IN (?)", slugs).Find(&subjects).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &subjects, nil
+}
+
 //returns a subject when given its ID
 func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 	if db == nil {
@@ -98,7 +117,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
+func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 
 	if sid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
@@ -281,7 +300,7 @@ func CreateSubjectTestAccounts() error {
 		return err
 	}
 
-	french, err := GetSubjectBySlug("", nil)
+	french, err := GetSubjectBySlug("french", nil)
 	TeachSubject(french, John, "I teach French", 59, nil)
 	if err != nil {
 		return err
