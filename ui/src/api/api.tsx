@@ -20,7 +20,7 @@ export interface APIContextValues {
   claims: AuthClaims | undefined;
   account: AccountResponseDTO | undefined;
   bearerToken: string | undefined;
-  services: Services | undefined;
+  services: Services;
 
   isLoggedIn(): boolean;
   loginFromJwt(jwt: string): Promise<void>;
