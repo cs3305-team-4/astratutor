@@ -14,6 +14,7 @@ import {
   LoginResponseDTO,
   SubjectDTO,
   SubjectTaughtDTO,
+  TutorSubjectsDTO,
 } from './definitions';
 
 export class Services {
@@ -217,12 +218,12 @@ export class Services {
     return (await res.json()) as SubjectDTO[];
   }
 
-  async readTutors(filters?: string[]): Promise<SubjectTaughtDTO[]> {
+  async readTutors(filters?: string[]): Promise<TutorSubjectsDTO[]> {
     const url = filters
       ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
       : `${config.apiUrl}/subjects/tutors`;
     const res = await fetchRest(url);
 
-    return (await res.json()) as SubjectTaughtDTO[];
+    return (await res.json()) as TutorSubjectsDTO[];
   }
 }

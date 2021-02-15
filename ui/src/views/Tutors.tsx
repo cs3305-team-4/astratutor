@@ -1,10 +1,10 @@
 import React, { ReactElement, useContext, useState } from 'react';
 
-import { SubjectDTO, SubjectTaughtDTO } from '../api/definitions';
+import { SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space } from 'antd';
+import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Tabs, Tag } from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
 
@@ -13,7 +13,7 @@ const { Content } = Layout;
 
 export function Tutors(): ReactElement {
   const api = useContext(APIContext);
-  const [tutors, setTutors] = useState<SubjectTaughtDTO[] | undefined>(undefined);
+  const [tutors, setTutors] = useState<TutorSubjectsDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
 
@@ -72,26 +72,41 @@ export function Tutors(): ReactElement {
             size="large"
             loading={tutors === undefined}
             dataSource={tutors}
-            renderItem={(tutor: SubjectTaughtDTO) => (
+            renderItem={(tutor: TutorSubjectsDTO) => (
               <Card>
                 <List.Item
-                  key={tutor.subject_taught_id}
-                  extra={<img width={200} src={tutor.tutor_avatar} alt="" />}
+                  key={tutor.id}
+                  extra={<img width={200} src={tutor.avatar} alt="" />}
                   actions={[
-                    <Link key="1" to={`/tutors/${tutor.tutor_id}/profile`}>
+                    <Link key="1" to={`/tutors/${tutor.id}/profile`}>
                       <Button type="primary">Visit Profile</Button>
                     </Link>,
                   ]}
                 >
                   <List.Item.Meta
                     title={
-                      <Link to={`/tutors/${tutor.tutor_id}/profile`}>
-                        {tutor.tutor_first_name} {tutor.tutor_last_name}
+                      <Link to={`/tutors/${tutor.id}/profile`}>
+                        {tutor.first_name} {tutor.last_name}
                       </Link>
                     }
-                    description={`${tutor.subject_name} €${tutor.price}/per Hour`}
+                    description={
+                      <Tabs>
+                        <Tabs.TabPane tab="Tutor Descrption">{tutor.description}</Tabs.TabPane>
+                        {tutor.subjects.map((subject) => (
+                          <Tabs.TabPane
+                            key={subject.id}
+                            tab={
+                              <Tag color={filters.includes(subject.slug) ? 'blue' : ''}>
+                                {subject.name} - €{subject.price}/Hour
+                              </Tag>
+                            }
+                          >
+                            {subject.description}
+                          </Tabs.TabPane>
+                        ))}
+                      </Tabs>
+                    }
                   />
-                  <Paragraph>{tutor.description}</Paragraph>
                 </List.Item>
               </Card>
             )}
