@@ -1,8 +1,8 @@
 export interface Callbacks {
-  onopen?: (ev: Event) => any;
-  onmessage?: (ev: MessageEvent) => any;
-  onclose?: (ev: CloseEvent) => any;
-  onerror?: (ev: Event) => any;
+  onopen?: (ev: Event) => void;
+  onmessage?: (ev: MessageEvent) => void;
+  onclose?: (ev: CloseEvent) => void;
+  onerror?: (ev: Event) => void;
 }
 
 export enum MESSAGE_TYPE {
@@ -21,14 +21,30 @@ export class Signalling {
     this.id = id;
 
     this.ws = new WebSocket(classUrl);
-    this.ws.onopen = callbacks.onopen!;
-    this.ws.onmessage = callbacks.onmessage!;
-    this.ws.onclose = callbacks.onerror!;
-    this.ws.onerror = callbacks.onerror!;
+    if (callbacks.onopen) this.ws.onopen = callbacks.onopen;
+    if (callbacks.onmessage) this.ws.onmessage = callbacks.onmessage;
+    if (callbacks.onclose) this.ws.onclose = callbacks.onclose;
+    if (callbacks.onerror) this.ws.onerror = callbacks.onerror;
   }
 
   send(message_type: MESSAGE_TYPE, to: string, data: any): void {
-    console.log(this.ws.readyState);
+    console.log(this.ws.readyState + ' - ' + message_type);
     this.ws.send(JSON.stringify({ src: this.id, dest: to, type: message_type, data: data }));
+  }
+
+  onopen(func: (ev: Event) => void) {
+    this.ws.onopen = func;
+  }
+
+  onmessage(func: (ev: MessageEvent) => void) {
+    this.ws.onmessage = func;
+  }
+
+  onclose(func: (ev: CloseEvent) => void) {
+    this.ws.onclose = func;
+  }
+
+  onerror(func: (ev: Event) => void) {
+    this.ws.onerror = func;
   }
 }

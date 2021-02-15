@@ -7,15 +7,17 @@ import {
   PhoneFilled,
 } from '@ant-design/icons';
 import { Avatar, Button, Col, Divider, Layout, Row, Select, Tooltip, Typography } from 'antd';
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useContext, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { Link, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { APIContext } from '../api/api';
 import { UserAvatar } from '../components/UserAvatar';
 import { ISettings, SettingsCTX } from '../api/classroom';
 import { LessonClassroom } from './LessonClassroom';
-import { Signalling } from '../webrtc/signalling';
+import { MESSAGE_TYPE, Signalling } from '../webrtc/signalling';
 import * as Devices from '../webrtc/devices';
+import config from '../config';
 
 const { Option } = Select;
 
@@ -62,7 +64,9 @@ export function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   // TODO(james): Connect to Websocket in lobby for probing people already in call
   // const signalling = new Signalling(auth.claims.sub, lid, null)
+  const api = useContext(APIContext);
   const history = useHistory();
+  const signalling = useRef<Signalling>();
   const [webcams, setWebcams] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const display = useRef<HTMLVideoElement>();
@@ -77,6 +81,7 @@ export function LessonLobby(): ReactElement {
   }
 
   const settingsValue: ISettings = {
+    signalling: signalling.current,
     fullscreen,
     setFullscreen,
     webcams,
@@ -90,6 +95,18 @@ export function LessonLobby(): ReactElement {
     webcamStream,
     setWebcamStream,
   };
+
+  useEffect(() => {
+    signalling.current = new Signalling(api.claims?.sub, `${config.signallingUrl}/${lid}`, {
+      onopen: (event: Event) => {
+        console.log('Connected to WS: ', lid);
+        // TODO(james): Probe Users
+        // signalling.current?.send(MESSAGE_TYPE.PROBE, '', null);
+      },
+      onclose: console.log,
+      onerror: console.log,
+    });
+  }, []);
 
   useAsync(async () => {
     await Devices.devicePermissions();

@@ -107,50 +107,49 @@ export function LessonClassroom(): ReactElement {
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [micEnabled, setMicEnabled] = React.useState(true);
 
-  const signalling = useRef<Signalling>();
+  const signalling = settings.signalling;
   const handler = useRef<WebRTCHandler>();
 
   useEffect(() => {
-    signalling.current = new Signalling(api.claims?.sub || '', `${config.signallingUrl}/${lid}`, {
-      onopen: (event: Event) => {
-        console.log('Connected to WS: ', lid);
-        signalling.current?.send(MESSAGE_TYPE.AHOY_HOY, '', null);
-      },
-      onclose: undefined,
-      onerror: undefined,
-      onmessage: (event: MessageEvent) => {
-        const message = JSON.parse(event.data);
-        if (message.src === api.claims?.sub) return;
-        const type: MESSAGE_TYPE = message.type;
-        switch (type) {
-          case MESSAGE_TYPE.AHOY_HOY: {
-            handler.current?.addPeer(message.src);
-            console.log(handler.current?.peers['22222222-2222-2222-2222-222222222222']?.conn.getReceivers());
-            break;
-          }
-          case MESSAGE_TYPE.CHAT: {
-            console.log('New Message:', message);
-            const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
-            setMessages((prev) => prev.concat(messageData));
-            break;
-          }
-          case MESSAGE_TYPE.SDP: {
-            if (message.dest !== signalling.current?.id) return;
-            handler.current?.incomingSDP(message.src, message.data);
-            break;
-          }
-          case MESSAGE_TYPE.CANDIDATE: {
-            if (message.dest !== signalling.current?.id) return;
-            handler.current?.incomingCandidate(message.src, message.data);
-            break;
-          }
+    // Signalling can be none if classroom page is refreshed before being sent back to lobby
+    if (signalling == null) return;
+    handler.current = new WebRTCHandler(signalling);
+    console.log(handler.current);
+    signalling.onmessage(async (event: MessageEvent) => {
+      const message = JSON.parse(event.data);
+      // Should never happen but just in case
+      if (message.src == api.claims?.sub) return;
+
+      const type: MESSAGE_TYPE = message.type;
+      switch (type) {
+        case MESSAGE_TYPE.AHOY_HOY: {
+          handler.current?.addPeer(message.src);
+          break;
         }
-        // console.log(event);
-      },
+        case MESSAGE_TYPE.CHAT: {
+          console.log('New Message: ', message);
+          const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
+          setMessages((prev) => prev.concat(messageData));
+          break;
+        }
+        case MESSAGE_TYPE.SDP: {
+          // Only respond to SDP destined for us
+          if (message.dest !== signalling.id) return;
+          await handler.current?.incomingSDP(message.src, message.data);
+          break;
+        }
+        case MESSAGE_TYPE.CANDIDATE: {
+          // Only respond to candidates destined for us
+          if (message.dest !== signalling.id) return;
+          await handler.current?.incomingCandidate(message.src, message.data);
+          break;
+        }
+      }
     });
-    handler.current = new WebRTCHandler(signalling.current);
+    signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
+
     handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
-      console.log(id, correlation, event);
+      console.log(event);
     };
   }, []);
 
@@ -158,11 +157,12 @@ export function LessonClassroom(): ReactElement {
     const last = messages[messages.length - 1];
     if (last && !last.profile) {
       console.log(last);
+      // TODO(eric): Profile
       const profile = await api.services.readProfileByAccountID(
         api.account?.id ?? '',
         api.account?.type ?? AccountType.Tutor,
       );
-      signalling.current?.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, profile });
+      signalling.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, undefined });
     }
   }, [api.account?.id, messages]);
 
@@ -183,6 +183,7 @@ export function LessonClassroom(): ReactElement {
       console.log(web.stream);
       setWebcamDisplays((prev) => prev.concat(web));
       web.stream.getTracks().forEach((v) => {
+        console.log('Adding Webcam');
         handler.current?.addTrack(v, StreamType.Camera, web.stream);
       });
     }

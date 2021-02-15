@@ -1,6 +1,8 @@
 import React from 'react';
+import { Signalling } from '../webrtc/signalling';
 
 export interface ISettings {
+  signalling: Signalling | null;
   fullscreen: boolean;
   setFullscreen: (v: boolean) => void;
   webcams: MediaDeviceInfo[];
@@ -16,6 +18,7 @@ export interface ISettings {
 }
 
 export const SettingsCTX = React.createContext<ISettings>({
+  signalling: null,
   fullscreen: false,
   setFullscreen: (v) => null,
   webcams: [],
