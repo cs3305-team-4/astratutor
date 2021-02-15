@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext, useState } from 'react';
 import moment, { Moment } from 'moment';
 
 import { useHistory } from 'react-router';
@@ -6,8 +6,9 @@ import { useHistory } from 'react-router';
 import { Modal, ModalProps, Button, Form, Select, Input, Typography, DatePicker, TimePicker, Row, Col } from 'antd';
 
 import { Availability } from './Availability';
-import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import { AccountType, ProfileResponseDTO, SubjectTaughtDTO } from '../api/definitions';
 import { APIContext } from '../api/api';
+import { useAsync } from 'react-async-hook';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -18,7 +19,9 @@ export interface RequestLessonModalProps extends ModalProps {
 }
 
 export function RequestLessonModal(props: RequestLessonModalProps): React.ReactElement {
-  const subjects = ['Leaving Certificate - English', 'Leaving Certificate - Irish'];
+  //const subjects = ['Leaving Certificate - English', 'Leaving Certificate - Irish'];
+
+  const [tutorSubjects, setTutorSubjects] = useState<SubjectTaughtDTO[] | undefined>(undefined);
 
   const api = React.useContext(APIContext);
   const history = useHistory();
@@ -28,6 +31,10 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
     subject: string;
     lesson_detail: string;
   }
+
+  useAsync(async () => {
+    setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.profile.account_id));
+  }, []);
 
   const onFinish = async (values: FormModel) => {
     console.log(values);
@@ -78,7 +85,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
     >
       <Form
         onFinish={onFinish}
-        initialValues={{ subject: subjects[0] }}
+        initialValues={{ subject: tutorSubjects ? tutorSubjects[0].id : undefined }}
         layout="vertical"
         name="request-lesson"
         preserve={false}
@@ -109,9 +116,9 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
             <Title level={5}>Subject</Title>
             <Form.Item name="subject" rules={[{ required: true, message: 'Please select a subject!' }]}>
               <Select size="large" style={{ width: '100%' }}>
-                {subjects.map((value, index) => (
-                  <Select.Option key={value} value={value}>
-                    {value}
+                {tutorSubjects?.map((subject, index) => (
+                  <Select.Option key={index} value={subject.id}>
+                    {subject.name}
                   </Select.Option>
                 ))}
               </Select>

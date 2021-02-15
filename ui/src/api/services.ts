@@ -226,4 +226,9 @@ export class Services {
 
     return (await res.json()) as TutorSubjectsDTO[];
   }
+
+  async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
+    return (await res.json()) as SubjectTaughtDTO[];
+  }
 }
