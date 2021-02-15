@@ -218,7 +218,7 @@ export class Services {
   }
 
   async readTutors(filters: string[]): Promise<SubjectTaughtDTO[]> {
-    const res = await fetchRest(`${config.apiUrl}/subjects/tutors?filters=${filters.join(',')}`);
+    const res = await fetchRest(`${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`);
 
     return (await res.json()) as SubjectTaughtDTO[];
   }
