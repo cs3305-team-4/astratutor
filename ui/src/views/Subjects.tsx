@@ -1,21 +1,16 @@
-import React, { ChangeEvent, ReactElement, useContext, useEffect, useState } from 'react';
-import styled from 'styled-components';
-
-import { Link } from 'react-router-dom';
+import React, { ChangeEvent, ReactElement, useContext, useState } from 'react';
 
 import { APIContext } from '../api/api';
 
 import Subject from '../components/Subject';
 
-import { Typography, Layout, Card, Row, Col, PageHeader, Input } from 'antd';
-import { ReadSubjectsDTO, SubjectDTO } from '../api/definitions';
+import { Typography, Layout, Row, Col, PageHeader, Input } from 'antd';
+import { SubjectDTO } from '../api/definitions';
 
 import { useAsync } from 'react-async-hook';
 
-import config from '../config';
-
-const { Title, Paragraph, Text } = Typography;
-const { Header, Footer, Sider, Content } = Layout;
+const { Text } = Typography;
+const { Content } = Layout;
 
 export function Subjects(): ReactElement {
   const api = useContext(APIContext);
