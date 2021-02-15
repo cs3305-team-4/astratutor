@@ -284,6 +284,7 @@ type Profile struct {
 	Country        string
 	Description    string
 	Color          string
+	Subjects       []SubjectTaught  `gorm:"foreignKey:TutorProfileID"`
 	Qualifications []Qualification  `gorm:"foreignKey:ProfileID"`
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 

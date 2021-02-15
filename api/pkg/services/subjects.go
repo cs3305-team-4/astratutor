@@ -11,9 +11,8 @@ import (
 //Subject contains information about a single subject
 type Subject struct {
 	database.Model
-	Name  string `gorm:"unique;not null;"`
-	Slug  string `gorm:"unique;not null;"`
-	Image string
+	Name string `gorm:"unique;not null;"`
+	Slug string `gorm:"unique;not null;"`
 }
 
 type SubjectTaughtError string
@@ -32,23 +31,21 @@ func CreateSubject(name string, image string, slug string, db *gorm.DB) error {
 		return err
 	}
 
-	return db.Create(&Subject{Name: name, Image: image, Slug: slug}).Error
+	return db.Create(&Subject{Name: name, Slug: slug}).Error
 }
 
 //Contains information on
 type SubjectTaught struct {
 	database.Model
 
-	//Contains Subject bring taught
 	Subject   Subject `gorm:"foreignKey:SubjectID"`
 	SubjectID uuid.UUID
-	//
-	Tutor   Account `gorm:"foreignKey:TutorID"`
-	TutorID uuid.UUID
-	//Price that the Tutor wishes to charge per lesson
-	Price uint
-	//Description given by the tutor
-	Description string
+
+	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
+	TutorProfileID uuid.UUID
+
+	Description string  `gorm:"not null;"`
+	Price       float32 `gorn:"not null;"`
 }
 
 //gets all subjects in the DB
@@ -64,6 +61,7 @@ func GetSubjects(db *gorm.DB) ([]Subject, error) {
 	return subject, db.Find(&subject).Error
 }
 
+// returns a subject when given a subjects slug
 func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	if db == nil {
 		var err error
@@ -83,7 +81,7 @@ func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	return &subject, nil
 }
 
-// returns a subject when given a subjects slug
+// returns a subjects when given a list of subject slugs
 func GetSubjectsBySlugs(slugs []string, db *gorm.DB) (*[]Subject, error) {
 	if db == nil {
 		var err error
@@ -117,7 +115,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
+func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
 
 	if sid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
@@ -131,6 +129,11 @@ func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) 
 			return nil, err
 		}
 	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
+	}
+
 	var subjectTaught []SubjectTaught
 	var err error
 	err = db.Where(&SubjectTaught{SubjectID: sid}).Find(&subjectTaught).Error
@@ -154,7 +157,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
+func GetAllTutors(db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -162,6 +165,11 @@ func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
 			return nil, err
 		}
 	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
+	}
+
 	var subjectTaught []SubjectTaught
 	return subjectTaught, db.Find(&subjectTaught).Error
 }
@@ -181,11 +189,11 @@ func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, er
 		}
 	}
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{TutorID: tid}).Find(&subjectTaught).Error
+	return subjectTaught, db.Where(&SubjectTaught{TutorProfileID: tid}).Find(&subjectTaught).Error
 }
 
 //creats a StudentTaught based on the subject and tutor with a set price description.
-func TeachSubject(subject *Subject, tutor *Account, description string, price uint, db *gorm.DB) error {
+func TeachSubject(subject *Subject, tutor *Account, description string, price float32, db *gorm.DB) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -205,10 +213,9 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price ui
 		}
 
 		err = tx.Create(&SubjectTaught{
-			Subject:     *subject,
-			Tutor:       *tutor,
-			Description: description,
-			Price:       price,
+			Subject:      *subject,
+			TutorProfile: *tutor.Profile,
+			Price:        price,
 		}).Error
 
 		if err != nil {
