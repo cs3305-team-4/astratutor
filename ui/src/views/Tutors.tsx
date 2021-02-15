@@ -1,11 +1,10 @@
-import React, { ReactElement, useContext, useEffect, useState } from 'react';
-import styled from 'styled-components';
+import React, { ReactElement, useContext, useState } from 'react';
 
 import { SubjectDTO, SubjectTaughtDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Form } from 'antd';
+import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space } from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
 
@@ -17,8 +16,6 @@ export function Tutors(): ReactElement {
   const [tutors, setTutors] = useState<SubjectTaughtDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
-
-  const [requestForm] = Form.useForm();
 
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
