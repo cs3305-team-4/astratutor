@@ -72,7 +72,7 @@ const StyledMessage = styled.div<{ self: boolean }>`
   }
 `;
 
-interface Message {
+export interface Message {
   profile?: ProfileResponseDTO;
   date: Date;
   text: string;
@@ -80,37 +80,22 @@ interface Message {
 
 interface MessagingProps {
   height: number;
+  messages: Message[];
+  setMessages: (m: Message[]) => void;
 }
 
 export default function Messaging(props: MessagingProps): JSX.Element {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      profile: {
-        avatar: '',
-        slug: '/',
-        first_name: 'Gamer',
-        last_name: 'Jones',
-        city: 'Cark',
-        country: 'Ireland',
-        subtitle: 'Gamer',
-        description: 'Gamer',
-        color: '#199a4c',
-      },
-      date: new Date(),
-      text: 'Hello fellow gamer',
-    },
-  ]);
   const [text, setText] = useState('');
   const sendMessage = () => {
     if (text) {
-      setMessages(messages.concat({ text, date: new Date() }));
+      props.setMessages(props.messages.concat({ text, date: new Date() }));
       setText('');
     }
   };
   return (
     <StyledLayout style={{ height: `calc(100vh - ${props.height}px)` }}>
       <StyledMessages>
-        {messages.map((v, i) => {
+        {props.messages.map((v, i) => {
           if (v.profile) {
             return (
               <div key={i} style={{ display: 'flex' }}>

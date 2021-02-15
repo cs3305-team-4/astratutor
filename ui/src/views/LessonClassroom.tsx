@@ -12,8 +12,8 @@ import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { APIContext } from '../api/api';
-import { ProfileResponseDTO } from '../api/definitions';
-import Messaging from '../components/Messaging';
+import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import Messaging, { Message } from '../components/Messaging';
 import { UserAvatar } from '../components/UserAvatar';
 import { SettingsCTX } from '../api/classroom';
 import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
@@ -94,37 +94,71 @@ const StyledVideo = styled.video`
 
 export function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
-  const signalling = useRef(null);
   const settings = useContext(SettingsCTX);
   const history = useHistory();
   const api = useContext(APIContext);
+
+  const [messages, setMessages] = React.useState<Message[]>([]);
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [micEnabled, setMicEnabled] = React.useState(true);
 
-  // Temp Websocket integration
+  const signalling = useRef<Signalling>();
+  const handler = useRef<WebRTCHandler>();
+
   useEffect(() => {
-    if (signalling.current) return;
-    signalling.current = new Signalling(api.claims.sub, `${config.signallingUrl}/${lid}`, {
-      onopen: onOpen,
+    signalling.current = new Signalling(api.claims?.sub || '', `${config.signallingUrl}/${lid}`, {
+      onopen: (event: Event) => {
+        console.log('Connected to WS: ', lid);
+        signalling.current?.send(MESSAGE_TYPE.AHOY_HOY, '', null);
+      },
       onclose: undefined,
       onerror: undefined,
-      onmessage: onMessage,
+      onmessage: (event: MessageEvent) => {
+        const message = JSON.parse(event.data);
+        if (message.src === api.claims?.sub) return;
+        const type: MESSAGE_TYPE = message.type;
+        switch (type) {
+          case MESSAGE_TYPE.AHOY_HOY: {
+            handler.current?.addPeer(message.src);
+            break;
+          }
+          case MESSAGE_TYPE.CHAT: {
+            console.log('New Message:', message);
+            const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
+            setMessages((prev) => prev.concat(messageData));
+            break;
+          }
+          case MESSAGE_TYPE.SDP: {
+            if (message.dest !== signalling.current?.id) return;
+            handler.current?.incomingSDP(message.src, message.data);
+            break;
+          }
+          case MESSAGE_TYPE.CANDIDATE: {
+            if (message.dest !== signalling.current?.id) return;
+            handler.current?.incomingCandidate(message.src, message.data);
+            break;
+          }
+        }
+        console.log(event);
+      },
     });
+    handler.current = new WebRTCHandler(signalling.current);
   }, []);
 
-  const onOpen = (_event: Event) => {
-    console.log('Connected to WS: ', lid);
-    signalling.current.send(MESSAGE_TYPE.AHOY_HOY);
-  };
-
-  const onMessage = (event: MessageEvent) => {
-    const message = JSON.parse(event.data);
-    if (message.src === api.claims.sub) return;
-    console.log(event);
-  };
+  useAsync(async () => {
+    const last = messages[messages.length - 1];
+    if (last && !last.profile) {
+      console.log(last);
+      const profile = await api.services.readProfileByAccountID(
+        api.account?.id ?? '',
+        api.account?.type ?? AccountType.Tutor,
+      );
+      signalling.current?.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, profile });
+    }
+  }, [api.account?.id, messages]);
 
   const addWebcam = (web: IWebcam) => {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
@@ -161,8 +195,10 @@ export function LessonClassroom(): ReactElement {
         }}
       />
     );
-    const web: IWebcam = { profile: await api.services.readProfileByAccount(api.account), ref: video };
-    addWebcam(web);
+    if (api.account) {
+      const web: IWebcam = { profile: await api.services.readProfileByAccount(api.account), ref: video };
+      addWebcam(web);
+    }
   }, [settings.webcamStream, webcamEnabled]);
 
   const hangup = () => {
@@ -256,7 +292,7 @@ export function LessonClassroom(): ReactElement {
               </div>
             </StyledWebcam>
           ))}
-          <Messaging height={webcamDisplays.length * webcamHeight} />
+          <Messaging messages={messages} setMessages={setMessages} height={webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content>
           <StyledVideo
