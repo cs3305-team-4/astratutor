@@ -19,10 +19,12 @@ import { SettingsCTX } from '../api/classroom';
 import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
 import { WebRTCHandler } from '../webrtc/webrtc';
 import config from '../config';
+import { StreamType } from '../webrtc/stream_types';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
   ref: React.ReactElement<HTMLVideoElement>;
+  stream: MediaStream;
 }
 
 const webcamHeight = 200;
@@ -123,6 +125,7 @@ export function LessonClassroom(): ReactElement {
         switch (type) {
           case MESSAGE_TYPE.AHOY_HOY: {
             handler.current?.addPeer(message.src);
+            console.log(handler.current?.peers['22222222-2222-2222-2222-222222222222']?.conn.getReceivers());
             break;
           }
           case MESSAGE_TYPE.CHAT: {
@@ -142,10 +145,13 @@ export function LessonClassroom(): ReactElement {
             break;
           }
         }
-        console.log(event);
+        // console.log(event);
       },
     });
     handler.current = new WebRTCHandler(signalling.current);
+    handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+      console.log(id, correlation, event);
+    };
   }, []);
 
   useAsync(async () => {
@@ -163,12 +169,22 @@ export function LessonClassroom(): ReactElement {
   const addWebcam = (web: IWebcam) => {
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
     if (other > -1) {
-      const temp = webcamDisplays;
-      delete temp[other];
-      temp[other] = web;
-      setWebcamDisplays(temp);
+      setWebcamDisplays((prev) => {
+        const temp = prev;
+        const tracks = web.stream.getTracks();
+        tracks.forEach((v, i) => {
+          handler.current?.replaceTrack(tracks[i], v);
+        });
+        delete temp[other];
+        temp[other] = web;
+        return temp;
+      });
     } else {
-      setWebcamDisplays(webcamDisplays.concat(web));
+      console.log(web.stream);
+      setWebcamDisplays((prev) => prev.concat(web));
+      web.stream.getTracks().forEach((v) => {
+        handler.current?.addTrack(v, StreamType.Camera, web.stream);
+      });
     }
   };
 
@@ -195,8 +211,12 @@ export function LessonClassroom(): ReactElement {
         }}
       />
     );
-    if (api.account) {
-      const web: IWebcam = { profile: await api.services.readProfileByAccount(api.account), ref: video };
+    if (api.account && settings.webcamStream) {
+      const web: IWebcam = {
+        profile: await api.services.readProfileByAccount(api.account),
+        ref: video,
+        stream: settings.webcamStream,
+      };
       addWebcam(web);
     }
   }, [settings.webcamStream, webcamEnabled]);

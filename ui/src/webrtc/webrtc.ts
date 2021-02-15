@@ -18,7 +18,7 @@ export class WebRTCHandler {
 
   addPeer(id: string, polite?: boolean): Peer {
     console.log('Adding Peer: ' + id);
-    const peer = new Peer(id, new RTCPeerConnection(), polite ?? false);
+    const peer = new Peer(id, new RTCPeerConnection(), polite || false);
 
     if (!polite) {
       peer.correlateChan = peer.conn.createDataChannel('correlate');
@@ -51,6 +51,7 @@ export class WebRTCHandler {
     peer.conn.onnegotiationneeded = async () => {
       console.log('Negotiaion Needed: ' + id);
       try {
+        if (peer.makingOffer || peer.conn.signalingState !== 'stable') return;
         peer.makingOffer = true;
         await peer.conn.setLocalDescription({});
         this.signaller.send(MESSAGE_TYPE.SDP, id, peer.conn.localDescription);
@@ -62,6 +63,7 @@ export class WebRTCHandler {
     };
 
     peer.conn.ontrack = (event: RTCTrackEvent) => {
+      console.log('on track');
       if (!this.ontrack) return;
       const sid = event.streams[0].id;
       this.ontrack(id, peer.streamCorrelations[sid], event);
@@ -113,6 +115,7 @@ export class WebRTCHandler {
   }
 
   addTrack(track: MediaStreamTrack, kind: StreamType, stream: MediaStream) {
+    console.log('Adding track:', track);
     Object.values(this.peers).forEach((peer) => {
       peer.correlateChan!.send(JSON.stringify({ sid: stream.id, kind: kind }));
       const sender = peer.conn.addTrack(track, stream);
