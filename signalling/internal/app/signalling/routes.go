@@ -21,9 +21,10 @@ func ServeWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new classroom if one for this code does not already exist
-	if _, ok := classes[classID]; !ok {
-		log.Infof("Creating Classroom: %s", classID)
-		classes[classID] = &Classroom{
+	classrooms.mu.Lock()
+	if _, ok := classrooms.classes[classID]; !ok {
+		log.Printf("Creating Classroom: %s", classID)
+		classrooms.classes[classID] = &Class{
 			Code:    classID,
 			Members: []*websocket.Conn{},
 		}
@@ -32,6 +33,7 @@ func ServeWS(w http.ResponseWriter, r *http.Request) {
 	log.Infof("Connecting %s to: %s", r.RemoteAddr, classID)
 
 	// Add connection to class
-	classes[classID].Members = append(classes[classID].Members, ws)
-	wsHandler(ws, classes[classID])
+	classrooms.classes[classID].Members = append(classrooms.classes[classID].Members, ws)
+	classrooms.mu.Unlock()
+	wsHandler(ws, classrooms.classes[classID])
 }
