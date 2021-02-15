@@ -1,11 +1,24 @@
 package signalling
 
-import "github.com/gorilla/websocket"
+import (
+	"sync"
 
-// Classroom ...
-type Classroom struct {
-	Code    string
-	Members []*websocket.Conn
+	"github.com/gorilla/websocket"
+)
+
+// Classes ...
+type Classrooms struct {
+	classes map[string]*Class
+	mu      sync.Mutex
 }
 
-var classes = map[string]*Classroom{}
+// Classroom ...
+type Class struct {
+	Code    string
+	Members []*websocket.Conn
+	mu      sync.Mutex
+}
+
+var classrooms = Classrooms{
+	classes: map[string]*Class{},
+}
