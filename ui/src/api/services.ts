@@ -12,6 +12,8 @@ import {
   AccountRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  SubjectDTO,
+  SubjectTaughtDTO,
 } from './definitions';
 
 export class Services {
@@ -207,5 +209,17 @@ export class Services {
         stage_detail,
       }),
     });
+  }
+
+  async readSubjects(): Promise<SubjectDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects`);
+
+    return (await res.json()) as SubjectDTO[];
+  }
+
+  async readTutors(filters: string[]): Promise<SubjectTaughtDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects/tutors?filters=${filters.join(',')}`);
+
+    return (await res.json()) as SubjectTaughtDTO[];
   }
 }
