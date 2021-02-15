@@ -41,29 +41,28 @@ type TutorSubjectsResponseDTO struct {
 	Subjects  []SubjectTaughtDTO `json:"subjects"`
 }
 
-func SubjectsTaughtToTutorSubjectsResponseDTO(subjectsTaught *[]services.SubjectTaught) *[]TutorSubjectsResponseDTO {
-	// NOTE: This method could probably use some optimization however it currently works
-	tutors := map[uuid.UUID]TutorSubjectsResponseDTO{}
-	for _, subjectTaught := range *subjectsTaught {
-		tutors[subjectTaught.TutorProfileID] = TutorSubjectsResponseDTO{
-			ID:        subjectTaught.TutorProfile.AccountID,
-			FirstName: subjectTaught.TutorProfile.FirstName,
-			LastName:  subjectTaught.TutorProfile.LastName,
-			Avatar:    subjectTaught.TutorProfile.Avatar,
-			Slug:      subjectTaught.TutorProfile.Slug,
-			Subjects: append(tutors[subjectTaught.TutorProfileID].Subjects, SubjectTaughtDTO{
-				ID:          subjectTaught.SubjectID,
+func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
+	tutorSubjectsResponse := []TutorSubjectsResponseDTO{}
+	for _, profile := range *profiles {
+		subjects := []SubjectTaughtDTO{}
+		for _, subjectTaught := range profile.Subjects {
+			subjects = append(subjects, SubjectTaughtDTO{
+				ID:          subjectTaught.Subject.ID,
 				Name:        subjectTaught.Subject.Name,
 				Slug:        subjectTaught.Subject.Slug,
 				Description: subjectTaught.Description,
 				Price:       subjectTaught.Price,
-			}),
+			})
 		}
-	}
 
-	tutorSubjectsResponse := []TutorSubjectsResponseDTO{}
-	for _, subjectTaughtDTOs := range tutors {
-		tutorSubjectsResponse = append(tutorSubjectsResponse, subjectTaughtDTOs)
+		tutorSubjectsResponse = append(tutorSubjectsResponse, TutorSubjectsResponseDTO{
+			ID:        profile.AccountID,
+			FirstName: profile.FirstName,
+			LastName:  profile.LastName,
+			Avatar:    profile.Avatar,
+			Slug:      profile.Slug,
+			Subjects:  subjects,
+		})
 	}
 
 	return &tutorSubjectsResponse
@@ -114,16 +113,16 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors := []services.SubjectTaught{}
+		tutors := []services.Profile{}
 		for _, subject := range *filtered {
-			res, err := services.GetTutorsBySubjectIDs(subject.ID, nil, "TutorProfile", "Subject")
+			res, err := services.GetTutorsBySubjectIDs(subject.ID, nil)
 			if err != nil {
 				restError(w, r, err, http.StatusBadRequest)
 				return
 			}
 			tutors = append(tutors, res...)
 		}
-		outTutors := SubjectsTaughtToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
 
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
@@ -131,12 +130,12 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		tutors, err := services.GetAllTutors(nil, "TutorProfile", "Subject")
+		tutors, err := services.GetAllTutors(nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := SubjectsTaughtToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
 			return

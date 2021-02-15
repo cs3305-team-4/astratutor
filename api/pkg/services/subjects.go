@@ -48,6 +48,15 @@ type SubjectTaught struct {
 	Price       float32 `gorn:"not null;"`
 }
 
+type TutorSubjects struct {
+	database.Model
+
+	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
+	TutorProfileID uuid.UUID
+
+	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
+}
+
 //gets all subjects in the DB
 func GetSubjects(db *gorm.DB) ([]Subject, error) {
 	if db == nil {
@@ -115,7 +124,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
+func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB) ([]Profile, error) {
 
 	if sid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
@@ -130,17 +139,26 @@ func GetTutorsBySubjectIDs(sid uuid.UUID, db *gorm.DB, preloads ...string) ([]Su
 		}
 	}
 
-	for _, preload := range preloads {
-		db = db.Preload(preload)
-	}
-
-	var subjectTaught []SubjectTaught
-	var err error
-	err = db.Where(&SubjectTaught{SubjectID: sid}).Find(&subjectTaught).Error
+	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	var profiles []Profile
+	err := db.Find(&profiles).Error
 	if err != nil {
 		return nil, err
 	}
-	return subjectTaught, nil
+
+	var profilesWithSubjects []Profile
+
+	for _, profile := range profiles {
+		if len(profile.Subjects) > 0 {
+			for _, subjectTaught := range profile.Subjects {
+				if subjectTaught.SubjectID == sid {
+					profilesWithSubjects = append(profilesWithSubjects, profile)
+					break
+				}
+			}
+		}
+	}
+	return profilesWithSubjects, nil
 }
 
 //Quries the DB for SubjectTaught where the ID matches the SubjectTaught ID
@@ -157,7 +175,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutors(db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
+func GetAllTutors(db *gorm.DB) ([]Profile, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -166,12 +184,21 @@ func GetAllTutors(db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
 		}
 	}
 
-	for _, preload := range preloads {
-		db = db.Preload(preload)
+	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	var profiles []Profile
+	err := db.Find(&profiles).Error
+	if err != nil {
+		return nil, err
 	}
 
-	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Find(&subjectTaught).Error
+	var profilesWithSubjects []Profile
+
+	for _, profile := range profiles {
+		if len(profile.Subjects) > 0 {
+			profilesWithSubjects = append(profilesWithSubjects, profile)
+		}
+	}
+	return profilesWithSubjects, nil
 }
 
 //Returns subjectTaught for specific tutors using their ID
