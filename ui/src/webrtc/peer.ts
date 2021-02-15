@@ -14,7 +14,7 @@ export class Peer {
   constructor(id: string, conn: RTCPeerConnection, polite: boolean) {
     this.id = id;
     this.conn = conn;
-    this.polite = polite ?? false;
+    this.polite = polite || false;
     this.makingOffer = false;
     this.ignoreOffer = false;
     this.correlateChan = undefined;
