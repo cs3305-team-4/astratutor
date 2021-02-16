@@ -24,6 +24,7 @@ interface IWebcam {
   profile: ProfileResponseDTO;
   ref: React.ReactElement<HTMLVideoElement>;
   stream: MediaStream;
+  streaming: boolean;
 }
 
 const webcamHeight = 200;
@@ -110,10 +111,10 @@ export function LessonClassroom(): ReactElement {
   const handler = useRef<WebRTCHandler>();
   const [addingPeer, setAddingPeer] = React.useState(false);
 
-  useEffect(() => {
+  useAsync(async () => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
-    handler.current = new WebRTCHandler(signalling);
+    handler.current = new WebRTCHandler(signalling, () => setAddingPeer(true));
     console.log(handler.current);
     signalling.onmessage(async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
@@ -149,7 +150,26 @@ export function LessonClassroom(): ReactElement {
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
 
     handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
-      console.log(event);
+      console.log('NEW TRACK', id, correlation, event);
+      switch (correlation) {
+        case StreamType.Camera:
+          const stream = event.streams.length ? event.streams[0] : new MediaStream();
+          const ref = (
+            <video
+              key={id}
+              ref={(ref) => {
+                if (ref) {
+                  ref.srcObject = stream;
+                  ref.play();
+                }
+              }}
+            />
+          );
+          const profile = settings.otherProfiles[id];
+          console.log(settings.otherProfiles);
+          setWebcamDisplays((prev) => prev.concat({ stream, ref, profile, streaming: true }));
+          break;
+      }
     };
   }, []);
 
@@ -166,22 +186,31 @@ export function LessonClassroom(): ReactElement {
   }, [api.account?.id, messages]);
 
   const addWebcam = (web: IWebcam) => {
+    console.log('Adding Webcam to', handler.current?.peers);
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
     if (other > -1) {
+      console.log(other);
       setWebcamDisplays((prev) => {
         const temp = prev;
         const tracks = web.stream.getTracks();
-        tracks.forEach((v, i) => {
-          handler.current?.replaceTrack(tracks[i], v);
-        });
+        const old = temp[other];
+        if (old.streaming) {
+          tracks.forEach((v, i) => {
+            handler.current?.replaceTrack(temp[other].stream.getTracks()[i], v);
+          });
+        } else {
+          web.stream.getTracks().forEach((v) => {
+            handler.current?.addTrack(v, StreamType.Camera, web.stream);
+          });
+        }
         delete temp[other];
         temp[other] = web;
         return temp;
       });
     } else {
+      web.streaming = Object.keys(handler.current!.peers).length > 0;
       setWebcamDisplays((prev) => prev.concat(web));
       web.stream.getTracks().forEach((v) => {
-        console.log('Adding Webcam to', handler.current?.peers);
         handler.current?.addTrack(v, StreamType.Camera, web.stream);
       });
     }
@@ -215,6 +244,7 @@ export function LessonClassroom(): ReactElement {
         profile: await api.services.readProfileByAccount(api.account),
         ref: video,
         stream: settings.webcamStream,
+        streaming: false,
       };
       addWebcam(web);
       if (addingPeer) {

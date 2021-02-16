@@ -170,6 +170,15 @@ export class Services {
     return (await res.json()) as LessonResponseDTO[];
   }
 
+  async readLesson(lessonId: string): Promise<LessonResponseDTO> {
+    const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as LessonResponseDTO;
+  }
+
   async readLessonByAccountId(lessonId: string): Promise<LessonResponseDTO> {
     const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
       headers: this.headers,

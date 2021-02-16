@@ -18,6 +18,7 @@ import { LessonClassroom } from './LessonClassroom';
 import { MESSAGE_TYPE, Signalling } from '../webrtc/signalling';
 import * as Devices from '../webrtc/devices';
 import config from '../config';
+import { AccountType, ProfileResponseDTO } from '../api/definitions';
 
 const { Option } = Select;
 
@@ -75,6 +76,7 @@ export function LessonLobby(): ReactElement {
   const [fullscreen, setFullscreen] = useState(document.fullscreenElement !== null);
   const [joined, setJoined] = useState(false);
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [otherProfiles, setOtherProfiles] = React.useState<{ [id: string]: ProfileResponseDTO }>({});
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -94,6 +96,7 @@ export function LessonLobby(): ReactElement {
     setSelectedMicrophone,
     webcamStream,
     setWebcamStream,
+    otherProfiles,
   };
 
   useEffect(() => {
@@ -125,6 +128,11 @@ export function LessonLobby(): ReactElement {
       setWebcams(vid);
       setMicrophones(mic);
     }
+    const lesson = await api.services.readLesson(lid);
+    setOtherProfiles({
+      [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
+      [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
+    });
   }, []);
   useAsync(async () => {
     if (!webcamStream) {

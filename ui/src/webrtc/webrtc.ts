@@ -11,9 +11,11 @@ export class WebRTCHandler {
 
   // Callbacks
   ontrack?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
+  onAddPeer: () => void;
 
-  constructor(signaller: Signalling) {
+  constructor(signaller: Signalling, onAddPeer: () => void) {
     this.signaller = signaller;
+    this.onAddPeer = onAddPeer;
     this.peers = {};
     this.tracks = {};
   }
@@ -33,6 +35,7 @@ export class WebRTCHandler {
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
       };
+      this.onAddPeer();
     }
 
     peer.conn.oniceconnectionstatechange = () => {
@@ -45,6 +48,7 @@ export class WebRTCHandler {
     peer.conn.ondatachannel = (event: RTCDataChannelEvent) => {
       peer.correlateChan = event.channel;
       console.log('Creating Data Channel - Recieve');
+      this.onAddPeer();
       peer.correlateChan.send(JSON.stringify({ kind: StreamType._READY_ }));
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
@@ -119,6 +123,7 @@ export class WebRTCHandler {
         await peer.conn.setLocalDescription({});
         this.signaller.send(MESSAGE_TYPE.SDP, id, peer.conn.localDescription);
       }
+      this.onAddPeer();
     } catch (err) {
       console.error(err);
     }
@@ -151,6 +156,7 @@ export class WebRTCHandler {
 
   replaceTrack(oldTrack: MediaStreamTrack, newTrack: MediaStreamTrack) {
     if (!this.tracks[oldTrack.id]) return;
+    console.log('replacing track');
     this.tracks[newTrack.id] = this.tracks[oldTrack.id];
     delete this.tracks[oldTrack.id];
 
