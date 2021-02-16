@@ -47,7 +47,7 @@ const StyledSider = styled(Layout.Sider)`
   border-right: 2px solid rgb(10 10 10);
 `;
 
-const StyledWebcam = styled.div`
+const StyledWebcam = styled.div<{ index: number }>`
   width: 100%;
   padding: 0;
   margin: 0;
@@ -66,7 +66,7 @@ const StyledWebcam = styled.div`
     height: 42px;
     position: absolute;
     width: 100%;
-    top: 158px;
+    top: ${(props) => props.index * webcamHeight + 158}px;
   }
 `;
 
@@ -333,17 +333,19 @@ export function LessonClassroom(): ReactElement {
           </Layout>
         </Modal>
         <StyledSider width={300}>
-          {webcamDisplays.map((v) => (
-            <StyledWebcam key={v.ref.key}>
-              {v.ref}
-              <div className="profile">
-                <UserAvatar profile={v.profile} />
-                <Typography.Text>
-                  {v.profile.first_name} {v.profile.last_name}
-                </Typography.Text>
-              </div>
-            </StyledWebcam>
-          ))}
+          {webcamDisplays.map((v, i) => {
+            return (
+              <StyledWebcam key={v.ref.key} index={i}>
+                {v.ref}
+                <div className="profile">
+                  <UserAvatar profile={v.profile} />
+                  <Typography.Text>
+                    {v.profile.first_name} {v.profile.last_name}
+                  </Typography.Text>
+                </div>
+              </StyledWebcam>
+            );
+          })}
           <Messaging messages={messages} setMessages={setMessages} height={webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content>
