@@ -50,6 +50,7 @@ import {
   QualificationRequestDTO,
   QualificationResponseDTO,
   ProfileResponseDTO,
+  SubjectTaughtDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
@@ -73,6 +74,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
 
   const [profile, setProfile] = React.useState<ProfileResponseDTO | undefined>(undefined);
   const [activeTab, setActiveTab] = React.useState<string>('outline');
+  const [tutorSubjects, setTutorSubjects] = React.useState<SubjectTaughtDTO[] | undefined>(undefined);
 
   const isSelf: boolean = api.isLoggedIn() && props.uuid === api.account.id;
 
@@ -95,6 +97,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const reloadProfile = async () => {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
+      setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -295,13 +298,11 @@ export function Profile(props: ProfileProps): React.ReactElement {
             </Title>
             {props.type === AccountType.Tutor && (
               <Content style={{ display: 'flex', flexWrap: 'wrap' }}>
-                {['Leaving Certificate - English', 'Leaving Certificate - Irish'].map(
-                  (subject: string, index: number) => (
-                    <Tag style={{ margin: '0.25rem' }} key={index}>
-                      {subject}
-                    </Tag>
-                  ),
-                )}
+                {tutorSubjects?.map((subject, index) => (
+                  <Tag style={{ margin: '0.25rem' }} key={index}>
+                    {subject.name}
+                  </Tag>
+                ))}
               </Content>
             )}
           </>

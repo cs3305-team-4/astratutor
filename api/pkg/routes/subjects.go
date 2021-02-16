@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/google/uuid"
@@ -12,69 +13,76 @@ import (
 func InjectSubjectsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleSubjectsGet).Methods("GET")
 	subrouter.HandleFunc("/tutors", handleSubjectTutorsGet).Methods("GET")
+	subrouter.HandleFunc("/tutors/{tid}", handleGetSubjectsForTutor).Methods("GET")
 }
 
 //Subject DTO represents an existing subject
 type SubjectResponseDTO struct {
-	Name  string    `json:"name" validate:"required"`
-	Slug  string    `json:"slug" validate:"len=0"`
-	ID    uuid.UUID `json:"subject_id" validate:"len=0"`
-	Image string    `json:"image" validate:"omitempty,base64"`
+	Name string    `json:"name" validate:"required"`
+	Slug string    `json:"slug" validate:"len=0"`
+	ID   uuid.UUID `json:"subject_id" validate:"len=0"`
 }
 
-//TutorSubjectResponseDTO
-type TutorSubjectResponseDTO struct {
-	SubjectTaughtID uuid.UUID `json:"subject_taught_id" validate:"len=0"`
-	SubjectName     string    `json:"subject_name" validate:"required"`
-	SubjectID       uuid.UUID `json:"subject_id" validate:"len=0"`
-	TutorFirstName  string    `json:"tutor_first_name" validate:"required"`
-	TutorLastName   string    `json:"tutor_last_name" validate:"required"`
-	TutorAvatar     string    `json:"tutor_avatar" validate:"omitempty,base64"`
-	TutorAccountID  uuid.UUID `json:"tutor_id" validate:"required"`
-	TutorSlug       string    `json:"tutor_slug" validate:"len=0"`
-	Price           uint      `json:"price" validate:"required"`
-	Description     string    `json:"description"`
+// Represents a tutors subject
+type SubjectTaughtDTO struct {
+	ID          uuid.UUID `json:"id" validate:"len=0"`
+	Name        string    `json:"name" validate:"required"`
+	Slug        string    `json:"slug" validate:"required"`
+	Description string    `json:"description"`
+	Price       float32   `json:"price" validate:"required"`
 }
 
-func SingleTutorSubjectToDTO(subjectTaught *services.SubjectTaught) *TutorSubjectResponseDTO {
-
-	tutor, err := services.ReadProfileByAccountID(subjectTaught.TutorID, nil)
-	if err != nil {
-		return nil
-	}
-	subject, err := services.GetSubjectByID(subjectTaught.SubjectID, nil)
-	if err != nil {
-		return nil
-	}
-	return &TutorSubjectResponseDTO{
-		SubjectName:     subject.Name,
-		SubjectTaughtID: subjectTaught.ID,
-		SubjectID:       subjectTaught.SubjectID,
-		Price:           subjectTaught.Price,
-		Description:     subjectTaught.Description,
-		TutorFirstName:  tutor.FirstName,
-		TutorLastName:   tutor.LastName,
-		TutorAvatar:     tutor.Avatar,
-		TutorSlug:       tutor.Slug,
-		TutorAccountID:  subjectTaught.TutorID,
-	}
-
+// Represents a Tutor and their subjects
+type TutorSubjectsResponseDTO struct {
+	ID          uuid.UUID          `json:"id" validate:"len=0"`
+	FirstName   string             `json:"first_name" validate:"required"`
+	LastName    string             `json:"last_name" validate:"required"`
+	Avatar      string             `json:"avatar" validate:"omitempty,base64"`
+	Slug        string             `json:"slug" validate:"len=0"`
+	Description string             `json:"description"`
+	Subjects    []SubjectTaughtDTO `json:"subjects"`
 }
 
-func TutorSubjectsToDTO(tutorSubjects []services.SubjectTaught) []TutorSubjectResponseDTO {
-	tutorSubjectsDTO := []TutorSubjectResponseDTO{}
-	for _, item := range tutorSubjects {
-		tutorSubjectsDTO = append(tutorSubjectsDTO, *SingleTutorSubjectToDTO(&item))
+func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
+	tutorSubjectsResponse := []TutorSubjectsResponseDTO{}
+	for _, profile := range *profiles {
+		tutorSubjectsResponse = append(tutorSubjectsResponse, TutorSubjectsResponseDTO{
+			ID:          profile.AccountID,
+			FirstName:   profile.FirstName,
+			LastName:    profile.LastName,
+			Avatar:      profile.Avatar,
+			Slug:        profile.Slug,
+			Description: profile.Description,
+			Subjects:    SubjectsTuaghtToDTO(&profile.Subjects),
+		})
 	}
-	return tutorSubjectsDTO
+
+	return &tutorSubjectsResponse
+}
+
+func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
+	return &SubjectTaughtDTO{
+		ID:          subjectTaught.Subject.ID,
+		Name:        subjectTaught.Subject.Name,
+		Slug:        subjectTaught.Subject.Slug,
+		Description: subjectTaught.Description,
+		Price:       subjectTaught.Price,
+	}
+}
+
+func SubjectsTuaghtToDTO(subjectsTaught *[]services.SubjectTaught) []SubjectTaughtDTO {
+	subjectsTaughtDto := []SubjectTaughtDTO{}
+	for _, subjectTaught := range *subjectsTaught {
+		subjectsTaughtDto = append(subjectsTaughtDto, *SubjectTaughtToDTO(&subjectTaught))
+	}
+	return subjectsTaughtDto
 }
 
 func SingleSubjectToDTO(subject *services.Subject) *SubjectResponseDTO {
 	return &SubjectResponseDTO{
-		Name:  subject.Name,
-		Slug:  subject.Slug,
-		ID:    subject.ID,
-		Image: subject.Image,
+		Name: subject.Name,
+		Slug: subject.Slug,
+		ID:   subject.ID,
 	}
 
 }
@@ -109,19 +117,18 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
 	if filter != "" {
-		filtered, err := services.GetSubjectBySlug(filter, nil)
+		filtered, err := services.GetSubjectsBySlugs(strings.Split(filter, ","), nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
 
-		tutors, err := services.GetTutorsBySubjectID(filtered.ID, nil)
+		tutors, err := services.GetTutorsBySubjects(filtered, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-
-		outTutors := TutorSubjectsToDTO(tutors)
+		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
 
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
@@ -134,11 +141,36 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := TutorSubjectsToDTO(tutors)
+		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
 			return
 		}
 	}
 
+}
+
+func handleGetSubjectsForTutor(w http.ResponseWriter, r *http.Request) {
+	tid, err := getUUID(r, "tid")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorProfile, err := services.ReadProfileByAccountID(tid, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorSubjects, err := services.GetSubjectsTaughtByTutorID(tutorProfile.ID, nil, "Subject")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(SubjectsTuaghtToDTO(&tutorSubjects)); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
 }

@@ -12,6 +12,9 @@ import {
   AccountRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  SubjectDTO,
+  SubjectTaughtDTO,
+  TutorSubjectsDTO,
 } from './definitions';
 
 export class Services {
@@ -207,5 +210,25 @@ export class Services {
         stage_detail,
       }),
     });
+  }
+
+  async readSubjects(): Promise<SubjectDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects`);
+
+    return (await res.json()) as SubjectDTO[];
+  }
+
+  async readTutors(filters?: string[]): Promise<TutorSubjectsDTO[]> {
+    const url = filters
+      ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
+      : `${config.apiUrl}/subjects/tutors`;
+    const res = await fetchRest(url);
+
+    return (await res.json()) as TutorSubjectsDTO[];
+  }
+
+  async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
+    return (await res.json()) as SubjectTaughtDTO[];
   }
 }
