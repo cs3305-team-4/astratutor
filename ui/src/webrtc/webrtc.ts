@@ -11,9 +11,12 @@ export class WebRTCHandler {
   // Callbacks
   ontrack?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
 
-  constructor(signaller: Signalling) {
+  onAddPeer: () => void;
+
+  constructor(signaller: Signalling, onAddPeer: () => void) {
     this.signaller = signaller;
     this.peers = {};
+    this.onAddPeer = onAddPeer;
   }
 
   addPeer(id: string, polite?: boolean): Peer {
@@ -26,7 +29,9 @@ export class WebRTCHandler {
     const peer = new Peer(id, new RTCPeerConnection(), polite || false);
 
     if (!polite) {
+      console.log('Creating correlate channel');
       peer.correlateChan = peer.conn.createDataChannel('correlate');
+      this.onAddPeer();
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
       };
@@ -41,6 +46,7 @@ export class WebRTCHandler {
 
     peer.conn.ondatachannel = (event: RTCDataChannelEvent) => {
       peer.correlateChan = event.channel;
+      this.onAddPeer();
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
       };
@@ -123,6 +129,10 @@ export class WebRTCHandler {
   addTrack(track: MediaStreamTrack, kind: StreamType, stream: MediaStream) {
     console.log('Adding track:', track);
     Object.values(this.peers).forEach((peer) => {
+      if (!peer.correlateChan) {
+        console.log('Tried Adding Track Before Connection Finished');
+        return;
+      }
       peer.correlateChan!.send(JSON.stringify({ sid: stream.id, kind: kind }));
       const sender = peer.conn.addTrack(track, stream);
       peer.tracks[track.id] = sender;

@@ -108,16 +108,17 @@ export function LessonClassroom(): ReactElement {
 
   const signalling = settings.signalling;
   const handler = useRef<WebRTCHandler>();
+  const [addingPeer, setAddingPeer] = React.useState(false);
 
   useEffect(() => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
-    handler.current = new WebRTCHandler(signalling);
+    handler.current = new WebRTCHandler(signalling, () => setAddingPeer(true));
     console.log(handler.current);
     signalling.onmessage(async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
       // Should never happen but just in case
-      if (message.src == api.claims?.sub) return;
+      if (message.src === api.claims?.sub) return;
 
       const type: MESSAGE_TYPE = message.type;
       switch (type) {
@@ -156,12 +157,11 @@ export function LessonClassroom(): ReactElement {
     const last = messages[messages.length - 1];
     if (last && !last.profile) {
       console.log(last);
-      // TODO(eric): Profile
       const profile = await api.services.readProfileByAccountID(
         api.account?.id ?? '',
         api.account?.type ?? AccountType.Tutor,
       );
-      signalling?.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, undefined });
+      signalling?.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, profile });
     }
   }, [api.account?.id, messages]);
 
@@ -179,10 +179,9 @@ export function LessonClassroom(): ReactElement {
         return temp;
       });
     } else {
-      console.log(web.stream);
       setWebcamDisplays((prev) => prev.concat(web));
       web.stream.getTracks().forEach((v) => {
-        console.log('Adding Webcam');
+        console.log('Adding Webcam to', handler.current?.peers);
         handler.current?.addTrack(v, StreamType.Camera, web.stream);
       });
     }
@@ -218,8 +217,11 @@ export function LessonClassroom(): ReactElement {
         stream: settings.webcamStream,
       };
       addWebcam(web);
+      if (addingPeer) {
+        setAddingPeer(false);
+      }
     }
-  }, [settings.webcamStream, webcamEnabled]);
+  }, [settings.webcamStream, webcamEnabled, addingPeer]);
 
   const hangup = () => {
     settings.webcamStream?.getVideoTracks().forEach((v) => {
