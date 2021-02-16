@@ -19,6 +19,7 @@ import { SettingsCTX } from '../api/classroom';
 import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
 import { WebRTCHandler } from '../webrtc/webrtc';
 import { StreamType } from '../webrtc/stream_types';
+import { screenStream } from '../webrtc/devices';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
@@ -106,10 +107,12 @@ export function LessonClassroom(): ReactElement {
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [micEnabled, setMicEnabled] = React.useState(true);
+  const [screen, setScreen] = React.useState<MediaStream>();
 
   const signalling = settings.signalling;
   const handler = useRef<WebRTCHandler>();
   const [addingPeer, setAddingPeer] = React.useState(false);
+  const screenRef = useRef<HTMLVideoElement>();
 
   useAsync(async () => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
@@ -261,6 +264,29 @@ export function LessonClassroom(): ReactElement {
     }
   }, [settings.webcamStream, webcamEnabled, addingPeer]);
 
+  useAsync(async () => {
+    if (screenEnabled) {
+      const src = await screenStream();
+      if (!src) {
+        setScreenEnabled(false);
+        return;
+      }
+      for (const track of src.getTracks()) {
+        handler.current?.addTrack(track, StreamType.Screen, src);
+      }
+      setScreen(src);
+      if (screenRef.current) {
+        screenRef.current.srcObject = src;
+      }
+    } else {
+      screen?.getTracks().forEach((v) => {
+        v.enabled = false;
+        handler.current?.removeTrack(v);
+      });
+      setScreen(undefined);
+    }
+  }, [screenEnabled]);
+
   const hangup = () => {
     settings.webcamStream?.getVideoTracks().forEach((v) => {
       v.stop();
@@ -360,7 +386,9 @@ export function LessonClassroom(): ReactElement {
           <StyledVideo
             autoPlay
             loop
-            src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4"
+            ref={(ref) => {
+              screenRef.current = ref ?? undefined;
+            }}
           />
         </Layout.Content>
         <StyledTools>
