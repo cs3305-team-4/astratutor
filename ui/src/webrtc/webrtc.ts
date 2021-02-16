@@ -18,6 +18,11 @@ export class WebRTCHandler {
 
   addPeer(id: string, polite?: boolean): Peer {
     console.log('Adding Peer: ' + id);
+    if (this.peers[id]) {
+      console.log('Deleting Peer');
+      delete this.peers[id];
+    }
+
     const peer = new Peer(id, new RTCPeerConnection(), polite || false);
 
     if (!polite) {
@@ -28,7 +33,7 @@ export class WebRTCHandler {
     }
 
     peer.conn.oniceconnectionstatechange = () => {
-      if (peer.conn.iceConnectionState === 'disconnected') {
+      if (this.peers[id].conn.iceConnectionState === 'disconnected') {
         console.log('Peer Disconnected: ' + peer.id);
         delete this.peers[peer.id];
       }
@@ -75,6 +80,7 @@ export class WebRTCHandler {
   }
 
   incomingCorrelation(id: string, event: MessageEvent<any>) {
+    console.log('Incoming Correlation');
     const correlation = JSON.parse(event.data);
     this.peers[id].streamCorrelations[correlation.sid] = correlation.kind;
   }

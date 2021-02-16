@@ -1,6 +1,8 @@
 import React from 'react';
+import { Signalling } from '../webrtc/signalling';
 
 export interface ISettings {
+  signalling?: Signalling;
   fullscreen: boolean;
   setFullscreen: (v: boolean) => void;
   webcams: MediaDeviceInfo[];
