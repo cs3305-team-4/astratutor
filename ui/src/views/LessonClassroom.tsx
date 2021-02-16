@@ -272,6 +272,9 @@ export function LessonClassroom(): ReactElement {
         setScreenEnabled(false);
         return;
       }
+      src.onremovetrack = () => {
+        setScreenEnabled(false);
+      };
       for (const track of src.getTracks()) {
         handler.current?.addTrack(track, StreamType.Screen, src);
       }
@@ -280,8 +283,12 @@ export function LessonClassroom(): ReactElement {
         screenRef.current.srcObject = src;
       }
     } else {
+      if (screenRef.current) {
+        screenRef.current.srcObject = null;
+      }
       screen?.getTracks().forEach((v) => {
         v.enabled = false;
+        v.stop();
         handler.current?.removeTrack(v);
       });
       setScreen(undefined);
