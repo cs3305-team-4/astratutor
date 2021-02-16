@@ -153,6 +153,14 @@ export function LessonClassroom(): ReactElement {
       console.log('NEW TRACK', id, correlation, event);
       switch (correlation) {
         case StreamType.Camera:
+          setWebcamDisplays((prev) => {
+            const other = prev.findIndex((v) => v.profile.account_id === id);
+            console.log(webcamDisplays, other, id);
+            if (other > -1) {
+              prev.splice(other, 1);
+            }
+            return prev;
+          });
           const stream = event.streams.length ? event.streams[0] : new MediaStream();
           const ref = (
             <video
