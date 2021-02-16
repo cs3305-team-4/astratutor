@@ -113,7 +113,7 @@ export function LessonClassroom(): ReactElement {
   useEffect(() => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
-    handler.current = new WebRTCHandler(signalling, () => setAddingPeer(true));
+    handler.current = new WebRTCHandler(signalling);
     console.log(handler.current);
     signalling.onmessage(async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
