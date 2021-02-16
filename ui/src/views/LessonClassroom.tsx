@@ -91,6 +91,7 @@ const StyledTools = styled(Layout.Footer)`
 `;
 
 const StyledVideo = styled.video`
+  background-color: #000;
   width: 100%;
   height: calc(100% - 88px);
 `;
