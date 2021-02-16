@@ -2,6 +2,7 @@ import { StreamType } from './stream_types';
 
 export class Peer {
   id: string;
+  ready: boolean;
   conn: RTCPeerConnection;
   polite: boolean;
   makingOffer: boolean;
@@ -13,6 +14,7 @@ export class Peer {
 
   constructor(id: string, conn: RTCPeerConnection, polite: boolean) {
     this.id = id;
+    this.ready = false;
     this.conn = conn;
     this.polite = polite || false;
     this.makingOffer = false;

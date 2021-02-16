@@ -1,5 +1,6 @@
 export enum StreamType {
-  Camera = 1,
+  _READY_ = 1,
+  Camera,
   Microphone,
   Screen,
   Canvas,

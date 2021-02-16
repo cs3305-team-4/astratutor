@@ -183,7 +183,6 @@ export function LessonClassroom(): ReactElement {
       console.log(web.stream);
       setWebcamDisplays((prev) => prev.concat(web));
       web.stream.getTracks().forEach((v) => {
-        console.log('Adding Webcam');
         handler.current?.addTrack(v, StreamType.Camera, web.stream);
       });
     }

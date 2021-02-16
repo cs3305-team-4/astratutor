@@ -7,6 +7,7 @@ import { StreamType } from './stream_types';
 export class WebRTCHandler {
   signaller: Signalling;
   peers: { [id: string]: Peer };
+  tracks: { [id: string]: [MediaStream, StreamType] };
 
   // Callbacks
   ontrack?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
@@ -14,6 +15,7 @@ export class WebRTCHandler {
   constructor(signaller: Signalling) {
     this.signaller = signaller;
     this.peers = {};
+    this.tracks = {};
   }
 
   addPeer(id: string, polite?: boolean): Peer {
@@ -26,6 +28,7 @@ export class WebRTCHandler {
     const peer = new Peer(id, new RTCPeerConnection(), polite || false);
 
     if (!polite) {
+      console.log('Creating Data Channel');
       peer.correlateChan = peer.conn.createDataChannel('correlate');
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
@@ -41,6 +44,8 @@ export class WebRTCHandler {
 
     peer.conn.ondatachannel = (event: RTCDataChannelEvent) => {
       peer.correlateChan = event.channel;
+      console.log('Creating Data Channel - Recieve');
+      peer.correlateChan.send(JSON.stringify({ kind: StreamType._READY_ }));
       peer.correlateChan.onmessage = (event) => {
         this.incomingCorrelation(id, event);
       };
@@ -82,7 +87,19 @@ export class WebRTCHandler {
   incomingCorrelation(id: string, event: MessageEvent<any>) {
     console.log('Incoming Correlation');
     const correlation = JSON.parse(event.data);
-    this.peers[id].streamCorrelations[correlation.sid] = correlation.kind;
+    const peer = this.peers[id];
+    if (correlation.kind === StreamType._READY_ && !peer.ready) {
+      peer.ready = true;
+      peer.correlateChan?.send(JSON.stringify({ kind: StreamType._READY_ }));
+      Object.entries(this.tracks).forEach(([trackId, [stream, kind]]) => {
+        const track = stream.getTrackById(trackId);
+        peer.correlateChan!.send(JSON.stringify({ sid: stream.id, kind: kind }));
+        const sender = peer.conn.addTrack(track!, stream);
+        peer.tracks[track!.id] = sender;
+      });
+    } else {
+      peer.streamCorrelations[correlation.sid] = correlation.kind;
+    }
   }
 
   async incomingSDP(id: string, sdp: RTCSessionDescription) {
@@ -122,7 +139,10 @@ export class WebRTCHandler {
 
   addTrack(track: MediaStreamTrack, kind: StreamType, stream: MediaStream) {
     console.log('Adding track:', track);
+    this.tracks[track.id] = [stream, kind];
     Object.values(this.peers).forEach((peer) => {
+      if (!peer.ready || peer.tracks[track.id]) return;
+
       peer.correlateChan!.send(JSON.stringify({ sid: stream.id, kind: kind }));
       const sender = peer.conn.addTrack(track, stream);
       peer.tracks[track.id] = sender;
@@ -130,6 +150,10 @@ export class WebRTCHandler {
   }
 
   replaceTrack(oldTrack: MediaStreamTrack, newTrack: MediaStreamTrack) {
+    if (!this.tracks[oldTrack.id]) return;
+    this.tracks[newTrack.id] = this.tracks[oldTrack.id];
+    delete this.tracks[oldTrack.id];
+
     Object.values(this.peers).forEach(async (peer) => {
       if (!peer.tracks[oldTrack.id]) return;
       await peer.tracks[oldTrack.id].replaceTrack(newTrack);
@@ -139,6 +163,9 @@ export class WebRTCHandler {
   }
 
   removeTrack(track: MediaStreamTrack) {
+    if (!this.tracks[track.id]) return;
+    delete this.tracks[track.id];
+
     Object.values(this.peers).forEach((peer) => {
       if (!peer.tracks[track.id]) return;
       peer.conn.removeTrack(peer.tracks[track.id]);
