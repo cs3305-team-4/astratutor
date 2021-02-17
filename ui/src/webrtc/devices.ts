@@ -75,9 +75,9 @@ export async function audioStream(deviceId: string): Promise<MediaStream | null>
  * @param {string} deviceId ID of device to access
  * @returns {Promise<(MediaStream | null)>} camera stream
  */
-export async function cameraStream(deviceId: string): Promise<MediaStream | null> {
+export async function cameraStream(deviceId: string, audioId?: string): Promise<MediaStream | null> {
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId } });
+    return await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId }, audio: { deviceId: audioId } });
   } catch (err) {
     console.error(err);
   }

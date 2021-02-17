@@ -149,9 +149,9 @@ export function LessonLobby(): ReactElement {
   useAsync(async () => {
     if (webcamStream) {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
-      setWebcamStream(await await Devices.cameraStream(selectedWebcam));
+      setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
     }
-  }, [selectedWebcam]);
+  }, [selectedWebcam, selectedMicrophone]);
   const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
@@ -330,6 +330,7 @@ export function LessonLobby(): ReactElement {
             </Row>
             <br />
             <video
+              muted
               style={{
                 height: 300,
               }}

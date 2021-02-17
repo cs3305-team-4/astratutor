@@ -327,6 +327,7 @@ export function LessonClassroom(): ReactElement {
     const video = (
       <video
         key={'self'}
+        muted
         ref={(ref) => {
           if (ref) {
             ref.srcObject = webcamEnabled ? settings.webcamStream : null;
@@ -398,6 +399,12 @@ export function LessonClassroom(): ReactElement {
     });
     history.push(`/lessons/${lid}/goodbye`);
   };
+
+  useEffect(() => {
+    settings.webcamStream?.getAudioTracks().forEach((v) => {
+      v.enabled = micEnabled;
+    });
+  }, [micEnabled, settings.webcamStream]);
 
   return (
     <StyledLayout>
