@@ -10,6 +10,7 @@ export enum MESSAGE_TYPE {
   CHAT,
   SDP,
   CANDIDATE,
+  STOP_STREAM,
 }
 
 export class Signalling {

@@ -83,7 +83,6 @@ export class WebRTCHandler {
       const sid = event.streams[0].id;
       const correlation = peer.streamCorrelations[sid];
       event.streams[0].addEventListener('removetrack', (e) => {
-        console.log('removetrack event', this.ontrackremove, correlation, event);
         if (this.ontrackremove) {
           this.ontrackremove(id, correlation, event);
         }

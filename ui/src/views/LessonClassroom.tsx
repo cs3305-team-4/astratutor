@@ -96,6 +96,29 @@ const StyledVideo = styled.video`
   height: calc(100% - 88px);
 `;
 
+const StyledStreaming = styled.div`
+  @keyframes transp {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  position: fixed;
+  bottom: 120px;
+  right: 40px;
+  color: #fff;
+  opacity: 0;
+  animation: transp 8s;
+`;
+
+function sleep(ms: number): unknown {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 export function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   const settings = useContext(SettingsCTX);
@@ -150,6 +173,12 @@ export function LessonClassroom(): ReactElement {
           await handler.current?.incomingCandidate(message.src, message.data);
           break;
         }
+        case MESSAGE_TYPE.STOP_STREAM: {
+          if (message.dest !== signalling.id) return;
+          console.log('MESSAGE STOP_STREAM');
+          setScreenEnabled(false);
+          break;
+        }
       }
     });
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
@@ -168,14 +197,20 @@ export function LessonClassroom(): ReactElement {
           // });
           break;
         case StreamType.Screen:
-          console.log('Screen no longer receiving');
-          if (screenRef.current?.srcObject) {
-            (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
-              v.enabled = false;
-              v.stop();
-            });
-            screenRef.current.srcObject = null;
-          }
+          setStreamingID((prev) => {
+            console.log('Screen no longer receiving', prev);
+            if (prev !== '') {
+              prev = '';
+              if (screenRef.current?.srcObject) {
+                (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+                  v.enabled = false;
+                  v.stop();
+                });
+                screenRef.current.srcObject = null;
+              }
+            }
+            return prev;
+          });
           break;
       }
     };
@@ -210,9 +245,17 @@ export function LessonClassroom(): ReactElement {
         case StreamType.Screen:
           console.log('Other user started screensharing');
           if (screenRef.current) {
+            ((screenRef.current.srcObject as MediaStream) || null)?.getTracks().forEach((v) => {
+              v.enabled = false;
+              v.stop();
+              if (streamingID === '') {
+                handler.current?.removeTrack(v);
+              }
+            });
             screenRef.current.srcObject = stream;
             screenRef.current.play();
           }
+          setStreamingID(id);
           break;
       }
     };
@@ -301,10 +344,16 @@ export function LessonClassroom(): ReactElement {
   useAsync(async () => {
     if (screenEnabled) {
       const src = await screenStream();
+      if (streamingID !== '') {
+        console.log('stopping other stream');
+        signalling?.send(MESSAGE_TYPE.STOP_STREAM, streamingID, { stop: true });
+        await sleep(500);
+      }
       if (!src) {
         setScreenEnabled(false);
         return;
       }
+      setStreamingID('');
       src.onremovetrack = () => {
         setScreenEnabled(false);
       };
@@ -329,6 +378,7 @@ export function LessonClassroom(): ReactElement {
         handler.current?.removeTrack(v);
       });
       setScreen(undefined);
+      setStreamingID('');
     }
   }, [screenEnabled]);
 
@@ -433,6 +483,15 @@ export function LessonClassroom(): ReactElement {
               screenRef.current = ref ?? undefined;
             }}
           />
+          {streamingID.length > 0 && (
+            <StyledStreaming>
+              <UserAvatar
+                profile={settings.otherProfiles[streamingID]}
+                props={{ style: { marginRight: '.5em' }, size: 'small' }}
+              />
+              {settings.otherProfiles[streamingID].first_name} {settings.otherProfiles[streamingID].last_name}
+            </StyledStreaming>
+          )}
         </Layout.Content>
         <StyledTools>
           <Tooltip title="Toggle Mute">
