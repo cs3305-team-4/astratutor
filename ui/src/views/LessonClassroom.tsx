@@ -113,6 +113,7 @@ export function LessonClassroom(): ReactElement {
   const signalling = settings.signalling;
   const handler = useRef<WebRTCHandler>();
   const [addingPeer, setAddingPeer] = React.useState(false);
+  const [streamingID, setStreamingID] = React.useState<string>('');
   const screenRef = useRef<HTMLVideoElement>();
 
   useAsync(async () => {
@@ -153,8 +154,34 @@ export function LessonClassroom(): ReactElement {
     });
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
 
+    handler.current.ontrackremove = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+      console.log(correlation);
+      switch (correlation) {
+        case StreamType.Camera:
+          // setWebcamDisplays((prev) => {
+          //   const other = prev.findIndex((v) => v.profile.account_id === id);
+          //   console.log(webcamDisplays, other, id);
+          //   if (other > -1) {
+          //     prev.splice(other, 1);
+          //   }
+          //   return prev;
+          // });
+          break;
+        case StreamType.Screen:
+          console.log('Screen no longer receiving');
+          if (screenRef.current?.srcObject) {
+            (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+              v.enabled = false;
+              v.stop();
+            });
+            screenRef.current.srcObject = null;
+          }
+          break;
+      }
+    };
     handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
       console.log('NEW TRACK', id, correlation, event);
+      const stream = event.streams.length ? event.streams[0] : new MediaStream();
       switch (correlation) {
         case StreamType.Camera:
           setWebcamDisplays((prev) => {
@@ -165,7 +192,6 @@ export function LessonClassroom(): ReactElement {
             }
             return prev;
           });
-          const stream = event.streams.length ? event.streams[0] : new MediaStream();
           const ref = (
             <video
               key={id}
@@ -180,6 +206,13 @@ export function LessonClassroom(): ReactElement {
           const profile = settings.otherProfiles[id];
           console.log(settings.otherProfiles);
           setWebcamDisplays((prev) => prev.concat({ stream, ref, profile, streaming: true }));
+          break;
+        case StreamType.Screen:
+          console.log('Other user started screensharing');
+          if (screenRef.current) {
+            screenRef.current.srcObject = stream;
+            screenRef.current.play();
+          }
           break;
       }
     };
@@ -276,11 +309,15 @@ export function LessonClassroom(): ReactElement {
         setScreenEnabled(false);
       };
       for (const track of src.getTracks()) {
+        track.onended = () => {
+          setScreenEnabled(false);
+        };
         handler.current?.addTrack(track, StreamType.Screen, src);
       }
       setScreen(src);
       if (screenRef.current) {
         screenRef.current.srcObject = src;
+        screenRef.current.play();
       }
     } else {
       if (screenRef.current) {
@@ -392,8 +429,6 @@ export function LessonClassroom(): ReactElement {
         </StyledSider>
         <Layout.Content>
           <StyledVideo
-            autoPlay
-            loop
             ref={(ref) => {
               screenRef.current = ref ?? undefined;
             }}

@@ -11,6 +11,7 @@ export class WebRTCHandler {
 
   // Callbacks
   ontrack?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
+  ontrackremove?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
   onAddPeer: () => void;
 
   constructor(signaller: Signalling, onAddPeer: () => void) {
@@ -80,6 +81,13 @@ export class WebRTCHandler {
       console.log('on track');
       if (!this.ontrack) return;
       const sid = event.streams[0].id;
+      const correlation = peer.streamCorrelations[sid];
+      event.streams[0].addEventListener('removetrack', (e) => {
+        console.log('removetrack event', this.ontrackremove, correlation, event);
+        if (this.ontrackremove) {
+          this.ontrackremove(id, correlation, event);
+        }
+      });
       this.ontrack(id, peer.streamCorrelations[sid], event);
       delete peer.streamCorrelations[sid];
     };
@@ -170,6 +178,7 @@ export class WebRTCHandler {
 
   removeTrack(track: MediaStreamTrack) {
     if (!this.tracks[track.id]) return;
+    console.log('Removing track');
     delete this.tracks[track.id];
 
     Object.values(this.peers).forEach((peer) => {
