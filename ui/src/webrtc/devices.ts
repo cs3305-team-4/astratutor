@@ -77,7 +77,11 @@ export async function audioStream(deviceId: string): Promise<MediaStream | null>
  */
 export async function cameraStream(deviceId: string, audioId?: string): Promise<MediaStream | null> {
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId }, audio: { deviceId: audioId } });
+    if (audioId) {
+      return await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId }, audio: { deviceId: audioId } });
+    } else {
+      return await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId } });
+    }
   } catch (err) {
     console.error(err);
   }

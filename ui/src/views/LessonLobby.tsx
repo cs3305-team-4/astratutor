@@ -136,7 +136,7 @@ export function LessonLobby(): ReactElement {
   }, []);
   useAsync(async () => {
     if (!webcamStream) {
-      await Devices.cameraPermission();
+      await Devices.devicePermissions();
       const devices = await Devices.getDevices();
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
