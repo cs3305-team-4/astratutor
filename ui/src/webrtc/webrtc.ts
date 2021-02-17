@@ -12,6 +12,7 @@ export class WebRTCHandler {
   // Callbacks
   ontrack?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
   ontrackremove?: (id: string, correlation: StreamType, event: RTCTrackEvent) => void;
+  ondisconnect?: (id: string) => void;
   onAddPeer: () => void;
 
   constructor(signaller: Signalling, onAddPeer: () => void) {
@@ -42,6 +43,9 @@ export class WebRTCHandler {
     peer.conn.oniceconnectionstatechange = () => {
       if (this.peers[id].conn.iceConnectionState === 'disconnected') {
         console.log('Peer Disconnected: ' + peer.id);
+        if (this.ondisconnect) {
+          this.ondisconnect(id);
+        }
         delete this.peers[peer.id];
       }
     };
@@ -185,5 +189,9 @@ export class WebRTCHandler {
       peer.conn.removeTrack(peer.tracks[track.id]);
       delete peer.tracks[track.id];
     });
+  }
+
+  close() {
+    Object.values(this.peers).forEach((v) => v.conn.close());
   }
 }

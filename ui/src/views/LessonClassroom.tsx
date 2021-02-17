@@ -139,6 +139,23 @@ export function LessonClassroom(): ReactElement {
   const [streamingID, setStreamingID] = React.useState<string>('');
   const screenRef = useRef<HTMLVideoElement>();
 
+  const onDisconnect = (id: string) => {
+    setWebcamDisplays((prev) => prev.filter((v) => v.profile.account_id !== id));
+    setStreamingID((prev) => {
+      console.log('Screen no longer receiving', prev);
+      if (prev !== '') {
+        prev = '';
+        if (screenRef.current?.srcObject) {
+          (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+            v.enabled = false;
+            v.stop();
+          });
+          screenRef.current.srcObject = null;
+        }
+      }
+      return prev;
+    });
+  };
   useAsync(async () => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
@@ -186,16 +203,6 @@ export function LessonClassroom(): ReactElement {
     handler.current.ontrackremove = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
       console.log(correlation);
       switch (correlation) {
-        case StreamType.Camera:
-          // setWebcamDisplays((prev) => {
-          //   const other = prev.findIndex((v) => v.profile.account_id === id);
-          //   console.log(webcamDisplays, other, id);
-          //   if (other > -1) {
-          //     prev.splice(other, 1);
-          //   }
-          //   return prev;
-          // });
-          break;
         case StreamType.Screen:
           setStreamingID((prev) => {
             console.log('Screen no longer receiving', prev);
@@ -214,6 +221,7 @@ export function LessonClassroom(): ReactElement {
           break;
       }
     };
+    handler.current.ondisconnect = onDisconnect;
     handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
       console.log('NEW TRACK', id, correlation, event);
       const stream = event.streams.length ? event.streams[0] : new MediaStream();
@@ -260,6 +268,7 @@ export function LessonClassroom(): ReactElement {
       }
     };
   }, []);
+  useEffect(() => console.log(webcamDisplays), [webcamDisplays]);
 
   useAsync(async () => {
     const last = messages[messages.length - 1];
@@ -383,6 +392,7 @@ export function LessonClassroom(): ReactElement {
   }, [screenEnabled]);
 
   const hangup = () => {
+    handler.current?.close();
     settings.webcamStream?.getVideoTracks().forEach((v) => {
       v.stop();
     });
