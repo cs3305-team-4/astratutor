@@ -12,7 +12,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       REACT_APP_API_URL: "http://localhost:8081"
-      REACT_APP_SIGNALLING_URL: "ws://localhost:8083/ws"
+      REACT_APP_SIGNALLING_URL: "ws://localhost:8081/signalling/ws"
     ports:
       - "8080:3000"
     depends_on:
@@ -51,13 +51,3 @@ services:
       - db
     logging:
       driver: none
-  signalling:
-    build:
-      context: "./signalling"
-      dockerfile: Dockerfile
-      target: "dev"
-    volumes:
-      - "./signalling:/signalling"
-    restart: on-failure
-    ports:
-      - "8083:8080"

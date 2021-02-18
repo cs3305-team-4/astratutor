@@ -17,7 +17,6 @@ export class Signalling {
   ws: WebSocket;
   id: string;
 
-  //TODO(james): Better callback system
   constructor(id: string, classUrl: string, callbacks: Callbacks) {
     this.id = id;
 

@@ -12,6 +12,7 @@ import {
   AccountRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  TurnCredentials,
 } from './definitions';
 
 export class Services {
@@ -216,5 +217,14 @@ export class Services {
         stage_detail,
       }),
     });
+  }
+
+  async getTurnCredentials(): Promise<TurnCredentials> {
+    const res = await fetchRest(`${config.apiUrl}/signalling/credentials`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as TurnCredentials;
   }
 }

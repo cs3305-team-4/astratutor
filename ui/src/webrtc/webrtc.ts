@@ -1,11 +1,13 @@
 import { Signalling, MESSAGE_TYPE } from './signalling';
 import { Peer } from './peer';
 import { StreamType } from './stream_types';
+import { TurnCredentials } from '../api/definitions';
 
 // Adapted From:
 // https://w3c.github.io/webrtc-pc/#perfect-negotiation-example
 export class WebRTCHandler {
   signaller: Signalling;
+  credentials: TurnCredentials;
   peers: { [id: string]: Peer };
   tracks: { [id: string]: [MediaStream, StreamType] };
 
@@ -15,9 +17,10 @@ export class WebRTCHandler {
   ondisconnect?: (id: string) => void;
   onAddPeer: () => void;
 
-  constructor(signaller: Signalling, onAddPeer: () => void) {
+  constructor(signaller: Signalling, credentials: TurnCredentials, onAddPeer: () => void) {
     this.signaller = signaller;
     this.onAddPeer = onAddPeer;
+    this.credentials = credentials;
     this.peers = {};
     this.tracks = {};
   }
@@ -29,7 +32,21 @@ export class WebRTCHandler {
       delete this.peers[id];
     }
 
-    const peer = new Peer(id, new RTCPeerConnection(), polite || false);
+    const peer = new Peer(
+      id,
+      new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          {
+            urls: 'turns:turn.astratutor.com:16501',
+            username: this.credentials.username,
+            credential: this.credentials.password,
+          },
+        ],
+      }),
+      polite || false,
+    );
 
     if (!polite) {
       console.log('Creating Data Channel');

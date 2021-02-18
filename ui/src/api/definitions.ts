@@ -140,3 +140,8 @@ export interface SubjectTaughtDTO {
   price: number;
   description: string;
 }
+
+export interface TurnCredentials {
+  username: string;
+  password: string;
+}

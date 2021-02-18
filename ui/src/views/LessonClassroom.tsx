@@ -159,7 +159,8 @@ export function LessonClassroom(): ReactElement {
   useAsync(async () => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
-    handler.current = new WebRTCHandler(signalling, () => setAddingPeer(true));
+    const credentials = await api.services.getTurnCredentials();
+    handler.current = new WebRTCHandler(signalling, credentials, () => setAddingPeer(true));
     console.log(handler.current);
     signalling.onmessage(async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
