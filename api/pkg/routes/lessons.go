@@ -154,7 +154,7 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 
 	// POST /{uuid}/accept
 	lessonResource.HandleFunc("/accept",
-		handleLessonsRequestStageChangeClosure(services.Accepted),
+		handleLessonsAcceptRequest,
 	).Methods("POST")
 
 	// POST /{uuid}/deny
@@ -264,6 +264,32 @@ func handleLessonsRequestStageChange(w http.ResponseWriter, r *http.Request, sta
 func handleLessonsRequestStageChangeClosure(stage services.LessonRequestStage) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handleLessonsRequestStageChange(w, r, stage)
+	}
+}
+
+func handleLessonsAcceptRequest(w http.ResponseWriter, r *http.Request) {
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = lesson.Accept(authContext.Account)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
 	}
 }
 
