@@ -121,6 +121,10 @@ export interface LessonDenyRequestDTO {
   reason: string;
 }
 
+export interface LessonCancelRequestDTO {
+  reason: string;
+}
+
 export interface SubjectDTO {
   name: string;
   image: string;

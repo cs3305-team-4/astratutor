@@ -16,6 +16,7 @@ import {
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
+  LessonCancelRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -201,13 +202,11 @@ export class Services {
     });
   }
 
-  async updateLessonStageCancel(lesson_id: string, stage_detail: string): Promise<void> {
+  async updateLessonStageCancel(lesson_id: string, cancelRequest: LessonCancelRequestDTO): Promise<void> {
     await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/cancel`, {
       headers: this.headers,
       method: 'POST',
-      body: JSON.stringify({
-        stage_detail,
-      }),
+      body: JSON.stringify(cancelRequest),
     });
   }
 

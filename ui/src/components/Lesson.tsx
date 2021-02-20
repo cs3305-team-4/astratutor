@@ -32,6 +32,9 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   const [showDenyModal, setShowDenyModal] = useState<boolean>(false);
   const [denyForm] = useForm();
 
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [cancelForm] = useForm();
+
   const reload = async () => {
     props.onUpdate(await api.services.readLessonByAccountId(props.lesson.id), props.otherProfile);
   };
@@ -80,7 +83,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
                 await api.services.updateLessonStageDeny(props.lesson.id, { reason: denyForm.getFieldValue('reason') });
                 await reload();
               }}
-              cancelText="Cancel"
+              cancelText="Back"
               onCancel={() => setShowDenyModal(false)}
             >
               <Form form={denyForm} layout="vertical">
@@ -106,15 +109,35 @@ export default function Lesson(props: LessonProps): React.ReactElement {
 
     case LessonRequestStage.Accepted:
       buttons.push(
-        <Button
-          style={{ margin: '0.2rem' }}
-          onClick={async () => {
-            await api.services.updateLessonStageCancel(props.lesson.id, 'Lesson cancelled');
-            await reload();
-          }}
-        >
-          Cancel
-        </Button>,
+        <>
+          <Button style={{ margin: '0.2rem' }} onClick={() => setShowCancelModal(true)}>
+            Cancel
+          </Button>
+          <Modal
+            title="Cancel Lesson"
+            visible={showCancelModal}
+            okText="Cancel"
+            okType="danger"
+            onOk={async () => {
+              await cancelForm.validateFields().then(async (values) => {
+                await api.services.updateLessonStageCancel(props.lesson.id, values);
+                await reload();
+              });
+            }}
+            cancelText="Back"
+            onCancel={() => setShowCancelModal(false)}
+          >
+            <Form form={cancelForm} layout="vertical">
+              <Form.Item
+                label="Reason"
+                name="reason"
+                rules={[{ required: true, message: 'Please give a reason for cancelling the lesson' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Form>
+          </Modal>
+        </>,
       );
       break;
   }
