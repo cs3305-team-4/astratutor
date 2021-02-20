@@ -81,6 +81,11 @@ type LessonStageChangeDTO struct {
 	StageDetail string `json:"stage_detail"`
 }
 
+// Represents a request to deny a lesson
+type LessonDenyRequestDTO struct {
+	Reason string `json:"reason"`
+}
+
 func dtoFromResourceMetadata(m *services.ResourceMetadata) *ResourceMetadataDTO {
 	return &ResourceMetadataDTO{
 		Name: m.Name,
@@ -159,7 +164,7 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 
 	// POST /{uuid}/deny
 	lessonResource.HandleFunc("/deny",
-		handleLessonsRequestStageChangeClosure(services.Denied),
+		handleLessonsDenyRequest,
 	).Methods("POST")
 
 	// POST /{uuid}/cancel
@@ -287,6 +292,37 @@ func handleLessonsAcceptRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = lesson.Accept(authContext.Account)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+func handleLessonsDenyRequest(w http.ResponseWriter, r *http.Request) {
+	denyRequest := &LessonDenyRequestDTO{}
+	if !ParseBody(w, r, denyRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = lesson.Deny(authContext.Account, denyRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
