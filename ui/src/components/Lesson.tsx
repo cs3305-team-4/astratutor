@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
 
-import { Typography, Layout, Row, Col, Avatar, PageHeader, Button, Statistic, Divider } from 'antd';
+import { Typography, Layout, Row, Col, Avatar, PageHeader, Button, Statistic, Divider, Modal, Form, Input } from 'antd';
 
 import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
 
 import { APIContext } from '../api/api';
+import { useForm } from 'antd/lib/form/Form';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -27,6 +28,9 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   const history = useHistory();
   const profile = props.otherProfile;
   const lesson = props.lesson;
+
+  const [showDenyModal, setShowDenyModal] = useState<boolean>(false);
+  const [denyForm] = useForm();
 
   const reload = async () => {
     props.onUpdate(await api.services.readLessonByAccountId(props.lesson.id), props.otherProfile);
@@ -63,15 +67,33 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         );
 
         buttons.push(
-          <Button
-            style={{ margin: '0.2rem' }}
-            onClick={async () => {
-              await api.services.updateLessonStageDeny(props.lesson.id, 'Lesson denied');
-              await reload();
-            }}
-          >
-            Deny
-          </Button>,
+          <>
+            <Button style={{ margin: '0.2rem' }} onClick={() => setShowDenyModal(true)}>
+              Deny
+            </Button>
+            <Modal
+              title="Deny Request"
+              visible={showDenyModal}
+              okText="Deny"
+              okType="danger"
+              onOk={async () => {
+                await api.services.updateLessonStageDeny(props.lesson.id, { reason: denyForm.getFieldValue('reason') });
+                await reload();
+              }}
+              cancelText="Cancel"
+              onCancel={() => setShowDenyModal(false)}
+            >
+              <Form form={denyForm} layout="vertical">
+                <Form.Item
+                  label="Reason"
+                  name="reason"
+                  rules={[{ required: true, message: 'Please give a reason for denying the request' }]}
+                >
+                  <Input />
+                </Form.Item>
+              </Form>
+            </Modal>
+          </>,
         );
       } else {
         buttons.push(

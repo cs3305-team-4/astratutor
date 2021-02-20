@@ -117,6 +117,10 @@ export interface LessonStageChangeDTO {
   stage_detail: string;
 }
 
+export interface LessonDenyRequestDTO {
+  reason: string;
+}
+
 export interface SubjectDTO {
   name: string;
   image: string;

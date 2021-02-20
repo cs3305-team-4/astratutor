@@ -8,6 +8,7 @@ import {
   WorkExperienceRequestDTO,
   LessonRequestDTO,
   LessonResponseDTO,
+  LessonDenyRequestDTO,
   ProfileRequestDTO,
   AccountRequestDTO,
   LoginRequestDTO,
@@ -192,13 +193,11 @@ export class Services {
     });
   }
 
-  async updateLessonStageDeny(lesson_id: string, stage_detail: string): Promise<void> {
+  async updateLessonStageDeny(lesson_id: string, denyRequest: LessonDenyRequestDTO): Promise<void> {
     await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/deny`, {
       headers: this.headers,
       method: 'POST',
-      body: JSON.stringify({
-        stage_detail,
-      }),
+      body: JSON.stringify(denyRequest),
     });
   }
 
