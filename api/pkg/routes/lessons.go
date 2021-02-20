@@ -86,6 +86,11 @@ type LessonDenyRequestDTO struct {
 	Reason string `json:"reason"`
 }
 
+// Represents a request to cancel a lesson
+type LessonCancelRequestDTO struct {
+	Reason string `json:"reason"`
+}
+
 func dtoFromResourceMetadata(m *services.ResourceMetadata) *ResourceMetadataDTO {
 	return &ResourceMetadataDTO{
 		Name: m.Name,
@@ -169,7 +174,7 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 
 	// POST /{uuid}/cancel
 	lessonResource.HandleFunc("/cancel",
-		handleLessonsRequestStageChangeClosure(services.Cancelled),
+		handleLessonsCancelRequest,
 	).Methods("POST")
 
 	subrouter.HandleFunc("/resources",
@@ -323,6 +328,38 @@ func handleLessonsDenyRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = lesson.Deny(authContext.Account, denyRequest.Reason)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+func handleLessonsCancelRequest(w http.ResponseWriter, r *http.Request) {
+	log.Info(r.Body)
+	cancelRequest := &LessonCancelRequestDTO{}
+	if !ParseBody(w, r, cancelRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = lesson.Cancel(authContext.Account, cancelRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

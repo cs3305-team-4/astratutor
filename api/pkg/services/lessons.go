@@ -391,6 +391,49 @@ func (l *Lesson) Deny(denier *Account, reason string) error {
 	return err
 }
 
+func (l *Lesson) Cancel(cancelee *Account, reason string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Accepted:
+			break
+		case Requested:
+			if cancelee.ID != lesson.RequesterID {
+				return errors.New("only the person who requested the lesson can cancel the request")
+			}
+
+		case Rescheduled:
+			if cancelee.ID != lesson.RequestStageChangerID {
+				return errors.New("only the person who rescheduled the lesson can cancel the request")
+			}
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Cancelled, lesson.RequestStage)
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			RequestStage:          Cancelled,
+			RequestStageDetail:    reason,
+			RequestStageChangerID: cancelee.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
 func (l *Lesson) ReadResourceByID(rid uuid.UUID) (*ResourceMetadata, error) {
 	db, err := database.Open()
 	if err != nil {
