@@ -196,10 +196,14 @@ func CreateLesson(requester *Account, student *Account, tutor *Account, startTim
 
 }
 
-func ReadLessonByID(id uuid.UUID) (*Lesson, error) {
+func ReadLessonByID(id uuid.UUID, preloads ...string) (*Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
+	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
 	}
 
 	var lesson Lesson
@@ -427,6 +431,72 @@ func (l *Lesson) Cancel(cancelee *Account, reason string) error {
 			RequestStage:          Cancelled,
 			RequestStageDetail:    reason,
 			RequestStageChangerID: cancelee.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
+func (l *Lesson) Reschedule(reschedulee *Account, newTime time.Time, reason string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	if !newTime.After(time.Now()) {
+		return fmt.Errorf("can't reschedule a lesson to the past")
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID, "Student", "Tutor")
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Accepted:
+			break
+		case Requested:
+			break
+		case Rescheduled:
+			break
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Rescheduled, lesson.RequestStage)
+		}
+
+		endTime := newTime.Add(time.Minute*time.Duration(59) + time.Second*time.Duration(59))
+
+		lat, err := LessonAtTime(&lesson.Student, newTime, endTime)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if lat == true {
+			return fmt.Errorf("cannot create lesson: the student has a lesson at that time")
+		}
+
+		lat, err = LessonAtTime(&lesson.Tutor, newTime, endTime)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if lat == true {
+			return fmt.Errorf("cannot create lesson: the teacher has a lesson at that time")
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			StartTime:             newTime,
+			EndTime:               endTime,
+			RequestStage:          Rescheduled,
+			RequestStageDetail:    reason,
+			RequestStageChangerID: reschedulee.ID,
 		})
 		return nil
 	})

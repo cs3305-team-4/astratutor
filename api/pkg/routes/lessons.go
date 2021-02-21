@@ -91,6 +91,11 @@ type LessonCancelRequestDTO struct {
 	Reason string `json:"reason"`
 }
 
+type LessonRescheduleRequestDTO struct {
+	NewTime time.Time `json:"new_time"`
+	Reason  string    `json:"reason"`
+}
+
 func dtoFromResourceMetadata(m *services.ResourceMetadata) *ResourceMetadataDTO {
 	return &ResourceMetadataDTO{
 		Name: m.Name,
@@ -175,6 +180,11 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 	// POST /{uuid}/cancel
 	lessonResource.HandleFunc("/cancel",
 		handleLessonsCancelRequest,
+	).Methods("POST")
+
+	// POST /{uuid}/cancel
+	lessonResource.HandleFunc("/reschedule",
+		handleLessonsRescheduleRequest,
 	).Methods("POST")
 
 	subrouter.HandleFunc("/resources",
@@ -335,7 +345,6 @@ func handleLessonsDenyRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLessonsCancelRequest(w http.ResponseWriter, r *http.Request) {
-	log.Info(r.Body)
 	cancelRequest := &LessonCancelRequestDTO{}
 	if !ParseBody(w, r, cancelRequest) {
 		return
@@ -360,6 +369,37 @@ func handleLessonsCancelRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = lesson.Cancel(authContext.Account, cancelRequest.Reason)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+func handleLessonsRescheduleRequest(w http.ResponseWriter, r *http.Request) {
+	rescheduleRequest := &LessonRescheduleRequestDTO{}
+	if !ParseBody(w, r, rescheduleRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = lesson.Reschedule(authContext.Account, rescheduleRequest.NewTime, rescheduleRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
