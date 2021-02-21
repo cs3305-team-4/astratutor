@@ -5,7 +5,10 @@ import React from 'react';
 export function UserAvatar(props: { profile: ProfileResponseDTO; props?: AvatarProps }): JSX.Element {
   return (
     <Tooltip title={props.profile.first_name + ' ' + props.profile.last_name} placement="top">
-      <Avatar style={{ backgroundColor: props.profile.color, cursor: 'pointer' }} {...props.props}>
+      <Avatar
+        {...props.props}
+        style={{ backgroundColor: props.profile.color, cursor: 'pointer', ...props.props?.style }}
+      >
         {props.profile.avatar || (props.profile.first_name ? props.profile.first_name[0].toUpperCase() : '')}
       </Avatar>
     </Tooltip>

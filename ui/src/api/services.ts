@@ -12,6 +12,7 @@ import {
   AccountRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  TurnCredentials,
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
@@ -173,6 +174,15 @@ export class Services {
     return (await res.json()) as LessonResponseDTO[];
   }
 
+  async readLesson(lessonId: string): Promise<LessonResponseDTO> {
+    const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as LessonResponseDTO;
+  }
+
   async readLessonByAccountId(lessonId: string): Promise<LessonResponseDTO> {
     const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
       headers: this.headers,
@@ -210,6 +220,15 @@ export class Services {
         stage_detail,
       }),
     });
+  }
+
+  async getTurnCredentials(): Promise<TurnCredentials> {
+    const res = await fetchRest(`${config.apiUrl}/signalling/credentials`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as TurnCredentials;
   }
 
   async readSubjects(): Promise<SubjectDTO[]> {

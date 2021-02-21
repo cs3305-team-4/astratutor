@@ -7,19 +7,25 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useEffect, useRef } from 'react';
 import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { APIContext } from '../api/api';
-import { ProfileResponseDTO } from '../api/definitions';
-import Messaging from '../components/Messaging';
+import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import Messaging, { Message } from '../components/Messaging';
 import { UserAvatar } from '../components/UserAvatar';
 import { SettingsCTX } from '../api/classroom';
+import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
+import { WebRTCHandler } from '../webrtc/webrtc';
+import { StreamType } from '../webrtc/stream_types';
+import { screenStream } from '../webrtc/devices';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
   ref: React.ReactElement<HTMLVideoElement>;
+  stream: MediaStream;
+  streaming: boolean;
 }
 
 const webcamHeight = 200;
@@ -42,7 +48,7 @@ const StyledSider = styled(Layout.Sider)`
   border-right: 2px solid rgb(10 10 10);
 `;
 
-const StyledWebcam = styled.div`
+const StyledWebcam = styled.div<{ index: number }>`
   width: 100%;
   padding: 0;
   margin: 0;
@@ -61,7 +67,7 @@ const StyledWebcam = styled.div`
     height: 42px;
     position: absolute;
     width: 100%;
-    top: 158px;
+    top: ${(props) => props.index * webcamHeight + 158}px;
   }
 `;
 
@@ -85,30 +91,226 @@ const StyledTools = styled(Layout.Footer)`
 `;
 
 const StyledVideo = styled.video`
+  background-color: #000;
   width: 100%;
   height: calc(100% - 88px);
 `;
 
+const StyledStreaming = styled.div`
+  @keyframes transp {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  position: fixed;
+  bottom: 120px;
+  right: 40px;
+  color: #fff;
+  opacity: 0;
+  animation: transp 8s;
+`;
+
+function sleep(ms: number): unknown {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 export function LessonClassroom(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
   const settings = useContext(SettingsCTX);
   const history = useHistory();
   const api = useContext(APIContext);
+
+  const [messages, setMessages] = React.useState<Message[]>([]);
   const [webcamDisplays, setWebcamDisplays] = React.useState<IWebcam[]>([]);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [webcamEnabled, setWebcamEnabled] = React.useState(true);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [micEnabled, setMicEnabled] = React.useState(true);
+  const [screen, setScreen] = React.useState<MediaStream>();
+
+  const signalling = settings.signalling;
+  const handler = useRef<WebRTCHandler>();
+  const [addingPeer, setAddingPeer] = React.useState(false);
+  const [streamingID, setStreamingID] = React.useState<string>('');
+  const screenRef = useRef<HTMLVideoElement>();
+
+  const onDisconnect = (id: string) => {
+    setWebcamDisplays((prev) => prev.filter((v) => v.profile.account_id !== id));
+    setStreamingID((prev) => {
+      console.log('Screen no longer receiving', prev);
+      if (prev !== '') {
+        prev = '';
+        if (screenRef.current?.srcObject) {
+          (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+            v.enabled = false;
+            v.stop();
+          });
+          screenRef.current.srcObject = null;
+        }
+      }
+      return prev;
+    });
+  };
+  useAsync(async () => {
+    // Signalling can be none if classroom page is refreshed before being sent back to lobby
+    if (signalling == null) return;
+    const credentials = await api.services.getTurnCredentials();
+    handler.current = new WebRTCHandler(signalling, credentials, () => setAddingPeer(true));
+    console.log(handler.current);
+    signalling.onmessage(async (event: MessageEvent) => {
+      const message = JSON.parse(event.data);
+      // Should never happen but just in case
+      if (message.src === api.claims?.sub) return;
+
+      const type: MESSAGE_TYPE = message.type;
+      switch (type) {
+        case MESSAGE_TYPE.AHOY_HOY: {
+          handler.current?.addPeer(message.src);
+          break;
+        }
+        case MESSAGE_TYPE.CHAT: {
+          console.log('New Message: ', message);
+          const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
+          setMessages((prev) => prev.concat(messageData));
+          break;
+        }
+        case MESSAGE_TYPE.SDP: {
+          // Only respond to SDP destined for us
+          if (message.dest !== signalling.id) return;
+          await handler.current?.incomingSDP(message.src, message.data);
+          break;
+        }
+        case MESSAGE_TYPE.CANDIDATE: {
+          // Only respond to candidates destined for us
+          if (message.dest !== signalling.id) return;
+          await handler.current?.incomingCandidate(message.src, message.data);
+          break;
+        }
+        case MESSAGE_TYPE.STOP_STREAM: {
+          if (message.dest !== signalling.id) return;
+          console.log('MESSAGE STOP_STREAM');
+          setScreenEnabled(false);
+          break;
+        }
+      }
+    });
+    signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
+
+    handler.current.ontrackremove = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+      console.log(correlation);
+      switch (correlation) {
+        case StreamType.Screen:
+          setStreamingID((prev) => {
+            console.log('Screen no longer receiving', prev);
+            if (prev !== '') {
+              prev = '';
+              if (screenRef.current?.srcObject) {
+                (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+                  v.enabled = false;
+                  v.stop();
+                });
+                screenRef.current.srcObject = null;
+              }
+            }
+            return prev;
+          });
+          break;
+      }
+    };
+    handler.current.ondisconnect = onDisconnect;
+    handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+      console.log('NEW TRACK', id, correlation, event);
+      const stream = event.streams.length ? event.streams[0] : new MediaStream();
+      switch (correlation) {
+        case StreamType.Camera:
+          setWebcamDisplays((prev) => {
+            const other = prev.findIndex((v) => v.profile.account_id === id);
+            console.log(webcamDisplays, other, id);
+            if (other > -1) {
+              prev.splice(other, 1);
+            }
+            return prev;
+          });
+          const ref = (
+            <video
+              key={id}
+              ref={(ref) => {
+                if (ref) {
+                  ref.srcObject = stream;
+                  ref.play();
+                }
+              }}
+            />
+          );
+          const profile = settings.otherProfiles[id];
+          console.log(settings.otherProfiles);
+          setWebcamDisplays((prev) => prev.concat({ stream, ref, profile, streaming: true }));
+          break;
+        case StreamType.Screen:
+          console.log('Other user started screensharing');
+          if (screenRef.current) {
+            ((screenRef.current.srcObject as MediaStream) || null)?.getTracks().forEach((v) => {
+              v.enabled = false;
+              v.stop();
+              if (streamingID === '') {
+                handler.current?.removeTrack(v);
+              }
+            });
+            screenRef.current.srcObject = stream;
+            screenRef.current.play();
+          }
+          setStreamingID(id);
+          break;
+      }
+    };
+  }, []);
+  useEffect(() => console.log(webcamDisplays), [webcamDisplays]);
+
+  useAsync(async () => {
+    const last = messages[messages.length - 1];
+    if (last && !last.profile) {
+      console.log(last);
+      const profile = await api.services.readProfileByAccountID(
+        api.account?.id ?? '',
+        api.account?.type ?? AccountType.Tutor,
+      );
+      signalling?.send(MESSAGE_TYPE.CHAT, '', { text: last.text, date: last.date, profile });
+    }
+  }, [api.account?.id, messages]);
 
   const addWebcam = (web: IWebcam) => {
+    console.log('Adding Webcam to', handler.current?.peers);
     const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
     if (other > -1) {
-      const temp = webcamDisplays;
-      delete temp[other];
-      temp[other] = web;
-      setWebcamDisplays(temp);
+      console.log(other);
+      setWebcamDisplays((prev) => {
+        const temp = prev;
+        const tracks = web.stream.getTracks();
+        const old = temp[other];
+        if (old.streaming) {
+          tracks.forEach((v, i) => {
+            handler.current?.replaceTrack(temp[other].stream.getTracks()[i], v);
+          });
+        } else {
+          web.stream.getTracks().forEach((v) => {
+            handler.current?.addTrack(v, StreamType.Camera, web.stream);
+          });
+        }
+        delete temp[other];
+        temp[other] = web;
+        return temp;
+      });
     } else {
-      setWebcamDisplays(webcamDisplays.concat(web));
+      web.streaming = Object.keys(handler.current!.peers).length > 0;
+      setWebcamDisplays((prev) => prev.concat(web));
+      web.stream.getTracks().forEach((v) => {
+        handler.current?.addTrack(v, StreamType.Camera, web.stream);
+      });
     }
   };
 
@@ -126,6 +328,7 @@ export function LessonClassroom(): ReactElement {
     const video = (
       <video
         key={'self'}
+        muted
         ref={(ref) => {
           if (ref) {
             ref.srcObject = webcamEnabled ? settings.webcamStream : null;
@@ -135,16 +338,74 @@ export function LessonClassroom(): ReactElement {
         }}
       />
     );
-    const web: IWebcam = { profile: await api.services.readProfileByAccount(api.account), ref: video };
-    addWebcam(web);
-  }, [settings.webcamStream, webcamEnabled]);
+    if (api.account && settings.webcamStream) {
+      const web: IWebcam = {
+        profile: await api.services.readProfileByAccount(api.account),
+        ref: video,
+        stream: settings.webcamStream,
+        streaming: false,
+      };
+      addWebcam(web);
+      if (addingPeer) {
+        setAddingPeer(false);
+      }
+    }
+  }, [settings.webcamStream, webcamEnabled, addingPeer]);
+
+  useAsync(async () => {
+    if (screenEnabled) {
+      const src = await screenStream();
+      if (streamingID !== '') {
+        console.log('stopping other stream');
+        signalling?.send(MESSAGE_TYPE.STOP_STREAM, streamingID, { stop: true });
+        await sleep(500);
+      }
+      if (!src) {
+        setScreenEnabled(false);
+        return;
+      }
+      setStreamingID('');
+      src.onremovetrack = () => {
+        setScreenEnabled(false);
+      };
+      for (const track of src.getTracks()) {
+        track.onended = () => {
+          setScreenEnabled(false);
+        };
+        handler.current?.addTrack(track, StreamType.Screen, src);
+      }
+      setScreen(src);
+      if (screenRef.current) {
+        screenRef.current.srcObject = src;
+        screenRef.current.play();
+      }
+    } else {
+      if (screenRef.current) {
+        screenRef.current.srcObject = null;
+      }
+      screen?.getTracks().forEach((v) => {
+        v.enabled = false;
+        v.stop();
+        handler.current?.removeTrack(v);
+      });
+      setScreen(undefined);
+      setStreamingID('');
+    }
+  }, [screenEnabled]);
 
   const hangup = () => {
+    handler.current?.close();
     settings.webcamStream?.getVideoTracks().forEach((v) => {
       v.stop();
     });
     history.push(`/lessons/${lid}/goodbye`);
   };
+
+  useEffect(() => {
+    settings.webcamStream?.getAudioTracks().forEach((v) => {
+      v.enabled = micEnabled;
+    });
+  }, [micEnabled, settings.webcamStream]);
 
   return (
     <StyledLayout>
@@ -175,7 +436,11 @@ export function LessonClassroom(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of settings.webcams) {
-                      opts.push(<Select.Option value={dev.deviceId}>{dev.label}</Select.Option>);
+                      opts.push(
+                        <Select.Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Select.Option>,
+                      );
                     }
                     return opts;
                   })()}
@@ -200,7 +465,11 @@ export function LessonClassroom(): ReactElement {
                   {(() => {
                     const opts: ReactElement[] = [];
                     for (const dev of settings.microphones) {
-                      opts.push(<Select.Option value={dev.deviceId}>{dev.label}</Select.Option>);
+                      opts.push(
+                        <Select.Option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label}
+                        </Select.Option>,
+                      );
                     }
                     return opts;
                   })()}
@@ -211,25 +480,36 @@ export function LessonClassroom(): ReactElement {
           </Layout>
         </Modal>
         <StyledSider width={300}>
-          {webcamDisplays.map((v) => (
-            <StyledWebcam key={v.ref.key}>
-              {v.ref}
-              <div className="profile">
-                <UserAvatar profile={v.profile} />
-                <Typography.Text>
-                  {v.profile.first_name} {v.profile.last_name}
-                </Typography.Text>
-              </div>
-            </StyledWebcam>
-          ))}
-          <Messaging height={webcamDisplays.length * webcamHeight} />
+          {webcamDisplays.map((v, i) => {
+            return (
+              <StyledWebcam key={v.ref.key} index={i}>
+                {v.ref}
+                <div className="profile">
+                  <UserAvatar profile={v.profile} />
+                  <Typography.Text>
+                    {v.profile.first_name} {v.profile.last_name}
+                  </Typography.Text>
+                </div>
+              </StyledWebcam>
+            );
+          })}
+          <Messaging messages={messages} setMessages={setMessages} height={webcamDisplays.length * webcamHeight} />
         </StyledSider>
         <Layout.Content>
           <StyledVideo
-            autoPlay
-            loop
-            src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4"
+            ref={(ref) => {
+              screenRef.current = ref ?? undefined;
+            }}
           />
+          {streamingID.length > 0 && (
+            <StyledStreaming>
+              <UserAvatar
+                profile={settings.otherProfiles[streamingID]}
+                props={{ style: { marginRight: '.5em' }, size: 'small' }}
+              />
+              {settings.otherProfiles[streamingID].first_name} {settings.otherProfiles[streamingID].last_name}
+            </StyledStreaming>
+          )}
         </Layout.Content>
         <StyledTools>
           <Tooltip title="Toggle Mute">

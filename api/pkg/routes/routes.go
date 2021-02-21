@@ -34,6 +34,7 @@ func GetHandler() http.Handler {
 	InjectStudentsRoutes(r.PathPrefix("/students").Subrouter())
 	InjectSubjectsRoutes(r.PathPrefix("/subjects").Subrouter())
 	InjectTutorsRoutes(r.PathPrefix("/tutors").Subrouter())
+	InjectSignallingRoutes(r.PathPrefix("/signalling").Subrouter())
 
 	return cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

@@ -140,3 +140,8 @@ export interface TutorSubjectsDTO {
   description: string;
   subjects: SubjectTaughtDTO[];
 }
+
+export interface TurnCredentials {
+  username: string;
+  password: string;
+}
