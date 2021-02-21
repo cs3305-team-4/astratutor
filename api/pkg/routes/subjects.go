@@ -25,11 +25,12 @@ type SubjectResponseDTO struct {
 
 // Represents a tutors subject
 type SubjectTaughtDTO struct {
-	ID          uuid.UUID `json:"id" validate:"len=0"`
-	Name        string    `json:"name" validate:"required"`
-	Slug        string    `json:"slug" validate:"required"`
-	Description string    `json:"description"`
-	Price       float32   `json:"price" validate:"required"`
+	SubjectTaughtID uuid.UUID `json:"Subject_Taught_id" validate:"len=0"`
+	SubjectID       uuid.UUID `json:"Subject_id" validate:"len=0"`
+	Name            string    `json:"name" validate:"required"`
+	Slug            string    `json:"slug" validate:"required"`
+	Description     string    `json:"description"`
+	Price           float32   `json:"price" validate:"required"`
 }
 
 // Represents a Tutor and their subjects
@@ -41,6 +42,22 @@ type TutorSubjectsResponseDTO struct {
 	Slug        string             `json:"slug" validate:"len=0"`
 	Description string             `json:"description"`
 	Subjects    []SubjectTaughtDTO `json:"subjects"`
+}
+
+// SubjectTaughtRequestDTO represents a subject a Tutor wishes to teach
+type SubjectTaughtRequestDTO struct {
+	Description string  `json:"description"`
+	Price       float32 `json:"price"`
+}
+
+// SubjectTaughtPriceUpdateRequestDTO represents a subject a Tutor wishes to update the description for
+type SubjectTaughtDescriptionUpdateRequestDTO struct {
+	Description string `json:"description"`
+}
+
+// SubjectTaughtPriceUpdateRequestDTO represents a subject a Tutor wishes to update the Price for
+type SubjectTaughtPriceUpdateRequestDTO struct {
+	Price float32 `json:"price"`
 }
 
 func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
@@ -62,11 +79,12 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 
 func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
 	return &SubjectTaughtDTO{
-		ID:          subjectTaught.Subject.ID,
-		Name:        subjectTaught.Subject.Name,
-		Slug:        subjectTaught.Subject.Slug,
-		Description: subjectTaught.Description,
-		Price:       subjectTaught.Price,
+		SubjectTaughtID: subjectTaught.ID,
+		SubjectID:       subjectTaught.Subject.ID,
+		Name:            subjectTaught.Subject.Name,
+		Slug:            subjectTaught.Subject.Slug,
+		Description:     subjectTaught.Description,
+		Price:           subjectTaught.Price,
 	}
 }
 
