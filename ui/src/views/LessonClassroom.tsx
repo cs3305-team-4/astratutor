@@ -1,9 +1,13 @@
 import {
   AudioOutlined,
+  BgColorsOutlined,
   CameraFilled,
+  DeleteOutlined,
   DesktopOutlined,
+  EditOutlined,
   PhoneFilled,
   SettingFilled,
+  UndoOutlined,
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
@@ -24,6 +28,7 @@ import { Stage, Layer, Image } from 'react-konva';
 import { Stage as StageType, stages } from 'konva/types/Stage';
 import Konva from 'konva';
 import { Layer as LayerType } from 'konva/types/Layer';
+import { SketchPicker } from 'react-color';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
@@ -120,6 +125,12 @@ const StyledStreaming = styled.div`
   animation: transp 8s;
 `;
 
+const StyledDrawMenu = styled.div`
+  position: fixed;
+  right: 30px;
+  bottom: 24px;
+`;
+
 function sleep(ms: number): unknown {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -148,6 +159,19 @@ export function LessonClassroom(): ReactElement {
   const [mode, setMode] = useState<'brush'>('brush');
   const stage = useRef<StageType>();
   const layer = useRef<LayerType>();
+
+  const wipe = () => {
+    layer.current?.removeChildren();
+    layer.current?.clear();
+  };
+
+  const undo = () => {
+    console.log(lastLine);
+    if (layer.current) {
+      layer.current.children.splice(layer.current.children.length - 1, 1);
+      layer.current.batchDraw();
+    }
+  };
 
   const onDisconnect = (id: string) => {
     setWebcamDisplays((prev) => prev.filter((v) => v.profile.account_id !== id));
@@ -214,6 +238,14 @@ export function LessonClassroom(): ReactElement {
             layer.current.add(line);
             layer.current.batchDraw();
           }
+          break;
+        }
+        case MESSAGE_TYPE.UNDO: {
+          undo();
+          break;
+        }
+        case MESSAGE_TYPE.WIPE: {
+          wipe();
           break;
         }
       }
@@ -433,6 +465,9 @@ export function LessonClassroom(): ReactElement {
     }
   }, [isPaint]);
 
+  const [pick, setPick] = useState(false);
+  const [color, setColor] = useState('#df4b26');
+
   return (
     <StyledLayout>
       <StyledLayout>
@@ -538,7 +573,7 @@ export function LessonClassroom(): ReactElement {
               const pos = stage.current.getPointerPosition();
               if (!pos) return;
               const line = new Konva.Line({
-                stroke: '#df4b26',
+                stroke: color,
                 strokeWidth: 5,
                 globalCompositeOperation: mode === 'brush' ? 'source-over' : 'destination-out',
                 points: [pos.x, pos.y],
@@ -631,6 +666,54 @@ export function LessonClassroom(): ReactElement {
             </Button>
           </Tooltip>
         </StyledTools>
+        <StyledDrawMenu>
+          <Tooltip title="Draw">
+            <Button
+              ghost={mode !== 'brush'}
+              onClick={() => setMode('brush')}
+              size={'large'}
+              style={{ margin: '0 3px' }}
+            >
+              <EditOutlined size={10} style={{ color: mode === 'brush' ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Wipe">
+            <Button
+              ghost={true}
+              onClick={() => {
+                wipe();
+                signalling?.send(MESSAGE_TYPE.WIPE, '', {});
+              }}
+              size={'large'}
+              style={{ margin: '0 3px' }}
+            >
+              <DeleteOutlined size={10} style={{ color: '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Undo">
+            <Button
+              ghost={true}
+              onClick={() => {
+                undo();
+                signalling?.send(MESSAGE_TYPE.UNDO, '', {});
+              }}
+              size={'large'}
+              style={{ margin: '0 3px' }}
+            >
+              <UndoOutlined size={10} style={{ color: '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Select colour">
+            <Button ghost={!pick} onClick={() => setPick(!pick)} size={'large'} style={{ margin: '0 3px' }}>
+              <BgColorsOutlined size={10} style={{ color: pick ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
+          {pick && (
+            <div style={{ position: 'fixed', bottom: 65, zIndex: 10000 }}>
+              <SketchPicker color={color} onChange={(e) => setColor(e.hex)} />
+            </div>
+          )}
+        </StyledDrawMenu>
       </StyledLayout>
     </StyledLayout>
   );

@@ -12,6 +12,8 @@ export enum MESSAGE_TYPE {
   CANDIDATE,
   STOP_STREAM,
   DRAW,
+  WIPE,
+  UNDO,
 }
 
 export class Signalling {
