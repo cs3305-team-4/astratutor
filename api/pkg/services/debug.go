@@ -181,11 +181,11 @@ func CreateDebugData() error {
 	log.Info("Added subject Leaving Certificate - Religion")
 
 	// Add Tutors to subjects
-	john, err := ReadAccountByID(uuid.MustParse("11111111-1111-1111-1111-111111111111"), nil)
+	john, err := ReadAccountByID(uuid.MustParse("11111111-1111-1111-1111-111111111111"), nil, "Profile")
 	if err != nil {
 		return err
 	}
-	jane, err := ReadAccountByID(uuid.MustParse("33333333-3333-3333-3333-333333333333"), nil)
+	jane, err := ReadAccountByID(uuid.MustParse("33333333-3333-3333-3333-333333333333"), nil, "Profile")
 	if err != nil {
 		return err
 	}
@@ -202,34 +202,35 @@ func CreateDebugData() error {
 		return err
 	}
 
+	log.Info("x")
 	err = db.FirstOrCreate(&SubjectTaught{
-		Model:       database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
-		Subject:     *english,
-		Tutor:       *john,
-		Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:       45,
+		Model:        database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
+		Subject:      *english,
+		TutorProfile: *john.Profile,
+		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
+		Price:        45,
 	}).Error
 	if err != nil {
 		return err
 	}
 	log.Info("John Tutor now teaching Leaving Certificate English")
 	err = db.FirstOrCreate(&SubjectTaught{
-		Model:       database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
-		Subject:     *irish,
-		Tutor:       *john,
-		Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:       50,
+		Model:        database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
+		Subject:      *irish,
+		TutorProfile: *john.Profile,
+		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
+		Price:        50,
 	}).Error
 	if err != nil {
 		return err
 	}
 	log.Info("John Tutor now teaching Leaving Certificate Irish")
 	err = db.FirstOrCreate(&SubjectTaught{
-		Model:       database.Model{ID: uuid.MustParse("33333333-3333-3333-3333-333333333333")},
-		Subject:     *physics,
-		Tutor:       *jane,
-		Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:       35,
+		Model:        database.Model{ID: uuid.MustParse("33333333-3333-3333-3333-333333333333")},
+		Subject:      *physics,
+		TutorProfile: *jane.Profile,
+		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
+		Price:        35,
 	}).Error
 	if err != nil {
 		return err

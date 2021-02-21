@@ -11,9 +11,8 @@ import (
 //Subject contains information about a single subject
 type Subject struct {
 	database.Model
-	Name  string `gorm:"unique;not null;"`
-	Slug  string `gorm:"unique;not null;"`
-	Image string
+	Name string `gorm:"unique;not null;"`
+	Slug string `gorm:"unique;not null;"`
 }
 
 type SubjectTaughtError string
@@ -32,23 +31,30 @@ func CreateSubject(name string, image string, slug string, db *gorm.DB) error {
 		return err
 	}
 
-	return db.Create(&Subject{Name: name, Image: image, Slug: slug}).Error
+	return db.Create(&Subject{Name: name, Slug: slug}).Error
 }
 
 //Contains information on
 type SubjectTaught struct {
 	database.Model
 
-	//Contains Subject bring taught
 	Subject   Subject `gorm:"foreignKey:SubjectID"`
 	SubjectID uuid.UUID
-	//
-	Tutor   Account `gorm:"foreignKey:TutorID"`
-	TutorID uuid.UUID
-	//Price that the Tutor wishes to charge per lesson
-	Price uint
-	//Description given by the tutor
-	Description string
+
+	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
+	TutorProfileID uuid.UUID
+
+	Description string  `gorm:"not null;"`
+	Price       float32 `gorn:"not null;"`
+}
+
+type TutorSubjects struct {
+	database.Model
+
+	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
+	TutorProfileID uuid.UUID
+
+	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
 }
 
 //gets all subjects in the DB
@@ -84,6 +90,26 @@ func GetSubjectBySlug(slug string, db *gorm.DB) (*Subject, error) {
 	return &subject, nil
 }
 
+// returns a subjects when given a list of subject slugs
+func GetSubjectsBySlugs(slugs []string, db *gorm.DB) (*[]Subject, error) {
+	if db == nil {
+		var err error
+		db, err = database.Open()
+		if err != nil {
+			return nil, err
+		}
+	}
+	var subjects []Subject
+	var err error
+	err = db.Where("slug IN (?)", slugs).Find(&subjects).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &subjects, nil
+}
+
 //returns a subject when given its ID
 func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 	if db == nil {
@@ -98,13 +124,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
-
-	if sid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
-		var err error
-		return nil, err
-	}
-
+func GetTutorsBySubjects(subjects *[]Subject, db *gorm.DB) ([]Profile, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -112,13 +132,30 @@ func GetTutorsBySubjectID(sid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
 			return nil, err
 		}
 	}
-	var subjectTaught []SubjectTaught
-	var err error
-	err = db.Where(&SubjectTaught{SubjectID: sid}).Find(&subjectTaught).Error
+
+	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	var profiles []Profile
+	err := db.Find(&profiles).Error
 	if err != nil {
 		return nil, err
 	}
-	return subjectTaught, nil
+
+	var profilesWithSubjects []Profile
+
+	for _, profile := range profiles {
+		if len(profile.Subjects) > 0 {
+		exit:
+			for _, subjectTaught := range profile.Subjects {
+				for _, subject := range *subjects {
+					if subjectTaught.SubjectID == subject.ID {
+						profilesWithSubjects = append(profilesWithSubjects, profile)
+						break exit
+					}
+				}
+			}
+		}
+	}
+	return profilesWithSubjects, nil
 }
 
 //Quries the DB for SubjectTaught where the ID matches the SubjectTaught ID
@@ -135,7 +172,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
+func GetAllTutors(db *gorm.DB) ([]Profile, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -143,13 +180,27 @@ func GetAllTutors(db *gorm.DB) ([]SubjectTaught, error) {
 			return nil, err
 		}
 	}
-	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Find(&subjectTaught).Error
+
+	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	var profiles []Profile
+	err := db.Find(&profiles).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var profilesWithSubjects []Profile
+
+	for _, profile := range profiles {
+		if len(profile.Subjects) > 0 {
+			profilesWithSubjects = append(profilesWithSubjects, profile)
+		}
+	}
+	return profilesWithSubjects, nil
 }
 
 //Returns subjectTaught for specific tutors using their ID
-func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, error) {
-	if tid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
+func GetSubjectsTaughtByTutorID(tpid uuid.UUID, db *gorm.DB, preloads ...string) ([]SubjectTaught, error) {
+	if tpid == uuid.MustParse("00000000-0000-0000-0000-000000000000") {
 		var err error
 		return nil, err
 	}
@@ -161,12 +212,17 @@ func GetSubjectsTaughtByTutorID(tid uuid.UUID, db *gorm.DB) ([]SubjectTaught, er
 			return nil, err
 		}
 	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
+	}
+
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{TutorID: tid}).Find(&subjectTaught).Error
+	return subjectTaught, db.Where(&SubjectTaught{TutorProfileID: tpid}).Find(&subjectTaught).Error
 }
 
 //creats a StudentTaught based on the subject and tutor with a set price description.
-func TeachSubject(subject *Subject, tutor *Account, description string, price uint, db *gorm.DB) error {
+func TeachSubject(subject *Subject, tutor *Account, description string, price float32, db *gorm.DB) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -186,10 +242,9 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price ui
 		}
 
 		err = tx.Create(&SubjectTaught{
-			Subject:     *subject,
-			Tutor:       *tutor,
-			Description: description,
-			Price:       price,
+			Subject:      *subject,
+			TutorProfile: *tutor.Profile,
+			Price:        price,
 		}).Error
 
 		if err != nil {
@@ -281,7 +336,7 @@ func CreateSubjectTestAccounts() error {
 		return err
 	}
 
-	french, err := GetSubjectBySlug("", nil)
+	french, err := GetSubjectBySlug("french", nil)
 	TeachSubject(french, John, "I teach French", 59, nil)
 	if err != nil {
 		return err

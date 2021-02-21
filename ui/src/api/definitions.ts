@@ -123,22 +123,22 @@ export interface SubjectDTO {
   slug: string;
 }
 
-export interface ReadSubjectsDTO {
-  subjects: SubjectDTO[];
+export interface SubjectTaughtDTO {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: string;
 }
 
-export interface SubjectTaughtDTO {
-  subject_taught_id: string;
-
-  subject_id: string;
-  subject_name: string;
-
-  tutor_first_name: string;
-  tutor_last_name: string;
-  tutor_avatar: string;
-
-  price: number;
+export interface TutorSubjectsDTO {
+  id: string;
+  first_name: string;
+  last_name: string;
+  avatar: string;
+  slug: string;
   description: string;
+  subjects: SubjectTaughtDTO[];
 }
 
 export interface TurnCredentials {

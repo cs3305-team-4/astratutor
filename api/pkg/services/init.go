@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	log "github.com/sirupsen/logrus"
@@ -19,9 +20,14 @@ func init() {
 		panic(fmt.Errorf("Could not read config file %s\n", err))
 	}
 
+Conn:
 	conn, err := database.Open()
 	if err != nil {
-		log.WithError(err).Error("Couldn't establish DB connection")
+		log.WithError(err).Error("Couldn't establish DB connection. Retrying in 3 seconds...")
+
+		// Retry connection until succeeds
+		time.Sleep(3 * time.Second)
+		goto Conn
 	}
 
 	log.Info("Migrating account service models")
