@@ -140,3 +140,11 @@ export interface TutorSubjectsDTO {
   description: string;
   subjects: SubjectTaughtDTO[];
 }
+
+export interface TutorBillingOnboardURLResponseDTO {
+  url: string;
+}
+
+export interface TutorBillingPanelURLResponseDTO {
+  url: string;
+}

@@ -15,6 +15,8 @@ import {
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
+  TutorBillingOnboardURLResponseDTO,
+  TutorBillingPanelURLResponseDTO,
 } from './definitions';
 
 export class Services {
@@ -230,5 +232,57 @@ export class Services {
   async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
     const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
     return (await res.json()) as SubjectTaughtDTO[];
+  }
+
+  async readTutorBillingOnboardStatus(account_id: string): Promise<boolean> {
+    const res = await fetchRest(
+      `${config.apiUrl}/accounts/${account_id}/billing/tutor-onboard`,
+      {
+        headers: this.headers,
+        method: 'GET',
+      },
+      [200, 404],
+    );
+
+    if (res.status == 200) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  async readTutorBillingRequirementsMetStatus(account_id: string): Promise<boolean> {
+    const res = await fetchRest(
+      `${config.apiUrl}/accounts/${account_id}/billing/tutor-requirements-met`,
+      {
+        headers: this.headers,
+        method: 'GET',
+      },
+      [200, 404],
+    );
+
+    if (res.status == 200) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  async readTutorBillingOnboardUrl(account_id: string): Promise<string> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/tutor-onboard-url`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as TutorBillingOnboardURLResponseDTO).url;
+  }
+
+  async readTutorBillingPanelUrl(account_id: string): Promise<string> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/tutor-panel-url`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as TutorBillingPanelURLResponseDTO).url;
   }
 }
