@@ -71,10 +71,9 @@ export default function Lesson(props: LessonProps): React.ReactElement {
 
   const requestPendingButton = (
     <>
-      <Button type="primary" disabled style={{ margin: '0.2rem' }}>
+      <Button type="text" disabled style={{ margin: '0.2rem' }}>
         Request Pending
       </Button>
-      ;
     </>
   );
 
