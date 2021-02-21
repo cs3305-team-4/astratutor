@@ -94,6 +94,7 @@ export enum LessonRequestStage {
   Accepted = 'accepted',
   Denied = 'denied',
   Cancelled = 'cancelled',
+  Rescheduled = 'rescheduled',
   Completed = 'completed',
   NoShowStudent = 'no-show-student',
   NoShowTutor = 'no-show-tutor',
@@ -122,6 +123,11 @@ export interface LessonDenyRequestDTO {
 }
 
 export interface LessonCancelRequestDTO {
+  reason: string;
+}
+
+export interface LessonRescheduleRequestDTO {
+  new_time: string;
   reason: string;
 }
 

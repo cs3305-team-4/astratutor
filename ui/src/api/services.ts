@@ -17,6 +17,7 @@ import {
   SubjectTaughtDTO,
   TutorSubjectsDTO,
   LessonCancelRequestDTO,
+  LessonRescheduleRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -207,6 +208,14 @@ export class Services {
       headers: this.headers,
       method: 'POST',
       body: JSON.stringify(cancelRequest),
+    });
+  }
+
+  async updateLessonStageReschedule(lesson_id: string, rescheduleRequest: LessonRescheduleRequestDTO): Promise<void> {
+    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/reschedule`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(rescheduleRequest),
     });
   }
 
