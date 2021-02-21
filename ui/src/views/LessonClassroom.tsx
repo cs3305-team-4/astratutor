@@ -7,7 +7,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
-import React, { ReactElement, useContext, useEffect, useRef } from 'react';
+import React, { ReactElement, useContext, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -20,6 +20,10 @@ import { Signalling, MESSAGE_TYPE } from '../webrtc/signalling';
 import { WebRTCHandler } from '../webrtc/webrtc';
 import { StreamType } from '../webrtc/stream_types';
 import { screenStream } from '../webrtc/devices';
+import { Stage, Layer, Image } from 'react-konva';
+import { Stage as StageType, stages } from 'konva/types/Stage';
+import Konva from 'konva';
+import { Layer as LayerType } from 'konva/types/Layer';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
@@ -407,6 +411,12 @@ export function LessonClassroom(): ReactElement {
     });
   }, [micEnabled, settings.webcamStream]);
 
+  const [isPaint, setIsPaint] = useState(false);
+  const [lastLine, setLastLine] = useState<Konva.Line>();
+  const [mode, setMode] = useState<'brush'>('brush');
+  const stage = useRef<StageType>();
+  const layer = useRef<LayerType>();
+
   return (
     <StyledLayout>
       <StyledLayout>
@@ -501,6 +511,40 @@ export function LessonClassroom(): ReactElement {
               screenRef.current = ref ?? undefined;
             }}
           />
+          <Stage
+            ref={(r) => {
+              stage.current = r ?? undefined;
+            }}
+            onMouseDown={(e) => {
+              if (!stage.current || !layer.current) return;
+              setIsPaint(true);
+              const pos = stage.current.getPointerPosition();
+              if (!pos) return;
+              const line = new Konva.Line({
+                stroke: '#df4b26',
+                strokeWidth: 5,
+                globalCompositeOperation: mode === 'brush' ? 'source-over' : 'destination-out',
+                points: [pos.x, pos.y],
+              });
+              setLastLine(line);
+              layer.current.add(line);
+            }}
+            width={window.innerWidth - 300}
+            height={window.innerHeight - 90}
+            style={{
+              background: 'transparent',
+              position: 'fixed',
+              width: '100%',
+              height: 'calc(100vh - 88px)',
+              top: 0,
+            }}
+          >
+            <Layer
+              ref={(r) => {
+                layer.current = r ?? undefined;
+              }}
+            ></Layer>
+          </Stage>
           {streamingID.length > 0 && (
             <StyledStreaming>
               <UserAvatar
