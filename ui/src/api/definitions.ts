@@ -125,6 +125,7 @@ export interface SubjectDTO {
 
 export interface SubjectTaughtDTO {
   id: string;
+  subject_id: string;
   name: string;
   slug: string;
   description: string;

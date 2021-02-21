@@ -25,12 +25,12 @@ type SubjectResponseDTO struct {
 
 // Represents a tutors subject
 type SubjectTaughtDTO struct {
-	SubjectTaughtID uuid.UUID `json:"Subject_Taught_id" validate:"len=0"`
-	SubjectID       uuid.UUID `json:"Subject_id" validate:"len=0"`
-	Name            string    `json:"name" validate:"required"`
-	Slug            string    `json:"slug" validate:"required"`
-	Description     string    `json:"description"`
-	Price           float32   `json:"price" validate:"required"`
+	ID          uuid.UUID `json:"id" validate:"len=0"`
+	SubjectID   uuid.UUID `json:"subject_id" validate:"len=0"`
+	Name        string    `json:"name" validate:"required"`
+	Slug        string    `json:"slug" validate:"required"`
+	Description string    `json:"description"`
+	Price       float32   `json:"price" validate:"required"`
 }
 
 // Represents a Tutor and their subjects
@@ -79,12 +79,12 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 
 func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
 	return &SubjectTaughtDTO{
-		SubjectTaughtID: subjectTaught.ID,
-		SubjectID:       subjectTaught.Subject.ID,
-		Name:            subjectTaught.Subject.Name,
-		Slug:            subjectTaught.Subject.Slug,
-		Description:     subjectTaught.Description,
-		Price:           subjectTaught.Price,
+		ID:          subjectTaught.ID,
+		SubjectID:   subjectTaught.Subject.ID,
+		Name:        subjectTaught.Subject.Name,
+		Slug:        subjectTaught.Subject.Slug,
+		Description: subjectTaught.Description,
+		Price:       subjectTaught.Price,
 	}
 }
 
