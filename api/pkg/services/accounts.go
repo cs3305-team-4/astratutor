@@ -54,8 +54,11 @@ type Account struct {
 	EmailVerified bool
 	Type          AccountType
 	Suspended     bool
-	PasswordHash  PasswordHash `gorm:"foreignKey:AccountID"`
-	Profile       *Profile     `gorm:"foreignKey:AccountID"`
+
+	// StripeID corresponds to a customer ID if the account type is a Student or a Stripe Connect account ID if the account type is a Tutor
+	StripeID     string
+	PasswordHash PasswordHash `gorm:"foreignKey:AccountID"`
+	Profile      *Profile     `gorm:"foreignKey:AccountID"`
 }
 
 func (a *Account) IsStudent() bool {
@@ -393,7 +396,14 @@ func CreateProfile(p *Profile) error {
 		}
 		p.GenerateNewColor()
 
+		// Setup billing for the account (as the profile has the required fields we can pre-input as a customer)
 		account.Profile = p
+		err = account.SetupBilling()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		return tx.Save(account).Error
 	})
 }

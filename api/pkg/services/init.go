@@ -7,6 +7,8 @@ import (
 	"github.com/cs3305-team-4/api/pkg/database"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
+	stripe "github.com/stripe/stripe-go/v72"
 )
 
 func init() {
@@ -47,5 +49,8 @@ Conn:
 	)
 	// Add some test users so we don't need to manually test things
 	CreateDebugData()
+
+	// Setup string key
+	stripe.Key = viper.GetString("billing.stripe.secret_key")
 
 }
