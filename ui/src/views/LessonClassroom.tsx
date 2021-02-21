@@ -143,6 +143,12 @@ export function LessonClassroom(): ReactElement {
   const [streamingID, setStreamingID] = React.useState<string>('');
   const screenRef = useRef<HTMLVideoElement>();
 
+  const [isPaint, setIsPaint] = useState(false);
+  const [lastLine, setLastLine] = useState<Konva.Line>();
+  const [mode, setMode] = useState<'brush'>('brush');
+  const stage = useRef<StageType>();
+  const layer = useRef<LayerType>();
+
   const onDisconnect = (id: string) => {
     setWebcamDisplays((prev) => prev.filter((v) => v.profile.account_id !== id));
     setStreamingID((prev) => {
@@ -199,6 +205,15 @@ export function LessonClassroom(): ReactElement {
           if (message.dest !== signalling.id) return;
           console.log('MESSAGE STOP_STREAM');
           setScreenEnabled(false);
+          break;
+        }
+        case MESSAGE_TYPE.DRAW: {
+          if (layer.current && message.data) {
+            console.log('MESSAGE DRAW', message.data);
+            const line = new Konva.Line(JSON.parse(message.data));
+            layer.current.add(line);
+            layer.current.batchDraw();
+          }
           break;
         }
       }
@@ -354,7 +369,7 @@ export function LessonClassroom(): ReactElement {
         setAddingPeer(false);
       }
     }
-  }, [settings.webcamStream, webcamEnabled, addingPeer]);
+  }, [settings.webcamStream, webcamEnabled, addingPeer, settings.selectedWebcam]);
 
   useAsync(async () => {
     if (screenEnabled) {
@@ -411,11 +426,12 @@ export function LessonClassroom(): ReactElement {
     });
   }, [micEnabled, settings.webcamStream]);
 
-  const [isPaint, setIsPaint] = useState(false);
-  const [lastLine, setLastLine] = useState<Konva.Line>();
-  const [mode, setMode] = useState<'brush'>('brush');
-  const stage = useRef<StageType>();
-  const layer = useRef<LayerType>();
+  useAsync(async () => {
+    if (!isPaint) {
+      console.log('SEND DRAW');
+      signalling?.send(MESSAGE_TYPE.DRAW, '', lastLine?.toJSON());
+    }
+  }, [isPaint]);
 
   return (
     <StyledLayout>
@@ -516,6 +532,7 @@ export function LessonClassroom(): ReactElement {
               stage.current = r ?? undefined;
             }}
             onMouseDown={(e) => {
+              console.log(e);
               if (!stage.current || !layer.current) return;
               setIsPaint(true);
               const pos = stage.current.getPointerPosition();
@@ -537,6 +554,20 @@ export function LessonClassroom(): ReactElement {
               width: '100%',
               height: 'calc(100vh - 88px)',
               top: 0,
+            }}
+            onMouseMove={(e) => {
+              if (!isPaint) {
+                return;
+              }
+              if (!stage.current || !layer.current || !lastLine) return;
+              const pos = stage.current.getPointerPosition();
+              if (!pos) return;
+              const newPoints = lastLine.points().concat([pos.x, pos.y]);
+              lastLine.points(newPoints);
+              layer.current.batchDraw();
+            }}
+            onMouseUp={(e) => {
+              setIsPaint(false);
             }}
           >
             <Layer

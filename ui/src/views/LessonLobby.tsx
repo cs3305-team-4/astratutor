@@ -112,32 +112,39 @@ export function LessonLobby(): ReactElement {
   }, []);
 
   useAsync(async () => {
-    await Devices.devicePermissions();
-    const devices = await Devices.getDevices();
-    const vid: MediaDeviceInfo[] = [];
-    const mic: MediaDeviceInfo[] = [];
-    for (const dev of devices) {
-      switch (dev.kind) {
-        case 'videoinput':
-          vid.push(dev);
-          break;
-        case 'audioinput':
-          mic.push(dev);
-          break;
+    const getDevices = async () => {
+      await Devices.devicePermissions();
+      const devices = await Devices.getDevices();
+      const vid: MediaDeviceInfo[] = [];
+      const mic: MediaDeviceInfo[] = [];
+      for (const dev of devices) {
+        switch (dev.kind) {
+          case 'videoinput':
+            vid.push(dev);
+            break;
+          case 'audioinput':
+            mic.push(dev);
+            break;
+        }
+        setWebcams(vid);
+        setMicrophones(mic);
       }
-      setWebcams(vid);
-      setMicrophones(mic);
-    }
-    const lesson = await api.services.readLesson(lid);
-    setOtherProfiles({
-      [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
-      [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
-    });
+      const lesson = await api.services.readLesson(lid);
+      setOtherProfiles({
+        [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
+        [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
+      });
+    };
+    getDevices();
+    navigator.mediaDevices.ondevicechange = getDevices;
   }, []);
   useAsync(async () => {
     if (!webcamStream) {
       await Devices.devicePermissions();
       const devices = await Devices.getDevices();
+      const mic = devices.filter((v) => v.kind === 'audioinput');
+      const mid = mic.length ? mic[0].deviceId : '';
+      setSelectedMicrophone(mid);
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
       const stream = await Devices.cameraStream(selectedWebcam);
