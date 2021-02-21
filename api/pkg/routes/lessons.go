@@ -71,16 +71,6 @@ type LessonRequestDTO struct {
 	LessonDetail string `json:"lesson_detail"`
 }
 
-// LessonRequesStagetDTO represents a change in request stage for a lesson
-// i.e confirmed, expired, etc
-type LessonStageChangeDTO struct {
-	// The ID of who wants the stage change, can be a teacher or student
-	// i.e if they request the tutors lesson create endpoint, it'l expect RequesterID to be a student
-	//RequesterID uuid.UUID `json:"requester_id"`
-
-	StageDetail string `json:"stage_detail"`
-}
-
 // Represents a request to deny a lesson
 type LessonDenyRequestDTO struct {
 	Reason string `json:"reason"`
@@ -247,43 +237,6 @@ func handleLessonsPost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
-	}
-}
-
-func handleLessonsRequestStageChange(w http.ResponseWriter, r *http.Request, stage services.LessonRequestStage) {
-	var stageRequest LessonStageChangeDTO
-	if !ParseBody(w, r, &stageRequest) {
-		return
-	}
-
-	authContext, err := ReadRequestAuthContext(r)
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
-
-	id, err := getUUID(r, "uuid")
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
-
-	lesson, err := services.ReadLessonByID(id)
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
-
-	err = lesson.UpdateRequestStageByAccount(authContext.Account, stage, stageRequest.StageDetail)
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
-}
-
-func handleLessonsRequestStageChangeClosure(stage services.LessonRequestStage) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		handleLessonsRequestStageChange(w, r, stage)
 	}
 }
 
