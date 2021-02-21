@@ -1,9 +1,26 @@
 import React from 'react';
 import styled from 'styled-components';
 
+import countries from 'i18n-iso-countries';
+import locales from 'i18n-iso-countries/langs/en.json';
+
 import { useAsync } from 'react-async-hook';
 
-import { Typography, Layout, Row, Col, Avatar, PageHeader, Input, Button, Statistic, Form, Upload, Modal } from 'antd';
+import {
+  Typography,
+  Layout,
+  Row,
+  Col,
+  Avatar,
+  PageHeader,
+  Input,
+  Button,
+  Statistic,
+  Form,
+  Upload,
+  Modal,
+  Select,
+} from 'antd';
 
 import { EditOutlined, UserAddOutlined, UserOutlined } from '@ant-design/icons';
 
@@ -12,6 +29,7 @@ import { APIContext } from '../api/api';
 import DefaultAvatar from '../assets/default_avatar.png';
 
 import { Redirect, useHistory } from 'react-router-dom';
+countries.registerLocale(locales);
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -72,7 +90,14 @@ export function CreateProfileForm(): React.ReactElement {
       <Content>
         <Row gutter={4}>
           <Col md={12} sm={24} xs={24}>
-            <Form layout="vertical" name="create-profile" onFinish={onFinish}>
+            <Form
+              layout="vertical"
+              name="create-profile"
+              onFinish={onFinish}
+              initialValues={{
+                country: 'IE',
+              }}
+            >
               <UserAddOutlined
                 style={{
                   display: 'block',
@@ -92,7 +117,13 @@ export function CreateProfileForm(): React.ReactElement {
                 <Input placeholder="City" />
               </Form.Item>
               <Form.Item name="country" rules={[{ required: true, message: 'Please input your country!' }]}>
-                <Input placeholder="Country" />
+                <Select style={{ width: '100%' }}>
+                  {Object.keys(countries.getNames('en', { select: 'official' })).map((value: string, index: number) => (
+                    <Select.Option key={index} value={value}>
+                      {countries.getNames('en', { select: 'official' })[value]}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
               <Form.Item>
                 <Button style={{ width: '100%' }} type="primary" htmlType="submit">
