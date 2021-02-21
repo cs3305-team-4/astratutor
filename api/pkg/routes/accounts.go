@@ -21,6 +21,12 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 	accountResource.HandleFunc("/email", handleAccountsUpdateEmail).Methods("POST")
 	accountResource.HandleFunc("/password", handleAccountsUpdatePassword).Methods("POST")
 	accountResource.HandleFunc("/lessons", handleAccountsLessonsGet).Methods("GET")
+
+	accountResource.HandleFunc("/billing/tutor-onboard", handleTutorBillingGetOnboard).Methods("GET")
+	accountResource.HandleFunc("/billing/tutor-onboard-url", handleTutorBillingGetOnboardURL).Methods("GET")
+	accountResource.HandleFunc("/billing/tutor-requirements-met", handleTutorBillingGetRequirementsMet).Methods("GET")
+	accountResource.HandleFunc("/billing/tutor-panel-url", handleTutorBillingGetPanelURL).Methods("GET")
+	accountResource.HandleFunc("/billing/payouts", handleTutorBillingCreatePayout).Methods("POST")
 }
 
 // AccountDTO return DTO.
@@ -45,6 +51,145 @@ func dtoFromAccount(a *services.Account) *AccountResponseDTO {
 		Email: a.Email,
 		Type:  string(a.Type),
 	}
+}
+
+func handleTutorBillingGetOnboard(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	ready, err := serviceAccount.IsTutorBillingOnboarded()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if ready {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	return
+}
+
+func handleTutorBillingCreatePayout(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	ready, err := serviceAccount.IsTutorBillingOnboarded()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if ready {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	return
+}
+
+func handleTutorBillingGetRequirementsMet(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	ready, err := serviceAccount.IsTutorBillingRequirementsMet()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if ready {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	return
+}
+
+type BillingOnboardURLResponseDTO struct {
+	URL string `json:"url" validate:"required"`
+}
+
+type BillingPanelURLResponseDTO struct {
+	URL string `json:"url" validate:"required"`
+}
+
+func handleTutorBillingGetOnboardURL(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	url, err := serviceAccount.GetTutorBillingOnboardURL()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &BillingOnboardURLResponseDTO{
+		URL: url,
+	})
+	return
+}
+
+func handleTutorBillingGetPanelURL(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	url, err := serviceAccount.GetTutorBillingPanelURL()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &BillingOnboardURLResponseDTO{
+		URL: url,
+	})
+	return
 }
 
 func handleAccountsGet(w http.ResponseWriter, r *http.Request) {

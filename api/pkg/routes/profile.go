@@ -35,7 +35,7 @@ type ProfileResponseDTO struct {
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
-	Country     string `json:"country" validate:"required"`
+	Country     string `json:"country" validate:"required,iso3166_1_alpha2"`
 	Description string `json:"description" validate:"omitempty,lte=1000"`
 	Color       string `json:"color" validate:"required"`
 }
