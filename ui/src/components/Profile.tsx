@@ -224,16 +224,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
   }
 
   return (
-    <Typography>
+    <Typography style={{ margin: '1rem' }}>
       {isSelf && (
-        <Alert
-          style={{ margin: '1rem' }}
-          message="Your Profile"
-          description="Your profile will present like this to others (without the option of editing elements)"
-          type="info"
-          showIcon
-        />
+        <div style={{ margin: '1rem' }}>
+          <Title level={3}>Profile</Title>
+          <Paragraph>Your profile will present like this to others (without the option of editing elements)</Paragraph>
+        </div>
       )}
+
       <PageHeader
         title={
           <>
