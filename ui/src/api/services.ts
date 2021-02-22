@@ -15,6 +15,7 @@ import {
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
+  PaginatedResponseDTO,
 } from './definitions';
 
 export class Services {
@@ -218,13 +219,18 @@ export class Services {
     return (await res.json()) as SubjectDTO[];
   }
 
-  async readTutors(filters?: string[]): Promise<TutorSubjectsDTO[]> {
-    const url = filters
-      ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
-      : `${config.apiUrl}/subjects/tutors`;
+  async readTutors(
+    page: number,
+    pageSize: number,
+    filters?: string[],
+  ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
+    // const url = filters
+    //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
+    //   : `${config.apiUrl}/subjects/tutors`;
+    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(',')}`;
     const res = await fetchRest(url);
 
-    return (await res.json()) as TutorSubjectsDTO[];
+    return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
   }
 
   async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
