@@ -140,3 +140,8 @@ export interface TutorSubjectsDTO {
   description: string;
   subjects: SubjectTaughtDTO[];
 }
+
+export interface PaginatedResponseDTO<T> {
+  total_pages: number;
+  items: T;
+}
