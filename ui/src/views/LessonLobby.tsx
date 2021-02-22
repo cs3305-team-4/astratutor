@@ -144,11 +144,12 @@ export function LessonLobby(): ReactElement {
       const devices = await Devices.getDevices();
       const mic = devices.filter((v) => v.kind === 'audioinput');
       const mid = mic.length ? mic[0].deviceId : '';
+      console.log('MIC', mid);
       setSelectedMicrophone(mid);
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
-      const stream = await Devices.cameraStream(selectedWebcam);
       setSelectedWebcam(id);
+      const stream = await Devices.cameraStream(id, mid);
       setWebcamStream(stream);
     }
   }, []);
@@ -156,6 +157,7 @@ export function LessonLobby(): ReactElement {
   useAsync(async () => {
     if (webcamStream) {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
+      webcamStream.getAudioTracks().forEach((v) => v.stop());
       setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
     }
   }, [selectedWebcam, selectedMicrophone]);
