@@ -14,6 +14,7 @@ export enum MESSAGE_TYPE {
   DRAW,
   WIPE,
   UNDO,
+  CHANGE_BG,
 }
 
 export class Signalling {

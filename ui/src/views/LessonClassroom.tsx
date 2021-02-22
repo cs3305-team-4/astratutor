@@ -248,6 +248,10 @@ export function LessonClassroom(): ReactElement {
           wipe();
           break;
         }
+        case MESSAGE_TYPE.CHANGE_BG: {
+          setBg(message.data);
+          break;
+        }
       }
     });
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
@@ -468,10 +472,18 @@ export function LessonClassroom(): ReactElement {
   const [pick, setPick] = useState(false);
   const [color, setColor] = useState(
     '#' +
-      Math.floor(Math.random() * 255).toString(16) +
-      Math.floor(Math.random() * 255).toString(16) +
-      Math.floor(Math.random() * 255).toString(16),
+      Math.floor(Math.random() * 250 + 5).toString(16) +
+      Math.floor(Math.random() * 250 + 5).toString(16) +
+      Math.floor(Math.random() * 250 + 5).toString(16),
   );
+
+  const [width, setWidth] = useState(window.innerWidth);
+  const [height, setHeight] = useState(window.innerHeight);
+
+  window.onresize = (e: UIEvent) => {
+    setWidth(window.innerWidth);
+    setHeight(window.innerHeight);
+  };
 
   return (
     <StyledLayout>
@@ -587,14 +599,15 @@ export function LessonClassroom(): ReactElement {
               setLastLine(line);
               layer.current.add(line);
             }}
-            width={window.innerWidth - 300}
-            height={window.innerHeight - 90}
+            width={width - 300}
+            height={height - 90}
             style={{
               background: 'transparent',
               position: 'fixed',
               width: '100%',
               height: 'calc(100vh - 88px)',
               top: 0,
+              cursor: 'crosshair',
             }}
             onMouseMove={(e) => {
               if (!isPaint) {
@@ -673,7 +686,7 @@ export function LessonClassroom(): ReactElement {
           </Tooltip>
         </StyledTools>
         <StyledDrawMenu>
-          <Tooltip title="Draw">
+          <Tooltip title="Free Draw">
             <Button
               ghost={mode !== 'brush'}
               onClick={() => setMode('brush')}
@@ -723,6 +736,7 @@ export function LessonClassroom(): ReactElement {
             value={bg}
             onChange={(e) => {
               setBg(e.target.value);
+              signalling?.send(MESSAGE_TYPE.CHANGE_BG, '', e.target.value);
             }}
             style={{ position: 'fixed', left: 330, bottom: 27 }}
           >
