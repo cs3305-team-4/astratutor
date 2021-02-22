@@ -1,21 +1,15 @@
 import { SendOutlined, SettingFilled } from '@ant-design/icons';
 import { Layout, Input } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { ProfileResponseDTO } from '../api/definitions';
 import { UserAvatar } from './UserAvatar';
 
 const StyledLayout = styled(Layout)`
   width: 100%;
-  background-color: rgb(10 10 10);
-`;
-
-const StyledMessages = styled.div`
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  height: calc(100% - 32px);
-  padding: 1em;
+  flex: 1;
+  background-color: rgb(10 10 10);
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 3px;
@@ -35,6 +29,13 @@ const StyledMessages = styled.div`
   &::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
+`;
+
+const StyledMessages = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 15px 1em 32px;
 `;
 
 const { Search } = Input;
@@ -86,16 +87,32 @@ interface MessagingProps {
 
 export default function Messaging(props: MessagingProps): JSX.Element {
   const [text, setText] = useState('');
+  const [last, setLast] = useState<Message>();
+
   const sendMessage = () => {
     if (text) {
       props.setMessages(props.messages.concat({ text, date: new Date() }));
       setText('');
     }
   };
+
+  // eslint-disable-next-line react/display-name
+  const layout = useRef<any>();
+
+  useEffect(() => {
+    const el = document.getElementById('messages');
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [last]);
   return (
-    <StyledLayout style={{ height: `calc(100vh - ${props.height}px)` }}>
-      <StyledMessages>
+    <StyledLayout id="messages" style={{ height: `calc(100vh - ${props.height}px)` }}>
+      <div style={{ flexGrow: 2 }}></div>
+      <StyledMessages onChange={(e) => console.log('resize')}>
         {props.messages.map((v, i) => {
+          if (i === props.messages.length - 1 && last?.date !== v.date) {
+            setLast(v);
+          }
           if (v.profile) {
             return (
               <div key={i} style={{ display: 'flex' }}>
