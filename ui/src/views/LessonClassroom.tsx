@@ -10,7 +10,7 @@ import {
   UndoOutlined,
   VideoCameraOutlined,
 } from '@ant-design/icons';
-import { Button, Col, Layout, Modal, Row, Select, Tooltip, Typography } from 'antd';
+import { Button, Col, Layout, Modal, Radio, Row, Select, Tooltip, Typography } from 'antd';
 import React, { ReactElement, useContext, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-async-hook';
 import { useHistory, useParams } from 'react-router-dom';
@@ -100,7 +100,6 @@ const StyledTools = styled(Layout.Footer)`
 `;
 
 const StyledVideo = styled.video`
-  background-color: #000;
   width: 100%;
   height: calc(100% - 88px);
 `;
@@ -157,6 +156,7 @@ export function LessonClassroom(): ReactElement {
   const [isPaint, setIsPaint] = useState(false);
   const [lastLine, setLastLine] = useState<Konva.Line>();
   const [mode, setMode] = useState<'brush'>('brush');
+  const [bg, setBg] = useState('black');
   const stage = useRef<StageType>();
   const layer = useRef<LayerType>();
 
@@ -466,7 +466,12 @@ export function LessonClassroom(): ReactElement {
   }, [isPaint]);
 
   const [pick, setPick] = useState(false);
-  const [color, setColor] = useState('#df4b26');
+  const [color, setColor] = useState(
+    '#' +
+      Math.floor(Math.random() * 255).toString(16) +
+      Math.floor(Math.random() * 255).toString(16) +
+      Math.floor(Math.random() * 255).toString(16),
+  );
 
   return (
     <StyledLayout>
@@ -558,6 +563,7 @@ export function LessonClassroom(): ReactElement {
         </StyledSider>
         <Layout.Content>
           <StyledVideo
+            style={{ backgroundColor: bg }}
             ref={(ref) => {
               screenRef.current = ref ?? undefined;
             }}
@@ -713,6 +719,20 @@ export function LessonClassroom(): ReactElement {
               <SketchPicker color={color} onChange={(e) => setColor(e.hex)} />
             </div>
           )}
+          <Radio.Group
+            value={bg}
+            onChange={(e) => {
+              setBg(e.target.value);
+            }}
+            style={{ position: 'fixed', left: 330, bottom: 27 }}
+          >
+            <Radio.Button style={{ background: 'transparent', color: '#fff' }} value="black">
+              Black
+            </Radio.Button>
+            <Radio.Button style={{ background: 'transparent', color: '#fff' }} value="white">
+              White
+            </Radio.Button>
+          </Radio.Group>
         </StyledDrawMenu>
       </StyledLayout>
     </StyledLayout>
