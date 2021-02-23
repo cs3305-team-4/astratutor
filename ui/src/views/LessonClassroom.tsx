@@ -282,6 +282,10 @@ export function LessonClassroom(): ReactElement {
           }
           break;
         }
+        case MESSAGE_TYPE.LEAVE: {
+          onDisconnect(message.data);
+          break;
+        }
       }
     });
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
@@ -490,6 +494,7 @@ export function LessonClassroom(): ReactElement {
     settings.webcamStream?.getVideoTracks().forEach((v) => {
       v.stop();
     });
+    signalling?.send(MESSAGE_TYPE.LEAVE, '', api.account?.id);
     history.push(`/lessons/${lid}/goodbye`);
   };
 

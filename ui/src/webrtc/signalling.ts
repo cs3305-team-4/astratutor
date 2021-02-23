@@ -16,6 +16,7 @@ export enum MESSAGE_TYPE {
   UNDO,
   CHANGE_BG,
   INIT,
+  LEAVE,
 }
 
 export class Signalling {
