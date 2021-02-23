@@ -5,7 +5,9 @@ import {
   DeleteOutlined,
   DesktopOutlined,
   EditOutlined,
+  MinusOutlined,
   PhoneFilled,
+  ScissorOutlined,
   SettingFilled,
   UndoOutlined,
   VideoCameraOutlined,
@@ -155,7 +157,7 @@ export function LessonClassroom(): ReactElement {
 
   const [isPaint, setIsPaint] = useState(false);
   const [lastLine, setLastLine] = useState<Konva.Line>();
-  const [mode, setMode] = useState<'brush'>('brush');
+  const [mode, setMode] = useState<'brush' | 'line' | 'eraser'>('brush');
   const [bg, setBg] = useState('black');
   const stage = useRef<StageType>();
   const layer = useRef<LayerType>();
@@ -593,7 +595,7 @@ export function LessonClassroom(): ReactElement {
               const line = new Konva.Line({
                 stroke: color,
                 strokeWidth: 5,
-                globalCompositeOperation: mode === 'brush' ? 'source-over' : 'destination-out',
+                globalCompositeOperation: mode === 'brush' || mode === 'line' ? 'source-over' : 'destination-out',
                 points: [pos.x, pos.y],
               });
               setLastLine(line);
@@ -616,7 +618,15 @@ export function LessonClassroom(): ReactElement {
               if (!stage.current || !layer.current || !lastLine) return;
               const pos = stage.current.getPointerPosition();
               if (!pos) return;
-              const newPoints = lastLine.points().concat([pos.x, pos.y]);
+              let newPoints: number[];
+              switch (mode) {
+                case 'line':
+                  newPoints = [lastLine.points()[0], lastLine.points()[1], pos.x, pos.y];
+                  break;
+                default:
+                  newPoints = lastLine.points().concat([pos.x, pos.y]);
+                  break;
+              }
               lastLine.points(newPoints);
               layer.current.batchDraw();
             }}
@@ -694,6 +704,21 @@ export function LessonClassroom(): ReactElement {
               style={{ margin: '0 3px' }}
             >
               <EditOutlined size={10} style={{ color: mode === 'brush' ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Line Draw">
+            <Button ghost={mode !== 'line'} onClick={() => setMode('line')} size={'large'} style={{ margin: '0 3px' }}>
+              <MinusOutlined size={10} style={{ color: mode === 'line' ? '#000' : '#fff' }} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Eraser">
+            <Button
+              ghost={mode !== 'eraser'}
+              onClick={() => setMode('eraser')}
+              size={'large'}
+              style={{ margin: '0 3px' }}
+            >
+              <ScissorOutlined size={10} style={{ color: mode === 'eraser' ? '#000' : '#fff' }} />
             </Button>
           </Tooltip>
           <Tooltip title="Wipe">

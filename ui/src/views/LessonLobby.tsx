@@ -18,7 +18,13 @@ import { LessonClassroom } from './LessonClassroom';
 import { MESSAGE_TYPE, Signalling } from '../webrtc/signalling';
 import * as Devices from '../webrtc/devices';
 import config from '../config';
-import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import {
+  AccountType,
+  LessonRequestDTO,
+  LessonResponseDTO,
+  ProfileResponseDTO,
+  SubjectTaughtDTO,
+} from '../api/definitions';
 
 const { Option } = Select;
 
@@ -77,6 +83,7 @@ export function LessonLobby(): ReactElement {
   const [joined, setJoined] = useState(false);
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [otherProfiles, setOtherProfiles] = React.useState<{ [id: string]: ProfileResponseDTO }>({});
+  const [metadata, setMetadata] = useState<LessonResponseDTO>();
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -134,6 +141,7 @@ export function LessonLobby(): ReactElement {
         [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
         [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
       });
+      setMetadata(lesson);
     };
     getDevices();
     navigator.mediaDevices.ondevicechange = getDevices;
@@ -161,7 +169,6 @@ export function LessonLobby(): ReactElement {
       setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
     }
   }, [selectedWebcam, selectedMicrophone]);
-  const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
       <Switch>
@@ -189,7 +196,7 @@ export function LessonLobby(): ReactElement {
           </StyledNav>
           <StyledLayout>
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-              Thanks for attending {title}!
+              Thanks for attending {metadata?.lesson_detail}!
             </Typography.Title>
             <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="link">
               Schedule my next lesson
@@ -258,7 +265,7 @@ export function LessonLobby(): ReactElement {
           <StyledLayout>
             <Typography>
               <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-                Joining your {title} classroom!
+                Joining your {metadata?.lesson_detail} classroom!
               </Typography.Title>
             </Typography>
             {/* TODO(james): Send probe message to discover users */}
