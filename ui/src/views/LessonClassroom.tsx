@@ -263,7 +263,7 @@ export function LessonClassroom(): ReactElement {
         }
         case MESSAGE_TYPE.INIT: {
           const data = message.data as IJoin;
-          if (!lastLine) {
+          if (lastLine === undefined) {
             console.log('INIT RECEIVED', message.data, stage.current);
             const children: string[] = JSON.parse(data.layerJson);
             const lines: Array<Line> = [];
