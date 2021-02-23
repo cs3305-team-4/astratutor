@@ -31,6 +31,8 @@ import { Stage as StageType, stages } from 'konva/types/Stage';
 import Konva from 'konva';
 import { Layer as LayerType } from 'konva/types/Layer';
 import { SketchPicker } from 'react-color';
+import { Collection } from 'konva/types/Util';
+import { Line } from 'konva/types/shapes/Line';
 
 interface IWebcam {
   profile: ProfileResponseDTO;
@@ -131,6 +133,11 @@ const StyledDrawMenu = styled.div`
   right: 30px;
   bottom: 24px;
 `;
+
+interface IJoin {
+  layerJson: string;
+  background: string;
+}
 
 function sleep(ms: number): unknown {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -252,6 +259,27 @@ export function LessonClassroom(): ReactElement {
         }
         case MESSAGE_TYPE.CHANGE_BG: {
           setBg(message.data);
+          break;
+        }
+        case MESSAGE_TYPE.INIT: {
+          const data = message.data as IJoin;
+          if (!lastLine) {
+            console.log('INIT RECEIVED', message.data, stage.current);
+            const children: string[] = JSON.parse(data.layerJson);
+            const lines: Array<Line> = [];
+            console.log(children);
+            for (const child of Object.values(children)) {
+              lines.push(new Konva.Line(JSON.parse(child)));
+            }
+            if (layer.current) {
+              for (const child of lines) {
+                layer.current.add(child);
+              }
+              layer.current.batchDraw();
+            }
+            setBg(data.background);
+            setLastLine(new Konva.Line());
+          }
           break;
         }
       }
@@ -404,6 +432,13 @@ export function LessonClassroom(): ReactElement {
       };
       addWebcam(web);
       if (addingPeer) {
+        if (layer.current) {
+          const data: IJoin = {
+            layerJson: JSON.stringify(layer.current.children),
+            background: bg,
+          };
+          signalling?.send(MESSAGE_TYPE.INIT, '', data);
+        }
         setAddingPeer(false);
       }
     }
@@ -753,7 +788,7 @@ export function LessonClassroom(): ReactElement {
             </Button>
           </Tooltip>
           {pick && (
-            <div style={{ position: 'fixed', bottom: 65, zIndex: 10000 }}>
+            <div style={{ position: 'fixed', bottom: 65, right: 0, zIndex: 10000 }}>
               <SketchPicker color={color} onChange={(e) => setColor(e.hex)} />
             </div>
           )}

@@ -15,6 +15,7 @@ export enum MESSAGE_TYPE {
   WIPE,
   UNDO,
   CHANGE_BG,
+  INIT,
 }
 
 export class Signalling {
