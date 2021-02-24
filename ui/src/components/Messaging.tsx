@@ -96,9 +96,6 @@ export default function Messaging(props: MessagingProps): JSX.Element {
     }
   };
 
-  // eslint-disable-next-line react/display-name
-  const layout = useRef<any>();
-
   useEffect(() => {
     const el = document.getElementById('messages');
     if (el) {
