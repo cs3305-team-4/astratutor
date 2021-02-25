@@ -82,7 +82,6 @@ export function Tutors(): ReactElement {
 
   return (
     <Content style={{ padding: '2em 0' }}>
-      {totalPages}
       <Row>
         <Col xl={{ offset: 4, span: 16 }} lg={{ offset: 2, span: 20 }} span={24}>
           <Row justify="space-between">
