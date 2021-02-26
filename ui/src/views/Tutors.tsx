@@ -25,7 +25,7 @@ export function Tutors(): ReactElement {
   const history = useHistory();
 
   const updatePath = (newPage: number, newPageSize: number, newFilters: string[]) => {
-    const path = '/subjects/tutors?';
+    const path = '/subjects/tutors';
     const queries: string[] = [];
 
     if (newFilters.length > 0) {
@@ -67,6 +67,7 @@ export function Tutors(): ReactElement {
   }, [currentPage, pageSize, filters]);
 
   const onFiltersChange = async (e: string[]) => {
+    setCurrentPage(1);
     setFilters(e);
   };
 
