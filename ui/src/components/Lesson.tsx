@@ -16,6 +16,7 @@ import {
   Form,
   Input,
   DatePicker,
+  message,
 } from 'antd';
 
 import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
@@ -83,8 +84,12 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         type="primary"
         style={{ margin: '0.2rem' }}
         onClick={async () => {
-          await api.services.updateLessonStageAccept(props.lesson.id);
-          await reload();
+          try {
+            await api.services.updateLessonStageAccept(props.lesson.id);
+            await reload();
+          } catch (e) {
+            message.error('Failed to accept lesson! Please try again later.');
+          }
         }}
       >
         Accept
@@ -103,11 +108,15 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okText="Deny"
         okType="danger"
         onOk={async () => {
-          await rescheduleForm.validateFields().then(async (values) => {
-            await api.services.updateLessonStageDeny(props.lesson.id, values);
-            await reload();
-            setShowDenyModal(false);
-          });
+          try {
+            await rescheduleForm.validateFields().then(async (values) => {
+              await api.services.updateLessonStageDeny(props.lesson.id, values);
+              await reload();
+              setShowDenyModal(false);
+            });
+          } catch (e) {
+            message.error('Failed to deny lesson! Please try again later.');
+          }
         }}
         cancelText="Back"
         onCancel={() => setShowDenyModal(false)}
@@ -137,9 +146,13 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okType="danger"
         onOk={async () => {
           await rescheduleForm.validateFields().then(async (values) => {
-            await api.services.updateLessonStageCancel(props.lesson.id, values);
-            await reload();
-            setShowCancelModal(false);
+            try {
+              await api.services.updateLessonStageCancel(props.lesson.id, values);
+              await reload();
+              setShowCancelModal(false);
+            } catch (e) {
+              message.error('Failed to cancel lesson! Please try again later.');
+            }
           });
         }}
         cancelText="Back"
@@ -169,16 +182,20 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okText="Reschedule"
         onOk={async () => {
           await rescheduleForm.validateFields().then(async (values) => {
-            values.new_time = values.new_time
-              .set({
-                minute: 0,
-                second: 0,
-                millisecond: 0,
-              })
-              .toISOString();
-            await api.services.updateLessonStageReschedule(props.lesson.id, values);
-            await reload();
-            setShowRescheduleModal(false);
+            try {
+              values.new_time = values.new_time
+                .set({
+                  minute: 0,
+                  second: 0,
+                  millisecond: 0,
+                })
+                .toISOString();
+              await api.services.updateLessonStageReschedule(props.lesson.id, values);
+              await reload();
+              setShowRescheduleModal(false);
+            } catch (e) {
+              message.error('Failed to reschedule lesson! Please try again later.');
+            }
           });
         }}
         cancelText="Back"
