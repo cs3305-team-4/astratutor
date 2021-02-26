@@ -22,6 +22,9 @@ const (
 	// The lesson (request) has been denied
 	Denied LessonRequestStage = "denied"
 
+	// The Lesson has been rescheduled
+	Rescheduled LessonRequestStage = "rescheduled"
+
 	// The lesson has been cancelled
 	Cancelled LessonRequestStage = "cancelled"
 
@@ -193,10 +196,14 @@ func CreateLesson(requester *Account, student *Account, tutor *Account, startTim
 
 }
 
-func ReadLessonByID(id uuid.UUID) (*Lesson, error) {
+func ReadLessonByID(id uuid.UUID, preloads ...string) (*Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
+	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
 	}
 
 	var lesson Lesson
@@ -300,6 +307,196 @@ func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage L
 			RequestStage:          newStage,
 			RequestStageDetail:    detail,
 			RequestStageChangerID: stageRequester.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
+func (l *Lesson) Accept(acceptor *Account) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Requested:
+			if acceptor.ID == lesson.RequesterID {
+				return errors.New("you can not mark a lesson as accepted if you were the one who created the lesson")
+			}
+
+		case Rescheduled:
+			if acceptor.ID == lesson.RequestStageChangerID {
+				return errors.New("you can not mark a lesson as accepted if you were the one who rescheduled the lesson")
+			}
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Accepted, lesson.RequestStage)
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			RequestStage:          Accepted,
+			RequestStageChangerID: acceptor.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
+func (l *Lesson) Deny(denier *Account, reason string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Requested:
+			if denier.ID == lesson.RequesterID {
+				return errors.New("you can not mark a lesson as denied if you were the one who created the lesson")
+			}
+
+		case Rescheduled:
+			if denier.ID == lesson.RequestStageChangerID {
+				return errors.New("you can not mark a lesson as denied if you were the one who rescheduled the lesson")
+			}
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Denied, lesson.RequestStage)
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			RequestStage:          Denied,
+			RequestStageDetail:    reason,
+			RequestStageChangerID: denier.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
+func (l *Lesson) Cancel(cancelee *Account, reason string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Accepted:
+			break
+		case Requested:
+			if cancelee.ID != lesson.RequesterID {
+				return errors.New("only the person who requested the lesson can cancel the request")
+			}
+
+		case Rescheduled:
+			if cancelee.ID != lesson.RequestStageChangerID {
+				return errors.New("only the person who rescheduled the lesson can cancel the request")
+			}
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Cancelled, lesson.RequestStage)
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			RequestStage:          Cancelled,
+			RequestStageDetail:    reason,
+			RequestStageChangerID: cancelee.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
+func (l *Lesson) Reschedule(reschedulee *Account, newTime time.Time, reason string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	if !newTime.After(time.Now()) {
+		return fmt.Errorf("can't reschedule a lesson to the past")
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID, "Student", "Tutor")
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Accepted:
+			break
+		case Requested:
+			break
+		case Rescheduled:
+			break
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Rescheduled, lesson.RequestStage)
+		}
+
+		endTime := newTime.Add(time.Minute*time.Duration(59) + time.Second*time.Duration(59))
+
+		lat, err := LessonAtTime(&lesson.Student, newTime, endTime)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if lat == true {
+			return fmt.Errorf("cannot create lesson: the student has a lesson at that time")
+		}
+
+		lat, err = LessonAtTime(&lesson.Tutor, newTime, endTime)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if lat == true {
+			return fmt.Errorf("cannot create lesson: the teacher has a lesson at that time")
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			StartTime:             newTime,
+			EndTime:               endTime,
+			RequestStage:          Rescheduled,
+			RequestStageDetail:    reason,
+			RequestStageChangerID: reschedulee.ID,
 		})
 		return nil
 	})

@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
 
-import { Typography, Layout, Row, Col, Avatar, PageHeader, Button, Statistic, Divider } from 'antd';
+import {
+  Typography,
+  Layout,
+  Row,
+  Col,
+  Avatar,
+  PageHeader,
+  Button,
+  Statistic,
+  Divider,
+  Modal,
+  Form,
+  Input,
+  DatePicker,
+  message,
+} from 'antd';
 
 import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
 
 import { APIContext } from '../api/api';
+import { useForm } from 'antd/lib/form/Form';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -28,6 +44,15 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   const profile = props.otherProfile;
   const lesson = props.lesson;
 
+  const [showDenyModal, setShowDenyModal] = useState<boolean>(false);
+  const [denyForm] = useForm();
+
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [cancelForm] = useForm();
+
+  const [showRescheduleModal, setShowRescheduleModal] = useState<boolean>(false);
+  const [rescheduleForm] = useForm();
+
   const reload = async () => {
     props.onUpdate(await api.services.readLessonByAccountId(props.lesson.id), props.otherProfile);
   };
@@ -45,56 +70,167 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     </Button>,
   );
 
-  switch (props.lesson.request_stage) {
-    case LessonRequestStage.Requested:
-      if (api.account.id !== lesson.requester_id) {
-        buttons.push(
-          <Button
-            type="primary"
-            key="enter classroom"
-            style={{ margin: '0.2rem' }}
-            onClick={async () => {
-              await api.services.updateLessonStageAccept(props.lesson.id);
-              await reload();
-            }}
-          >
-            Accept
-          </Button>,
-        );
+  const requestPendingButton = (
+    <>
+      <Button type="text" disabled style={{ margin: '0.2rem' }}>
+        Request Pending
+      </Button>
+    </>
+  );
 
-        buttons.push(
-          <Button
-            style={{ margin: '0.2rem' }}
-            onClick={async () => {
-              await api.services.updateLessonStageDeny(props.lesson.id, 'Lesson denied');
+  const acceptButton = (
+    <>
+      <Button
+        type="primary"
+        style={{ margin: '0.2rem' }}
+        onClick={async () => {
+          try {
+            await api.services.updateLessonStageAccept(props.lesson.id);
+            await reload();
+          } catch (e) {
+            message.error('Failed to accept lesson! Please try again later.');
+          }
+        }}
+      >
+        Accept
+      </Button>
+    </>
+  );
+
+  const denyButton = (
+    <>
+      <Button style={{ margin: '0.2rem' }} danger onClick={() => setShowDenyModal(true)}>
+        Deny
+      </Button>
+      <Modal
+        title="Deny Request"
+        visible={showDenyModal}
+        okText="Deny"
+        okType="danger"
+        onOk={async () => {
+          try {
+            await rescheduleForm.validateFields().then(async (values) => {
+              await api.services.updateLessonStageDeny(props.lesson.id, values);
               await reload();
-            }}
+              setShowDenyModal(false);
+            });
+          } catch (e) {
+            message.error('Failed to deny lesson! Please try again later.');
+          }
+        }}
+        cancelText="Back"
+        onCancel={() => setShowDenyModal(false)}
+      >
+        <Form form={denyForm} layout="vertical">
+          <Form.Item
+            label="Reason"
+            name="reason"
+            rules={[{ required: true, message: 'Please give a reason for denying the request' }]}
           >
-            Deny
-          </Button>,
-        );
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  );
+
+  const cancelButton = (
+    <>
+      <Button style={{ margin: '0.2rem' }} danger onClick={() => setShowCancelModal(true)}>
+        Cancel
+      </Button>
+      <Modal
+        title="Cancel Lesson"
+        visible={showCancelModal}
+        okText="Cancel"
+        okType="danger"
+        onOk={async () => {
+          await rescheduleForm.validateFields().then(async (values) => {
+            try {
+              await api.services.updateLessonStageCancel(props.lesson.id, values);
+              await reload();
+              setShowCancelModal(false);
+            } catch (e) {
+              message.error('Failed to cancel lesson! Please try again later.');
+            }
+          });
+        }}
+        cancelText="Back"
+        onCancel={() => setShowCancelModal(false)}
+      >
+        <Form form={cancelForm} layout="vertical">
+          <Form.Item
+            label="Reason"
+            name="reason"
+            rules={[{ required: true, message: 'Please give a reason for cancelling the request' }]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  );
+
+  const rescheduleButton = (
+    <>
+      <Button style={{ margin: '0.2rem' }} type="dashed" onClick={() => setShowRescheduleModal(true)}>
+        Reschedule
+      </Button>
+      <Modal
+        title="Reschedule Lesson"
+        visible={showRescheduleModal}
+        okText="Reschedule"
+        onOk={async () => {
+          await rescheduleForm.validateFields().then(async (values) => {
+            try {
+              values.new_time = values.new_time
+                .set({
+                  minute: 0,
+                  second: 0,
+                  millisecond: 0,
+                })
+                .toISOString();
+              await api.services.updateLessonStageReschedule(props.lesson.id, values);
+              await reload();
+              setShowRescheduleModal(false);
+            } catch (e) {
+              message.error('Failed to reschedule lesson! Please try again later.');
+            }
+          });
+        }}
+        cancelText="Back"
+        onCancel={() => setShowRescheduleModal(false)}
+      >
+        <Form form={rescheduleForm} layout="vertical">
+          <Form.Item label="New Time" name="new_time" rules={[{ required: true, message: 'Please select a date!' }]}>
+            <DatePicker style={{ width: '100%' }} size="large" showTime format={'YYYY-MM-DD HH:00:00'} />
+          </Form.Item>
+          <Form.Item
+            label="Reason"
+            name="reason"
+            rules={[{ required: true, message: 'Please give a reason for rescheduling the request' }]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  );
+
+  switch (props.lesson.request_stage) {
+    case LessonRequestStage.Rescheduled:
+    case LessonRequestStage.Requested:
+      if (api.account.id !== lesson.request_stage_changer_id) {
+        // If you arent the account who requested the lesson than you can accept/ deny
+        buttons.push(acceptButton, denyButton, rescheduleButton);
       } else {
-        buttons.push(
-          <Button type="primary" disabled style={{ margin: '0.2rem' }}>
-            Request Pending
-          </Button>,
-        );
+        // If you are the one who requested the lesson than you can cancel or see its pending
+        buttons.push(cancelButton, requestPendingButton);
       }
       break;
-
     case LessonRequestStage.Accepted:
-      buttons.push(
-        <Button
-          style={{ margin: '0.2rem' }}
-          onClick={async () => {
-            await api.services.updateLessonStageCancel(props.lesson.id, 'Lesson cancelled');
-            await reload();
-          }}
-        >
-          Cancel
-        </Button>,
-      );
-      break;
+      // Once the lesson is accepted either party can cancel or reschedule a lesson
+      buttons.push(cancelButton, rescheduleButton);
   }
 
   return (
