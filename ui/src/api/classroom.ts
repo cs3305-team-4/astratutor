@@ -1,10 +1,13 @@
 import React from 'react';
+import { Signalling } from '../webrtc/signalling';
+import { ProfileResponseDTO } from './definitions';
 
 export interface ISettings {
+  signalling?: Signalling;
   fullscreen: boolean;
   setFullscreen: (v: boolean) => void;
   webcams: MediaDeviceInfo[];
-  setWebcams: (v: MediaDeviceInfo[]) => void;
+  setWebcams: React.Dispatch<React.SetStateAction<MediaDeviceInfo[]>>;
   microphones: MediaDeviceInfo[];
   setMicrophones: (v: MediaDeviceInfo[]) => void;
   selectedWebcam: string;
@@ -13,6 +16,7 @@ export interface ISettings {
   setSelectedMicrophone: (v: string) => void;
   webcamStream: MediaStream | null;
   setWebcamStream: (v: MediaStream) => void;
+  otherProfiles: { [id: string]: ProfileResponseDTO };
 }
 
 export const SettingsCTX = React.createContext<ISettings>({
@@ -28,4 +32,5 @@ export const SettingsCTX = React.createContext<ISettings>({
   setSelectedMicrophone: (v) => null,
   webcamStream: null,
   setWebcamStream: (v) => null,
+  otherProfiles: {},
 });
