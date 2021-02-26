@@ -4,7 +4,7 @@ import { SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Tabs, Tag } from 'antd';
+import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Tabs, Tag, Pagination } from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
 
@@ -17,29 +17,68 @@ export function Tutors(): ReactElement {
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
 
+  const updatePath = (newPage: number, newPageSize: number, newFilters: string[]) => {
+    const path = '/subjects/tutors';
+    const queries: string[] = [];
+
+    if (newFilters.length > 0) {
+      queries.push(`filter=${newFilters.join(',')}`);
+    }
+    if (newPage > 1) {
+      queries.push(`page=${newPage}`);
+    }
+    if (pageSize !== 10) {
+      queries.push(`page_size=${pageSize}`);
+    }
+    if (queries.length > 0) history.push(path + '?' + queries.join('&'));
+    else history.push(path);
+  };
+
+  // Initial Page Load
   useAsync(async () => {
     if (query.has('filter')) {
-      const filterValues = query.get('filter').split(',');
-      setFilters(filterValues);
-      setTutors(await api.services.readTutors(filterValues));
-    } else {
-      setTutors(await api.services.readTutors());
+      setFilters(query.get('filter').split(','));
     }
+    if (query.has('page')) {
+      setCurrentPage(+query.get('page'));
+    }
+    if (query.has('page_size')) {
+      setPageSize(+query.get('page_size'));
+    }
+
     setSubjects(await api.services.readSubjects());
   }, []);
 
+  // Called every tune dependencies change
+  useAsync(async () => {
+    const res = await api.services.readTutors(currentPage, pageSize, filters);
+
+    setTotalPages(res.total_pages);
+    setTutors(res.items);
+
+    updatePath(currentPage, pageSize, filters);
+  }, [currentPage, pageSize, filters]);
+
   const onFiltersChange = async (e: string[]) => {
-    history.push(e.length > 0 ? `/subjects/tutors?filter=${e.join(',')}` : '/subjects/tutors');
+    setCurrentPage(1);
     setFilters(e);
-    setTutors(await api.services.readTutors(e));
   };
 
   const onSearch = (searchVal: string) => {
     console.log(searchVal);
     // TODO: Add search functionality to /subjects/tutors endpoint
+  };
+
+  const onPaginationUpdate = (newPage: number, newPageSize: number) => {
+    setCurrentPage(newPage);
+    setPageSize(newPageSize);
   };
 
   return (
@@ -72,6 +111,15 @@ export function Tutors(): ReactElement {
             size="large"
             loading={tutors === undefined}
             dataSource={tutors}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              pageSizeOptions: ['1', '10', '15', '25', '50', '100'],
+              onChange: onPaginationUpdate,
+              onShowSizeChange: onPaginationUpdate,
+              total: totalPages * pageSize,
+              showSizeChanger: true,
+            }}
             renderItem={(tutor: TutorSubjectsDTO) => (
               <Card>
                 <List.Item

@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -116,6 +117,16 @@ func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
 func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
+
+	pageSize, err := strconv.Atoi(q.Get("page_size"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10
+	}
+	page, err := strconv.Atoi(q.Get("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
 	if filter != "" {
 		filtered, err := services.GetSubjectsBySlugs(strings.Split(filter, ","), nil)
 		if err != nil {
@@ -123,12 +134,12 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors, err := services.GetTutorsBySubjects(filtered, nil)
+		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ToPaginatedDTO(total_pages, ProfileToTutorSubjectsResponseDTO(&tutors))
 
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
@@ -136,12 +147,12 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		tutors, err := services.GetAllTutors(nil)
+		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, page)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ToPaginatedDTO(totalPages, ProfileToTutorSubjectsResponseDTO(&tutors))
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
 			return

@@ -155,6 +155,11 @@ export interface TutorSubjectsDTO {
   subjects: SubjectTaughtDTO[];
 }
 
+export interface PaginatedResponseDTO<T> {
+  total_pages: number;
+  items: T;
+}
+
 export interface TurnCredentials {
   username: string;
   password: string;
