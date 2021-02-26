@@ -23,7 +23,7 @@ var seedFirstNames []string
 var seedLastNames []string
 var seedWords []string
 var seedDegrees = []string{"Bachelors", "Masters", "Postdoctorate"}
-var seedSchools = []string{"Oxford", "Harvard", "University College Cork", "Trinity College Dublin", "Dublin College University"}
+var seedSchools = []string{}
 var seedSubjects []string
 var seedLocations []string
 
@@ -211,6 +211,11 @@ func SeedDatabase() error {
 	}
 
 	seedLocations, err = ReadFileToLines("./seed/locations")
+	if err != nil {
+		return err
+	}
+
+	seedSchools, err = ReadFileToLines("./seed/schools")
 	if err != nil {
 		return err
 	}
