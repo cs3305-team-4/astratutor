@@ -55,6 +55,7 @@ import {
   ProfileResponseDTO,
   SubjectTaughtDTO,
   SubjectDTO,
+  ReviewAverageDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
@@ -78,6 +79,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const history = useHistory();
 
   const [profile, setProfile] = React.useState<ProfileResponseDTO | undefined>(undefined);
+  const [rating, setRating] = React.useState<ReviewAverageDTO | undefined>(undefined);
   const [activeTab, setActiveTab] = React.useState<string>('outline');
   const [tutorSubjects, setTutorSubjects] = React.useState<SubjectTaughtDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = React.useState<SubjectDTO[] | undefined>(undefined);
@@ -111,6 +113,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
       setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
       setSubjects(await api.services.readSubjects());
+      setRating(await api.services.tutorRatingAverage(props.uuid));
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -277,6 +280,13 @@ export function Profile(props: ProfileProps): React.ReactElement {
     };
   };
 
+  const ratingValue = (): string => {
+    if (!rating || rating.average === 0) {
+      return 'No Ratings';
+    }
+    return `${rating.average} / 5`;
+  };
+
   if (profile === undefined) {
     return (
       <>
@@ -385,7 +395,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
             )}
             {props.type === AccountType.Tutor && (
               <Col>
-                <Statistic key="users" title="Average Review" value={'4.5/5'} />
+                <Statistic key="users" title="Average Review" value={ratingValue()} />
               </Col>
             )}
           </Row>,
@@ -827,6 +837,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
               </Modal>
             </>
           )}
+          {activeTab === 'reviews' && <></>}
         </Content>
       )}
       <RequestLessonModal

@@ -183,3 +183,25 @@ export interface TurnCredentials {
   username: string;
   password: string;
 }
+
+export interface ReviewCreateDTO {
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewDTO {
+  id: string;
+  created_at: string; // RFC3339 timestap
+  rating: number;
+  comment: string;
+  student_id: string;
+}
+
+export interface ReviewUpdateDTO {
+  rating?: number;
+  comment?: string;
+}
+
+export interface ReviewAverageDTO {
+  average: number;
+}
