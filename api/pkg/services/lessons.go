@@ -538,3 +538,22 @@ func (r *ResourceMetadata) GetData() ([]byte, error) {
 
 	return resourceData.Data, nil
 }
+
+func HaveCompletedLesson(student uuid.UUID, tutor uuid.UUID) (bool, error) {
+	db, err := database.Open()
+	if err != nil {
+		return false, err
+	}
+
+	res := db.Model(&Lesson{}).Where(&Lesson{
+		StudentID:    student,
+		TutorID:      tutor,
+		RequestStage: Completed,
+	}).First(&Lesson{})
+
+	if res.RowsAffected == 0 {
+		return false, ReviewErrorNoCompletedLesson
+	}
+
+	return true, nil
+}
