@@ -45,12 +45,16 @@ import {
 import {
   AccountType,
   ProfileRequestDTO,
+  SubjectTaughtRequestDTO,
+  SubjectTaughtPriceUpdateRequestDTO,
+  SubjectTaughtDescriptionUpdateRequestDTO,
   WorkExperienceRequestDTO,
   WorkExperienceResponseDTO,
   QualificationRequestDTO,
   QualificationResponseDTO,
   ProfileResponseDTO,
   SubjectTaughtDTO,
+  SubjectDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
@@ -75,6 +79,8 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const [profile, setProfile] = React.useState<ProfileResponseDTO | undefined>(undefined);
   const [activeTab, setActiveTab] = React.useState<string>('outline');
   const [tutorSubjects, setTutorSubjects] = React.useState<SubjectTaughtDTO[] | undefined>(undefined);
+  const [subjects, setSubjects] = React.useState<SubjectDTO[] | undefined>(undefined);
+  const [TutorSubjectID, setTutorSubjectID] = React.useState<string>();
 
   const isSelf: boolean = api.isLoggedIn() && props.uuid === api.account.id;
 
@@ -82,9 +88,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
 
   const [editSubtitle, setEditSubtitle] = React.useState<boolean>(false);
   const [newSubtitle, setNewSubtitle] = React.useState<string>('');
+  const [addSubVisible, setAddSubVisible] = React.useState<boolean>(false);
 
   const [editDesc, setEditDesc] = React.useState<boolean>(false);
   const [newDesc, setNewDesc] = React.useState<string>();
+
+  const [editSubs, setEditSubs] = React.useState<boolean>(false);
+  const [editSubDescVisible, setEditSubDescVisible] = React.useState<boolean>(false);
+  const [editSubPriceVisible, setEditSubPriceVisible] = React.useState<boolean>(false);
 
   const [editQualis, setEditQualis] = React.useState<boolean>(false);
   const [addQualiVisible, setAddQualiVisible] = React.useState<boolean>(false);
@@ -98,6 +109,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
       setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
+      setSubjects(await api.services.readSubjects());
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -147,11 +159,34 @@ export function Profile(props: ProfileProps): React.ReactElement {
     }
   };
 
+  const subPricEdit = async (id: string) => {
+    setTutorSubjectID(id);
+    setEditSubPriceVisible(!editSubDescVisible);
+  };
+
+  const subDescEdit = async (id: string) => {
+    setTutorSubjectID(id);
+    setEditSubDescVisible(!editSubDescVisible);
+  };
+
   const commitWork = async (work: WorkExperienceRequestDTO) => {
     try {
       await api.services.createWorkExperienceOnProfileID(props.uuid, props.type, work);
       await reloadProfile();
       setAddQualiVisible(false);
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not create work experience: ${e}`,
+      });
+    }
+  };
+
+  const commitSub = async (subjectTaught: SubjectTaughtRequestDTO) => {
+    try {
+      await api.services.createSubjectTaughtOnProfileID(props.uuid, props.type, subjectTaught);
+      await reloadProfile();
+      setAddSubVisible(false);
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -175,6 +210,30 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const commitDesc = async (desc: string) => {
     try {
       await api.services.updateDescriptionOnProfileID(props.uuid, props.type, desc);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set description: ${e}`,
+      });
+    }
+  };
+
+  const commitSubPrice = async (price: SubjectTaughtPriceUpdateRequestDTO) => {
+    try {
+      await api.services.updateSubjectPriceOnProfileID(props.uuid, TutorSubjectID, props.type, price);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set description: ${e}`,
+      });
+    }
+  };
+
+  const commitSubDescription = async (desc: SubjectTaughtDescriptionUpdateRequestDTO) => {
+    try {
+      await api.services.updateSubjectDescriptionOnProfileID(props.uuid, TutorSubjectID, props.type, desc);
       await reloadProfile();
     } catch (e) {
       Modal.error({
@@ -395,7 +454,69 @@ export function Profile(props: ProfileProps): React.ReactElement {
                       size="large"
                     />
                   )}
-                  <Title level={5}>Subjects</Title>
+                  <Title level={5}>
+                    Subjects
+                    <Button
+                      hidden={!isSelf}
+                      onClick={async () => {
+                        setEditSubs(editSubs ? false : true);
+                      }}
+                      size="small"
+                      style={{ margin: '0 0.5rem' }}
+                      type={editSubs ? 'primary' : 'default'}
+                    >
+                      <EditOutlined />
+                      {!editSubs ? 'Edit' : 'Finish'}
+                    </Button>
+                    {editSubs && (
+                      <Button
+                        size="small"
+                        style={{ position: 'relative', right: 0, margin: '0 0.5rem' }}
+                        onClick={() => setAddSubVisible(!addSubVisible)}
+                      >
+                        <PlusOutlined />
+                        Add
+                      </Button>
+                    )}
+                  </Title>
+                  <Table
+                    locale={{
+                      emptyText: 'No Subjects listed',
+                    }}
+                    columns={[
+                      { title: 'Subject', key: 'subject', dataIndex: 'subject' },
+                      { title: 'Price', key: 'price', dataIndex: 'price' },
+                      { title: 'Description', key: 'description', dataIndex: 'description' },
+                      { title: '', key: 'editPrice', dataIndex: 'editPrice' },
+                      { title: '', key: 'editDesc', dataIndex: 'editDesc' },
+                    ]}
+                    size="small"
+                    style={{ width: '100%' }}
+                    pagination={false}
+                    dataSource={tutorSubjects?.map((subject, index) => {
+                      return {
+                        price: subject.price,
+                        subject: subject.name,
+                        description: subject.description,
+                        editDesc: editSubs ? (
+                          <Button onClick={() => subDescEdit(subject.id)} style={{ margin: '0 0.5rem' }} size="small">
+                            <EditOutlined />
+                            Edit Description
+                          </Button>
+                        ) : (
+                          <></>
+                        ),
+                        editPrice: editSubs ? (
+                          <Button onClick={() => subPricEdit(subject.id)} style={{ margin: '0 0.5rem' }} size="small">
+                            <EditOutlined />
+                            Edit Price
+                          </Button>
+                        ) : (
+                          <></>
+                        ),
+                      };
+                    })}
+                  ></Table>
                   <Row style={{ margin: '0.5rem 0' }}>
                     <Title level={5}>
                       Qualifications
@@ -608,6 +729,95 @@ export function Profile(props: ProfileProps): React.ReactElement {
                       placeholder="Short description of the role"
                       style={{ minHeight: '240px', margin: '0.5rem 0' }}
                       size="large"
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="Teach a Subject"
+                visible={addSubVisible}
+                onCancel={() => setAddSubVisible(false)}
+                footer={[
+                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Add
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSub} layout="vertical" name="add-subject" preserve={false}>
+                  <Form.Item name="subject_id" rules={[{ required: true, message: 'Please select Subject!' }]}>
+                    <Select size="large" showSearch style={{ width: '100%' }}>
+                      {subjects?.map((subject, index) => (
+                        <Select.Option key={index} value={subject.id}>
+                          {subject.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    name="price"
+                    rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
+                  >
+                    <InputNumber
+                      placeholder="Desired Cost of a Lesson"
+                      size="large"
+                      style={{ width: '100%' }}
+                      min={1}
+                    />
+                  </Form.Item>
+                  <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
+                    <TextArea
+                      maxLength={1000}
+                      placeholder="Description of your subject"
+                      style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="New Subject Description"
+                visible={editSubDescVisible}
+                onCancel={() => setEditSubDescVisible(false)}
+                footer={[
+                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Add
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSubDescription} layout="vertical" name="add-subject" preserve={false}>
+                  <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
+                    <TextArea
+                      maxLength={1000}
+                      placeholder="Description of your subject"
+                      style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="New Subject Price"
+                visible={editSubPriceVisible}
+                onCancel={() => setEditSubPriceVisible(false)}
+                footer={[
+                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Change
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSubPrice} layout="vertical" name="add-subject" preserve={false}>
+                  <Form.Item
+                    name="price"
+                    rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
+                  >
+                    <InputNumber
+                      placeholder="Desired Cost of a Lesson"
+                      size="large"
+                      style={{ width: '100%' }}
+                      min={1}
                     />
                   </Form.Item>
                 </Form>

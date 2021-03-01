@@ -15,6 +15,9 @@ import {
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
+  SubjectTaughtPriceUpdateRequestDTO,
+  SubjectTaughtRequestDTO,
+  SubjectTaughtDescriptionUpdateRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -115,6 +118,18 @@ export class Services {
     });
   }
 
+  async createSubjectTaughtOnProfileID(
+    profileId: string,
+    accountType: AccountType,
+    SubjectTaught: SubjectTaughtRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${SubjectTaught.subject_id}`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(SubjectTaught),
+    });
+  }
+
   async deleteWorkExperienceOnProfileID(profileId: string, accountType: AccountType, expId: string): Promise<void> {
     await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/profile/work-experience/${expId}`, {
       headers: this.headers,
@@ -128,6 +143,36 @@ export class Services {
       method: 'POST',
       body: JSON.stringify({
         value: description,
+      }),
+    });
+  }
+
+  async updateSubjectDescriptionOnProfileID(
+    profileId: string,
+    subjectTaughtID: string,
+    accountType: AccountType,
+    UpdateDescription: SubjectTaughtDescriptionUpdateRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${subjectTaughtID}/description`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        description: UpdateDescription.description,
+      }),
+    });
+  }
+
+  async updateSubjectPriceOnProfileID(
+    profileId: string,
+    subjectTaughtID: string,
+    accountType: AccountType,
+    UpdatePrice: SubjectTaughtPriceUpdateRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${subjectTaughtID}/cost`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        price: UpdatePrice.price,
       }),
     });
   }

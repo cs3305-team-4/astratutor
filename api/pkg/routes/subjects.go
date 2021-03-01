@@ -20,7 +20,7 @@ func InjectSubjectsRoutes(subrouter *mux.Router) {
 type SubjectResponseDTO struct {
 	Name string    `json:"name" validate:"required"`
 	Slug string    `json:"slug" validate:"len=0"`
-	ID   uuid.UUID `json:"subject_id" validate:"len=0"`
+	ID   uuid.UUID `json:"id" validate:"len=0"`
 }
 
 // Represents a tutors subject

@@ -118,6 +118,7 @@ export interface LessonStageChangeDTO {
 }
 
 export interface SubjectDTO {
+  id: string;
   name: string;
   image: string;
   slug: string;
@@ -140,4 +141,18 @@ export interface TutorSubjectsDTO {
   slug: string;
   description: string;
   subjects: SubjectTaughtDTO[];
+}
+
+export interface SubjectTaughtRequestDTO {
+  subject_id: string;
+  price: string;
+  description: string;
+}
+
+export interface SubjectTaughtDescriptionUpdateRequestDTO {
+  description: string;
+}
+
+export interface SubjectTaughtPriceUpdateRequestDTO {
+  price: string;
 }
