@@ -16,6 +16,7 @@ export function Tutors(): ReactElement {
   const [tutors, setTutors] = useState<TutorSubjectsDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
+  const [search, setSearch] = useState<string>('');
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -58,13 +59,13 @@ export function Tutors(): ReactElement {
 
   // Called every tune dependencies change
   useAsync(async () => {
-    const res = await api.services.readTutors(currentPage, pageSize, filters);
+    const res = await api.services.readTutors(currentPage, pageSize, filters, search);
 
     setTotalPages(res.total_pages);
     setTutors(res.items);
 
     updatePath(currentPage, pageSize, filters);
-  }, [currentPage, pageSize, filters]);
+  }, [currentPage, pageSize, filters, search]);
 
   const onFiltersChange = async (e: string[]) => {
     setCurrentPage(1);
@@ -73,6 +74,8 @@ export function Tutors(): ReactElement {
 
   const onSearch = (searchVal: string) => {
     console.log(searchVal);
+    setCurrentPage(1);
+    setSearch(searchVal);
     // TODO: Add search functionality to /subjects/tutors endpoint
   };
 

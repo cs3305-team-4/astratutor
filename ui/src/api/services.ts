@@ -249,12 +249,16 @@ export class Services {
     page: number,
     pageSize: number,
     filters?: string[],
+    query?: string,
   ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
     // const url = filters
     //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
     //   : `${config.apiUrl}/subjects/tutors`;
-    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(',')}`;
+    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(
+      ',',
+    )}&q=${query}`;
     const res = await fetchRest(url);
+    console.log(res);
 
     return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
   }

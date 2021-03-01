@@ -57,6 +57,7 @@ import { RequestLessonModal } from './RequestLessonModal';
 
 import { APIContext } from '../api/api';
 import { Availability } from './Availability';
+import { UserAvatar } from './UserAvatar';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -269,7 +270,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                     }}
                     size="small"
                   >
-                    <Avatar src={profile.avatar} size={96}></Avatar>
+                    <UserAvatar profile={profile} props={{ size: 96, style: { fontSize: 40 } }} />
                   </Button>
                 </Upload>
               </ImgCrop>

@@ -125,7 +125,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, db *gorm.DB) ([]Profile, int, error) {
+func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, query string, db *gorm.DB) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -153,7 +153,9 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, d
 				Where("subject_id IN (?)", subject_ids).
 				Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
-		Scopes(Paginate(pageSize, page)).
+		Scopes(
+			Paginate(pageSize, page),
+			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query})).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err
@@ -176,7 +178,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutorsPaginated(db *gorm.DB, pageSize int, page int) ([]Profile, int, error) {
+func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -194,7 +196,9 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, page int) ([]Profile, int,
 	err := db.
 		Where("id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
-		Scopes(Paginate(pageSize, page)).
+		Scopes(
+			Paginate(pageSize, page),
+			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query})).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err
