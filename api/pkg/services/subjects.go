@@ -185,12 +185,16 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
-		Where("id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
+		Where("profiles.id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
+		Joins("JOIN subject_taughts ON subject_taughts.tutor_profile_id = profiles.id").
+		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
+		Group("profiles.id").
 		Scopes(
-			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query}, SearchQuery{"country", query}, SearchQuery{"city", query}, SearchQuery{"description", query}),
+			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
 			Paginate(pageSize, page),
 		).
+		// Distinct("profiles.id").
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err

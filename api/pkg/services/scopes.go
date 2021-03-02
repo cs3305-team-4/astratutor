@@ -41,6 +41,7 @@ func Search(queries ...SearchQuery) func(db *gorm.DB) *gorm.DB {
 				conds = append(conds, "%"+strings.ToLower(query.query)+"%")
 			}
 		}
+		fmt.Println(q)
 		if q != "" {
 			db = db.Where(q, conds...)
 		}
