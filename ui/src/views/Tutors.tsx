@@ -60,6 +60,7 @@ export function Tutors(): ReactElement {
   // Called every tune dependencies change
   useAsync(async () => {
     const res = await api.services.readTutors(currentPage, pageSize, filters, search);
+    console.log(res);
 
     setTotalPages(res.total_pages);
     setTutors(res.items);
@@ -73,7 +74,6 @@ export function Tutors(): ReactElement {
   };
 
   const onSearch = (searchVal: string) => {
-    console.log(searchVal);
     setCurrentPage(1);
     setSearch(searchVal);
     // TODO: Add search functionality to /subjects/tutors endpoint

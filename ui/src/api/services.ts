@@ -258,7 +258,6 @@ export class Services {
       ',',
     )}&q=${query}`;
     const res = await fetchRest(url);
-    console.log(res);
 
     return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
   }

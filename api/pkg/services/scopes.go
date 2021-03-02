@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -33,14 +34,13 @@ func Search(queries ...SearchQuery) func(db *gorm.DB) *gorm.DB {
 		for i, query := range queries {
 			if query.query != "" {
 				if i > 0 {
-					q = fmt.Sprintf("%s OR %s = ?", q, query.field)
+					q = fmt.Sprintf("%s OR LOWER( %s ) LIKE ?", q, query.field)
 				} else {
-					q = fmt.Sprintf("%s = ?", query.field)
+					q = fmt.Sprintf("LOWER( %s ) LIKE ?", query.field)
 				}
-				conds = append(conds, "%"+query.query+"%")
+				conds = append(conds, "%"+strings.ToLower(query.query)+"%")
 			}
 		}
-		fmt.Println(conds)
 		if q != "" {
 			db = db.Where(q, conds...)
 		}

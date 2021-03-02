@@ -139,12 +139,6 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 		subject_ids = append(subject_ids, subject.ID.String())
 	}
 
-	// Get total tutors who are teaching subjects that match the id
-	var totalTutors int64
-	db.Model(&SubjectTaught{}).
-		Where("subject_id IN (?)", subject_ids).
-		Distinct("tutor_profile_id").Count(&totalTutors)
-
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
@@ -154,14 +148,15 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 				Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
 		Scopes(
+			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query}, SearchQuery{"country", query}, SearchQuery{"city", query}, SearchQuery{"description", query}),
 			Paginate(pageSize, page),
-			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query})).
+		).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return profiles, int(math.Ceil(float64(totalTutors) / float64(pageSize))), nil
+	return profiles, int(math.Ceil(float64(len(profiles)) / float64(pageSize))), nil
 }
 
 //Quries the DB for SubjectTaught where the ID matches the SubjectTaught ID
@@ -187,24 +182,21 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([
 		}
 	}
 
-	// Get total tutors who are teaching subjects
-	var totalTutors int64
-	db.Model(&SubjectTaught{}).Distinct("tutor_profile_id").Count(&totalTutors)
-
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
 		Where("id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
 		Scopes(
+			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query}, SearchQuery{"country", query}, SearchQuery{"city", query}, SearchQuery{"description", query}),
 			Paginate(pageSize, page),
-			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query})).
+		).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return profiles, int(math.Ceil(float64(totalTutors) / float64(pageSize))), nil
+	return profiles, int(math.Ceil(float64(len(profiles)) / float64(pageSize))), nil
 }
 
 //Returns subjectTaught for specific tutors using their ID
