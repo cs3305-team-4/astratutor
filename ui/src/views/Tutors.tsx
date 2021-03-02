@@ -17,6 +17,7 @@ export function Tutors(): ReactElement {
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [searchBox, setSearchBox] = useState<string>('');
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -25,7 +26,7 @@ export function Tutors(): ReactElement {
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
 
-  const updatePath = (newPage: number, newPageSize: number, newFilters: string[]) => {
+  const updatePath = (newPage: number, newPageSize: number, newFilters: string[], newQuery: string) => {
     const path = '/subjects/tutors';
     const queries: string[] = [];
 
@@ -38,6 +39,9 @@ export function Tutors(): ReactElement {
     if (pageSize !== 10) {
       queries.push(`page_size=${pageSize}`);
     }
+    if (newQuery.length > 0) {
+      queries.push(`query=${newQuery}`);
+    }
     if (queries.length > 0) history.push(path + '?' + queries.join('&'));
     else history.push(path);
   };
@@ -45,13 +49,17 @@ export function Tutors(): ReactElement {
   // Initial Page Load
   useAsync(async () => {
     if (query.has('filter')) {
-      setFilters(query.get('filter').split(','));
+      setFilters((query.get('filter') ?? '').split(','));
     }
     if (query.has('page')) {
-      setCurrentPage(+query.get('page'));
+      setCurrentPage(+(query.get('page') ?? 0));
     }
     if (query.has('page_size')) {
-      setPageSize(+query.get('page_size'));
+      setPageSize(+(query.get('page_size') ?? 0));
+    }
+    if (query.has('query')) {
+      setSearch(query.get('query') ?? '');
+      setSearchBox(query.get('query') ?? '');
     }
 
     setSubjects(await api.services.readSubjects());
@@ -65,7 +73,7 @@ export function Tutors(): ReactElement {
     setTotalPages(res.total_pages);
     setTutors(res.items);
 
-    updatePath(currentPage, pageSize, filters);
+    updatePath(currentPage, pageSize, filters, search);
   }, [currentPage, pageSize, filters, search]);
 
   const onFiltersChange = async (e: string[]) => {
@@ -106,7 +114,13 @@ export function Tutors(): ReactElement {
                   </Select.Option>
                 ))}
               </Select>
-              <Input.Search key="2" placeholder="Search for a tutor" onSearch={onSearch} />
+              <Input.Search
+                value={searchBox}
+                key="2"
+                placeholder="Search for a tutor"
+                onChange={(e) => setSearchBox(e.currentTarget.value)}
+                onSearch={onSearch}
+              />
             </Space>
           </Row>
           <List
