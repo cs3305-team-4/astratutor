@@ -125,7 +125,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, query string, db *gorm.DB) ([]Profile, int, error) {
+func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, query string, sort string, db *gorm.DB) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -151,14 +151,17 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
-		Where("id IN (?)",
+		Where("profiles.id IN (?)",
 			db.Model(&SubjectTaught{}).
 				Where("subject_id IN (?)", subject_ids).
 				Select("tutor_profile_id")).
+		Joins("JOIN subject_taughts ON subject_taughts.tutor_profile_id = profiles.id").
 		Preload("Subjects").Preload("Subjects.Subject").
+		Group("profiles.id").
 		Scopes(
-			Search(SearchQuery{"first_name", query}, SearchQuery{"last_name", query}, SearchQuery{"country", query}, SearchQuery{"city", query}, SearchQuery{"description", query}),
+			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}),
 			Paginate(pageSize, page),
+			SortTutors(sort),
 		).
 		Find(&profiles).Error
 	if err != nil {
@@ -182,7 +185,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([]Profile, int, error) {
+func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, sort string, page int) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -211,9 +214,11 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([
 		Scopes(
 			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
 			Paginate(pageSize, page),
+			SortTutors(sort),
 		).
 		Find(&profiles).
 		Error
+	fmt.Println(profiles)
 	if err != nil {
 		return nil, 0, err
 	}

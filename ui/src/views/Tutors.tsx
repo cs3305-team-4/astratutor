@@ -19,14 +19,16 @@ import {
   Tag,
   Pagination,
   Menu,
+  Dropdown,
 } from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
-import { EnvironmentFilled } from '@ant-design/icons';
+import { DownOutlined, EnvironmentFilled } from '@ant-design/icons';
 import { UserAvatar } from '../components/UserAvatar';
 
 const { Title, Paragraph } = Typography;
 const { Content } = Layout;
+const { Option } = Select;
 
 export function Tutors(): ReactElement {
   const api = useContext(APIContext);
@@ -39,6 +41,7 @@ export function Tutors(): ReactElement {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [sort, setSort] = useState<string>('featured');
 
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
@@ -84,14 +87,14 @@ export function Tutors(): ReactElement {
 
   // Called every tune dependencies change
   useAsync(async () => {
-    const res = await api.services.readTutors(currentPage, pageSize, filters, search);
+    const res = await api.services.readTutors(currentPage, pageSize, filters, search, sort);
     console.log(res);
 
     setTotalPages(res.total_pages);
     setTutors(res.items);
 
     updatePath(currentPage, pageSize, filters, search);
-  }, [currentPage, pageSize, filters, search]);
+  }, [currentPage, pageSize, filters, search, sort]);
 
   const onFiltersChange = async (e: string[]) => {
     setCurrentPage(1);
@@ -101,12 +104,16 @@ export function Tutors(): ReactElement {
   const onSearch = (searchVal: string) => {
     setCurrentPage(1);
     setSearch(searchVal);
-    // TODO: Add search functionality to /subjects/tutors endpoint
   };
 
   const onPaginationUpdate = (newPage: number, newPageSize: number) => {
     setCurrentPage(newPage);
     setPageSize(newPageSize);
+  };
+
+  const onSort = (sort: string) => {
+    setCurrentPage(1);
+    setSort(sort);
   };
 
   return (
@@ -116,12 +123,17 @@ export function Tutors(): ReactElement {
           <Row justify="space-between">
             <Title>Tutors</Title>
             <Space>
+              <Select onChange={onSort} dropdownMatchSelectWidth={false} style={{ width: 230 }} defaultValue="featured">
+                <Option value="featured">Sort by: Featured</Option>
+                <Option value="low">Sort by: Price Low to High</Option>
+                <Option value="high">Sort by: Price High to Low</Option>
+              </Select>
               <Select
                 key="1"
                 mode="multiple"
                 allowClear
                 value={filters}
-                placeholder="Filter"
+                placeholder="Filter by subject"
                 onChange={onFiltersChange}
                 style={{ minWidth: '200px' }}
               >

@@ -250,13 +250,14 @@ export class Services {
     pageSize: number,
     filters?: string[],
     query?: string,
+    sort?: string,
   ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
     // const url = filters
     //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
     //   : `${config.apiUrl}/subjects/tutors`;
     const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(
       ',',
-    )}&q=${query}`;
+    )}&q=${query}&sort=${sort}`;
     const res = await fetchRest(url);
 
     return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;

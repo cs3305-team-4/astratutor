@@ -124,6 +124,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
 	query := q.Get("q")
+	sort := q.Get("sort")
 
 	pageSize, err := strconv.Atoi(q.Get("page_size"))
 	if err != nil || pageSize <= 0 {
@@ -141,7 +142,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, query, nil)
+		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, query, sort, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
@@ -154,7 +155,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, query, page)
+		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, query, sort, page)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return

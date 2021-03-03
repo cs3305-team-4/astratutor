@@ -47,3 +47,14 @@ func Search(queries ...SearchQuery) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+func SortTutors(sort string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		switch sort {
+		case "low":
+			db = db.Order("AVG( subject_taughts.price ) asc")
+		case "high":
+			db = db.Order("AVG( subject_taughts.price ) desc")
+		}
+		return db
+	}
+}
