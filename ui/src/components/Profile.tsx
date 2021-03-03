@@ -183,6 +183,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   };
 
   const commitSub = async (subjectTaught: SubjectTaughtRequestDTO) => {
+    console.log(subjectTaught);
     try {
       await api.services.createSubjectTaughtOnProfileID(props.uuid, props.type, subjectTaught);
       await reloadProfile();
@@ -190,7 +191,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
     } catch (e) {
       Modal.error({
         title: 'Error',
-        content: `Could not create work experience: ${e}`,
+        content: `Could not teach Subject: ${e}`,
       });
     }
   };
@@ -232,6 +233,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   };
 
   const commitSubDescription = async (desc: SubjectTaughtDescriptionUpdateRequestDTO) => {
+    console.log(desc);
     try {
       await api.services.updateSubjectDescriptionOnProfileID(props.uuid, TutorSubjectID, props.type, desc);
       await reloadProfile();
@@ -475,7 +477,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                         onClick={() => setAddSubVisible(!addSubVisible)}
                       >
                         <PlusOutlined />
-                        Add
+                        Teach A New Subject
                       </Button>
                     )}
                   </Title>
@@ -739,7 +741,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 visible={addSubVisible}
                 onCancel={() => setAddSubVisible(false)}
                 footer={[
-                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                  <Button form="add-subject" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
                     Add
                   </Button>,
                 ]}
@@ -781,12 +783,12 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 visible={editSubDescVisible}
                 onCancel={() => setEditSubDescVisible(false)}
                 footer={[
-                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                  <Button form="add-desc" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
                     Add
                   </Button>,
                 ]}
               >
-                <Form onFinish={commitSubDescription} layout="vertical" name="add-subject" preserve={false}>
+                <Form onFinish={commitSubDescription} layout="vertical" name="add-desc" preserve={false}>
                   <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
                     <TextArea
                       maxLength={1000}
@@ -803,12 +805,12 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 visible={editSubPriceVisible}
                 onCancel={() => setEditSubPriceVisible(false)}
                 footer={[
-                  <Button form="add-sub" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                  <Button form="add-price" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
                     Change
                   </Button>,
                 ]}
               >
-                <Form onFinish={commitSubPrice} layout="vertical" name="add-subject" preserve={false}>
+                <Form onFinish={commitSubPrice} layout="vertical" name="add-price" preserve={false}>
                   <Form.Item
                     name="price"
                     rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
