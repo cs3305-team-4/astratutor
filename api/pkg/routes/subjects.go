@@ -21,12 +21,13 @@ func InjectSubjectsRoutes(subrouter *mux.Router) {
 type SubjectResponseDTO struct {
 	Name string    `json:"name" validate:"required"`
 	Slug string    `json:"slug" validate:"len=0"`
-	ID   uuid.UUID `json:"subject_id" validate:"len=0"`
+	ID   uuid.UUID `json:"id" validate:"len=0"`
 }
 
 // Represents a tutors subject
 type SubjectTaughtDTO struct {
 	ID          uuid.UUID `json:"id" validate:"len=0"`
+	SubjectID   uuid.UUID `json:"subject_id" validate:"len=0"`
 	Name        string    `json:"name" validate:"required"`
 	Slug        string    `json:"slug" validate:"required"`
 	Description string    `json:"description"`
@@ -42,6 +43,22 @@ type TutorSubjectsResponseDTO struct {
 	Slug        string             `json:"slug" validate:"len=0"`
 	Description string             `json:"description"`
 	Subjects    []SubjectTaughtDTO `json:"subjects"`
+}
+
+// SubjectTaughtRequestDTO represents a subject a Tutor wishes to teach
+type SubjectTaughtRequestDTO struct {
+	Description string  `json:"description"`
+	Price       float32 `json:"price"`
+}
+
+// SubjectTaughtDescriptionUpdateRequestDTO represents a subject a Tutor wishes to update the description for
+type SubjectTaughtDescriptionUpdateRequestDTO struct {
+	Description string `json:"description"`
+}
+
+// SubjectTaughtPriceUpdateRequestDTO represents a subject a Tutor wishes to update the Price for
+type SubjectTaughtPriceUpdateRequestDTO struct {
+	Price float32 `json:"price"`
 }
 
 func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
@@ -63,7 +80,8 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 
 func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
 	return &SubjectTaughtDTO{
-		ID:          subjectTaught.Subject.ID,
+		ID:          subjectTaught.ID,
+		SubjectID:   subjectTaught.Subject.ID,
 		Name:        subjectTaught.Subject.Name,
 		Slug:        subjectTaught.Subject.Slug,
 		Description: subjectTaught.Description,

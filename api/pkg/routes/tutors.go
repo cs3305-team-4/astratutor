@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -31,6 +32,11 @@ func InjectTutorsRoutes(subrouter *mux.Router) {
 	accountResource.HandleFunc("/profile/work-experience", handleTutorProfileWorkExperiencePost).Methods("POST")
 	accountResource.HandleFunc("/profile/work-experience/{wid}", handleTutorProfileWorkExperienceDelete).Methods("DELETE")
 
+	//Subject routes
+	accountResource.HandleFunc("/subjects", handleTutorSubjectsGet).Methods("GET")
+	accountResource.HandleFunc("/subjects/{sid}", handleTutorTeachSubject).Methods("POST")
+	accountResource.HandleFunc("/subjects/{stid}/cost", handleTutorSubjectUpdateCost).Methods("POST")
+	accountResource.HandleFunc("/subjects/{stid}/description", handleTutorSubjectUpdateDescription).Methods("POST")
 }
 
 func handleTutorProfileQualificationsPost(w http.ResponseWriter, r *http.Request) {
@@ -194,4 +200,148 @@ func handleTutorProfileAvailabilityPost(w http.ResponseWriter, r *http.Request) 
 	}
 	profileDto := dtoFromProfile(profile, services.Tutor)
 	WriteBody(w, r, profileDto)
+}
+
+func handleTutorSubjectsGet(w http.ResponseWriter, r *http.Request) {
+	tid, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorProfile, err := services.ReadProfileByAccountID(tid, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	tutorSubjects, err := services.GetSubjectsTaughtByTutorID(tutorProfile.ID, nil, "Subject")
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(SubjectsTuaghtToDTO(&tutorSubjects)); err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+}
+
+//function to let a tutor teach a subject
+func handleTutorTeachSubject(w http.ResponseWriter, r *http.Request) {
+	var err error
+	sID, err := getUUID(r, "sid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	subjectRequest := &SubjectTaughtRequestDTO{}
+	if !ParseBody(w, r, subjectRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if !(authContext.Account.ID == id) {
+		restError(w, r, errors.New("only allowed to assign your own account to a subject"), http.StatusBadRequest)
+		return
+	}
+
+	subject, err := services.GetSubjectByID(sID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	tutor, err := services.ReadAccountByID(id, nil, "Profile")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = services.TeachSubject(subject, tutor, subjectRequest.Description, subjectRequest.Price, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+func handleTutorSubjectUpdateCost(w http.ResponseWriter, r *http.Request) {
+	var subjectTaughtUpdateRequest SubjectTaughtPriceUpdateRequestDTO
+	var err error
+	stID, err := getUUID(r, "stid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if !ParseBody(w, r, &subjectTaughtUpdateRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if !(authContext.Account.ID == id) {
+		restError(w, r, errors.New("only allowed to update your own subjects"), http.StatusBadRequest)
+		return
+	}
+
+	services.UpdateCost(stID, subjectTaughtUpdateRequest.Price, nil)
+}
+
+func handleTutorSubjectUpdateDescription(w http.ResponseWriter, r *http.Request) {
+	var err error
+	stID, err := getUUID(r, "stid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	var subjectTaughtUpdateRequest SubjectTaughtDescriptionUpdateRequestDTO
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if !(authContext.Account.ID == id) {
+		restError(w, r, errors.New("only allowed to update your own subjects"), http.StatusBadRequest)
+		return
+	}
+
+	if !ParseBody(w, r, &subjectTaughtUpdateRequest) {
+		return
+	}
+
+	services.UpdateDescription(stID, subjectTaughtUpdateRequest.Description, nil)
+
 }
