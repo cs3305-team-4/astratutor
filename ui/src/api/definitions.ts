@@ -132,6 +132,7 @@ export interface LessonRescheduleRequestDTO {
 }
 
 export interface SubjectDTO {
+  id: string;
   name: string;
   image: string;
   slug: string;
@@ -139,6 +140,7 @@ export interface SubjectDTO {
 
 export interface SubjectTaughtDTO {
   id: string;
+  subject_id: string;
   name: string;
   slug: string;
   description: string;
@@ -153,6 +155,20 @@ export interface TutorSubjectsDTO {
   slug: string;
   description: string;
   subjects: SubjectTaughtDTO[];
+}
+
+export interface SubjectTaughtRequestDTO {
+  subject_id: string;
+  price: string;
+  description: string;
+}
+
+export interface SubjectTaughtDescriptionUpdateRequestDTO {
+  description: string;
+}
+
+export interface SubjectTaughtPriceUpdateRequestDTO {
+  price: string;
 }
 
 export interface PaginatedResponseDTO<T> {

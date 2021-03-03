@@ -249,6 +249,7 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price fl
 		err = tx.Create(&SubjectTaught{
 			Subject:      *subject,
 			TutorProfile: *tutor.Profile,
+			Description:  description,
 			Price:        price,
 		}).Error
 
@@ -265,7 +266,7 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price fl
 }
 
 //updates the price of a subjecttaught by the sid
-func UpdateCost(stid uuid.UUID, price uint, db *gorm.DB) (*SubjectTaught, error) {
+func UpdateCost(stid uuid.UUID, price float32, db *gorm.DB) (*SubjectTaught, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
