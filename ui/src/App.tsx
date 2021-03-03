@@ -61,19 +61,20 @@ function App(): React.ReactElement {
   if (api.isLoggedIn() && profile) {
     headerLinks = [
       <Link to="/" key="home">
-        <Button type="text">Home</Button>
+        <Button type={history.location.pathname === '/' ? 'link' : 'text'}>Home</Button>
       </Link>,
       <Link to="/subjects" key="subjects">
-        <Button type="text">Subjects</Button>
+        <Button type={history.location.pathname === '/subjects' ? 'link' : 'text'}>Subjects</Button>
       </Link>,
       <Link to="/subjects/tutors" key="tutors">
-        <Button type="text">Find A Tutor</Button>
+        <Button type={history.location.pathname.startsWith('/subjects/tutors') ? 'link' : 'text'}>Find A Tutor</Button>
       </Link>,
       <Link to="/lessons" key="lessons">
-        <Button type="text">My Lessons</Button>
+        <Button type={history.location.pathname.startsWith('/lessons') ? 'link' : 'text'}>My Lessons</Button>
       </Link>,
       <Link to="/account/profile" key="account">
-        <Button type="link">
+        <Divider type="vertical" style={{ borderLeft: '1px solid rgb(169 169 169)', marginRight: 20 }} />
+        <Button type={history.location.pathname.startsWith('/account') ? 'link' : 'text'}>
           <UserAvatar props={{ size: 20, style: { marginRight: 7 } }} profile={profile} />
           {profile?.first_name} {profile?.last_name}
         </Button>
@@ -85,13 +86,13 @@ function App(): React.ReactElement {
   } else {
     headerLinks = [
       <Link to="/" key="home">
-        <Button type="text">Home</Button>,
+        <Button type={history.location.pathname === '/' ? 'link' : 'text'}>Home</Button>
       </Link>,
       <Link to="/subjects" key="subjects">
-        <Button type="text">Subjects</Button>,
+        <Button type={history.location.pathname === '/subjects' ? 'link' : 'text'}>Subjects</Button>
       </Link>,
       <Link to="/subjects/tutors" key="tutors">
-        <Button type="text">Find A Tutor</Button>,
+        <Button type={history.location.pathname.startsWith('/subjects/tutors') ? 'link' : 'text'}>Find A Tutor</Button>
       </Link>,
       <Link to="/login" key="login">
         <Button type="primary">Log in</Button>

@@ -66,17 +66,6 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   };
 
   const buttons = [];
-  buttons.push(
-    <Button
-      key="enter classroom"
-      style={{ margin: '0.2rem' }}
-      onClick={() => {
-        history.push(`/lessons/${props.lesson.id}/lobby`);
-      }}
-    >
-      Enter Classroom
-    </Button>,
-  );
 
   const requestPendingButton = (
     <>
@@ -237,6 +226,19 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       }
       break;
     case LessonRequestStage.Accepted:
+      buttons.push(
+        <Button
+          ghost
+          type="primary"
+          key="enter classroom"
+          style={{ margin: '0.2rem' }}
+          onClick={() => {
+            history.push(`/lessons/${props.lesson.id}/lobby`);
+          }}
+        >
+          Enter Classroom
+        </Button>,
+      );
       // Once the lesson is accepted either party can cancel or reschedule a lesson
       buttons.push(cancelButton, rescheduleButton);
   }
@@ -275,7 +277,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
             />
           </Col>
         </Row>,
-        <Row key="buttons" gutter={16} align="top" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
+        <Row key="buttons" gutter={16} align="bottom" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
           {buttons}
         </Row>,
       ]}
