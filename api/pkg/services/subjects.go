@@ -16,6 +16,23 @@ type Subject struct {
 	Slug string `gorm:"unique;not null;"`
 }
 
+type SubjectRequest struct {
+	database.Model
+	RequesterID uuid.UUID
+	Requester   Account `gorm:"foreignKey:RequesterId"`
+	Name        string  `gorm:"not null;"`
+	Status      SubjectRequestStatus
+	Reason      string
+}
+
+type SubjectRequestStatus string
+
+const (
+	SubjectRequestApproved SubjectRequestStatus = "approved"
+	SubjectRequestDenied   SubjectRequestStatus = "denied"
+	SubjectRequestPending  SubjectRequestStatus = "pending"
+)
+
 type SubjectTaughtError string
 
 func (e SubjectTaughtError) Error() string {
