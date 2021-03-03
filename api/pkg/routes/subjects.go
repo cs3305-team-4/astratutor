@@ -24,6 +24,10 @@ type SubjectResponseDTO struct {
 	ID   uuid.UUID `json:"id" validate:"len=0"`
 }
 
+type SubjectRequestDTO struct {
+	Name string `json:"name" validate:"required"`
+}
+
 // Represents a tutors subject
 type SubjectTaughtDTO struct {
 	ID          uuid.UUID `json:"id" validate:"len=0"`
