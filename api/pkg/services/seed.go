@@ -225,6 +225,9 @@ func SeedDatabase() error {
 		return err
 	}
 
+	// Setting a fixed seed so that seeding is derterministic
+	rand.Seed(2131287698123)
+
 	// Create Subjects
 	log.Info("Seeding Subjects...")
 	for s := 0; s < len(seedSubjects); s++ {
@@ -360,5 +363,7 @@ func SeedDatabase() error {
 
 	db.CreateInBatches(lessons, 20)
 
+	// Setting seed to be current time so that rand is no longer deterministic
+	rand.Seed(time.Now().UnixNano())
 	return nil
 }
