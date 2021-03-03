@@ -46,7 +46,13 @@ export function Tutors(): ReactElement {
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
 
-  const updatePath = (newPage: number, newPageSize: number, newFilters: string[], newQuery: string) => {
+  const updatePath = (
+    newPage: number,
+    newPageSize: number,
+    newFilters: string[],
+    newQuery: string,
+    newSort: string,
+  ) => {
     const path = '/subjects/tutors';
     const queries: string[] = [];
 
@@ -61,6 +67,9 @@ export function Tutors(): ReactElement {
     }
     if (newQuery.length > 0) {
       queries.push(`query=${newQuery}`);
+    }
+    if (newSort.length > 0) {
+      queries.push(`sort=${newSort}`);
     }
     if (queries.length > 0) history.push(path + '?' + queries.join('&'));
     else history.push(path);
@@ -81,6 +90,9 @@ export function Tutors(): ReactElement {
       setSearch(query.get('query') ?? '');
       setSearchBox(query.get('query') ?? '');
     }
+    if (query.has('sort')) {
+      setSort(query.get('sort') ?? '');
+    }
 
     setSubjects(await api.services.readSubjects());
   }, []);
@@ -93,7 +105,7 @@ export function Tutors(): ReactElement {
     setTotalPages(res.total_pages);
     setTutors(res.items);
 
-    updatePath(currentPage, pageSize, filters, search);
+    updatePath(currentPage, pageSize, filters, search, sort);
   }, [currentPage, pageSize, filters, search, sort]);
 
   const onFiltersChange = async (e: string[]) => {
@@ -123,7 +135,13 @@ export function Tutors(): ReactElement {
           <Row justify="space-between">
             <Title>Tutors</Title>
             <Space>
-              <Select onChange={onSort} dropdownMatchSelectWidth={false} style={{ width: 230 }} defaultValue="featured">
+              <Select
+                value={sort}
+                onChange={onSort}
+                dropdownMatchSelectWidth={false}
+                style={{ width: 230 }}
+                defaultValue="featured"
+              >
                 <Option value="featured">Sort by: Featured</Option>
                 <Option value="low">Sort by: Price Low to High</Option>
                 <Option value="high">Sort by: Price High to Low</Option>
