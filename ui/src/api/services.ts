@@ -8,16 +8,21 @@ import {
   WorkExperienceRequestDTO,
   LessonRequestDTO,
   LessonResponseDTO,
+  LessonDenyRequestDTO,
   ProfileRequestDTO,
   AccountRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  TurnCredentials,
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
   SubjectTaughtPriceUpdateRequestDTO,
   SubjectTaughtRequestDTO,
   SubjectTaughtDescriptionUpdateRequestDTO,
+  PaginatedResponseDTO,
+  LessonCancelRequestDTO,
+  LessonRescheduleRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -218,6 +223,15 @@ export class Services {
     return (await res.json()) as LessonResponseDTO[];
   }
 
+  async readLesson(lessonId: string): Promise<LessonResponseDTO> {
+    const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as LessonResponseDTO;
+  }
+
   async readLessonByAccountId(lessonId: string): Promise<LessonResponseDTO> {
     const res = await fetchRest(`${config.apiUrl}/lessons/${lessonId}`, {
       headers: this.headers,
@@ -237,24 +251,37 @@ export class Services {
     });
   }
 
-  async updateLessonStageDeny(lesson_id: string, stage_detail: string): Promise<void> {
+  async updateLessonStageDeny(lesson_id: string, denyRequest: LessonDenyRequestDTO): Promise<void> {
     await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/deny`, {
       headers: this.headers,
       method: 'POST',
-      body: JSON.stringify({
-        stage_detail,
-      }),
+      body: JSON.stringify(denyRequest),
     });
   }
 
-  async updateLessonStageCancel(lesson_id: string, stage_detail: string): Promise<void> {
+  async updateLessonStageCancel(lesson_id: string, cancelRequest: LessonCancelRequestDTO): Promise<void> {
     await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/cancel`, {
       headers: this.headers,
       method: 'POST',
-      body: JSON.stringify({
-        stage_detail,
-      }),
+      body: JSON.stringify(cancelRequest),
     });
+  }
+
+  async updateLessonStageReschedule(lesson_id: string, rescheduleRequest: LessonRescheduleRequestDTO): Promise<void> {
+    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/reschedule`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(rescheduleRequest),
+    });
+  }
+
+  async getTurnCredentials(): Promise<TurnCredentials> {
+    const res = await fetchRest(`${config.apiUrl}/signalling/credentials`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as TurnCredentials;
   }
 
   async readSubjects(): Promise<SubjectDTO[]> {
@@ -263,13 +290,18 @@ export class Services {
     return (await res.json()) as SubjectDTO[];
   }
 
-  async readTutors(filters?: string[]): Promise<TutorSubjectsDTO[]> {
-    const url = filters
-      ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
-      : `${config.apiUrl}/subjects/tutors`;
+  async readTutors(
+    page: number,
+    pageSize: number,
+    filters?: string[],
+  ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
+    // const url = filters
+    //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
+    //   : `${config.apiUrl}/subjects/tutors`;
+    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(',')}`;
     const res = await fetchRest(url);
 
-    return (await res.json()) as TutorSubjectsDTO[];
+    return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
   }
 
   async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {

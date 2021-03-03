@@ -92,7 +92,10 @@ export function Lessons(): React.ReactElement {
       <Content style={{ minHeight: 'calc(100vh - 72px)' }}>
         {menu === Menus.Requests &&
           Object.keys(lessonProps).map((key: string, index: number) => {
-            if (lessonProps[key].lesson.request_stage === LessonRequestStage.Requested) {
+            if (
+              lessonProps[key].lesson.request_stage === LessonRequestStage.Requested ||
+              lessonProps[key].lesson.request_stage === LessonRequestStage.Rescheduled
+            ) {
               return <Lesson key={index} {...lessonProps[key]} />;
             }
 
@@ -131,11 +134,11 @@ export function Lessons(): React.ReactElement {
             return <></>;
           })}
         {/* {menu === Menus.Scheduled && (
-          
+
         )}
         ap((lessonProp: LessonProps, index: number) => <Lesson key={index} {...lessonProp} />)}
         {menu === Menus.Completed && (
-          
+
         )} */}
       </Content>
     </StyledLayout>

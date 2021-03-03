@@ -94,6 +94,7 @@ export enum LessonRequestStage {
   Accepted = 'accepted',
   Denied = 'denied',
   Cancelled = 'cancelled',
+  Rescheduled = 'rescheduled',
   Completed = 'completed',
   NoShowStudent = 'no-show-student',
   NoShowTutor = 'no-show-tutor',
@@ -115,6 +116,19 @@ export interface LessonResponseDTO {
 // i.e confirmed, expired, etc
 export interface LessonStageChangeDTO {
   stage_detail: string;
+}
+
+export interface LessonDenyRequestDTO {
+  reason: string;
+}
+
+export interface LessonCancelRequestDTO {
+  reason: string;
+}
+
+export interface LessonRescheduleRequestDTO {
+  new_time: string;
+  reason: string;
 }
 
 export interface SubjectDTO {
@@ -155,4 +169,14 @@ export interface SubjectTaughtDescriptionUpdateRequestDTO {
 
 export interface SubjectTaughtPriceUpdateRequestDTO {
   price: string;
+}
+
+export interface PaginatedResponseDTO<T> {
+  total_pages: number;
+  items: T;
+}
+
+export interface TurnCredentials {
+  username: string;
+  password: string;
 }

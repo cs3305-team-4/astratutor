@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
@@ -124,38 +125,41 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjects(subjects *[]Subject, db *gorm.DB) ([]Profile, error) {
+func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, db *gorm.DB) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
-	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	var subject_ids []string
+	for _, subject := range *subjects {
+		subject_ids = append(subject_ids, subject.ID.String())
+	}
+
+	// Get total tutors who are teaching subjects that match the id
+	var totalTutors int64
+	db.Model(&SubjectTaught{}).
+		Where("subject_id IN (?)", subject_ids).
+		Distinct("tutor_profile_id").Count(&totalTutors)
+
+	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
-	err := db.Find(&profiles).Error
+	err := db.
+		Where("id IN (?)",
+			db.Model(&SubjectTaught{}).
+				Where("subject_id IN (?)", subject_ids).
+				Select("tutor_profile_id")).
+		Preload("Subjects").Preload("Subjects.Subject").
+		Scopes(Paginate(pageSize, page)).
+		Find(&profiles).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var profilesWithSubjects []Profile
-
-	for _, profile := range profiles {
-		if len(profile.Subjects) > 0 {
-		exit:
-			for _, subjectTaught := range profile.Subjects {
-				for _, subject := range *subjects {
-					if subjectTaught.SubjectID == subject.ID {
-						profilesWithSubjects = append(profilesWithSubjects, profile)
-						break exit
-					}
-				}
-			}
-		}
-	}
-	return profilesWithSubjects, nil
+	return profiles, int(math.Ceil(float64(totalTutors) / float64(pageSize))), nil
 }
 
 //Quries the DB for SubjectTaught where the ID matches the SubjectTaught ID
@@ -172,30 +176,31 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutors(db *gorm.DB) ([]Profile, error) {
+func GetAllTutorsPaginated(db *gorm.DB, pageSize int, page int) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
-	db = db.Preload("Subjects").Preload("Subjects.Subject")
+	// Get total tutors who are teaching subjects
+	var totalTutors int64
+	db.Model(&SubjectTaught{}).Distinct("tutor_profile_id").Count(&totalTutors)
+
+	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
-	err := db.Find(&profiles).Error
+	err := db.
+		Where("id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
+		Preload("Subjects").Preload("Subjects.Subject").
+		Scopes(Paginate(pageSize, page)).
+		Find(&profiles).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var profilesWithSubjects []Profile
-
-	for _, profile := range profiles {
-		if len(profile.Subjects) > 0 {
-			profilesWithSubjects = append(profilesWithSubjects, profile)
-		}
-	}
-	return profilesWithSubjects, nil
+	return profiles, int(math.Ceil(float64(totalTutors) / float64(pageSize))), nil
 }
 
 //Returns subjectTaught for specific tutors using their ID
