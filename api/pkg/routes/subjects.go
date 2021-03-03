@@ -13,7 +13,7 @@ import (
 
 func InjectSubjectsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleSubjectsGet).Methods("GET")
-	subrouter.HandleFunc("", handleRequestSubject).Nethods("POST")
+	subrouter.HandleFunc("", handleRequestSubject).Methods("POST")
 	subrouter.HandleFunc("/tutors", handleSubjectTutorsGet).Methods("GET")
 	subrouter.HandleFunc("/tutors/{tid}", handleGetSubjectsForTutor).Methods("GET")
 }
