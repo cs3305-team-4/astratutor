@@ -13,6 +13,7 @@ import (
 
 func InjectSubjectsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("", handleSubjectsGet).Methods("GET")
+	subrouter.HandleFunc("", handleRequestSubject).Nethods("POST")
 	subrouter.HandleFunc("/tutors", handleSubjectTutorsGet).Methods("GET")
 	subrouter.HandleFunc("/tutors/{tid}", handleGetSubjectsForTutor).Methods("GET")
 }
@@ -204,6 +205,24 @@ func handleGetSubjectsForTutor(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewEncoder(w).Encode(SubjectsTuaghtToDTO(&tutorSubjects)); err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleRequestSubject(w http.ResponseWriter, r *http.Request) {
+	subjectRequest := &SubjectRequestDTO{}
+	if !ParseBody(w, r, subjectRequest) {
+		return
+	}
+
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if err = services.RequestSubject(authContext.Account, subjectRequest.Name); err != nil {
+		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 }
