@@ -4,10 +4,11 @@ import { APIContext } from '../api/api';
 
 import Subject from '../components/Subject';
 
-import { Typography, Layout, Row, Col, PageHeader, Input } from 'antd';
+import { Typography, Layout, Row, Col, PageHeader, Input, Space } from 'antd';
 import { SubjectDTO } from '../api/definitions';
 
 import { useAsync } from 'react-async-hook';
+const { Title, Paragraph } = Typography;
 
 const { Text } = Typography;
 const { Content } = Layout;
@@ -53,11 +54,13 @@ export function Subjects(): ReactElement {
     <Content style={{ padding: '2em 0' }}>
       <Row>
         <Col xl={{ offset: 4, span: 16 }} lg={{ offset: 2, span: 20 }} span={24}>
-          <PageHeader
-            title="Subjects"
-            extra={[<Input.Search key="1" placeholder="Search for a subject" allowClear onChange={onSearch} />]}
-          />
-          <Row gutter={[16, 16]}>{displaySubjects}</Row>
+          <Row justify="space-between">
+            <Title>Tutors</Title>
+            <Space>
+              <Input.Search key="1" placeholder="Search for a subject" allowClear onChange={onSearch} />
+            </Space>
+          </Row>
+          <Row>{displaySubjects}</Row>
         </Col>
       </Row>
     </Content>
