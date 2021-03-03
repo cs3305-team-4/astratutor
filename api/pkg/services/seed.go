@@ -75,10 +75,17 @@ func RandomizeProfile(account *Account) {
 	availability := make(Availability, 168)
 	if account.Type == Tutor {
 		for s := 1; s < rand.Intn(4)+2; s++ {
+		createNew:
 			subject := SubjectTaught{
 				Subject:     subjects[rand.Intn(len(subjects))],
 				Description: CreateDesc(300),
 				Price:       float32(rand.Intn(30) + 20),
+			}
+			// Ensure tutor isnt already teaching this subject
+			for _, subjectTaught := range subjectsTaught {
+				if subjectTaught.Subject == subject.Subject {
+					goto createNew
+				}
 			}
 			subjectsTaught = append(subjectsTaught, subject)
 		}
