@@ -23,6 +23,7 @@ import {
   PaginatedResponseDTO,
   LessonCancelRequestDTO,
   LessonRescheduleRequestDTO,
+  SubjectRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -307,5 +308,13 @@ export class Services {
   async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
     const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
     return (await res.json()) as SubjectTaughtDTO[];
+  }
+
+  async requestSubjectAdded(subjectRequest: SubjectRequestDTO): Promise<void> {
+    await fetchRest(`${config.apiUrl}/subjects`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(subjectRequest),
+    });
   }
 }
