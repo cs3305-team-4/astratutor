@@ -152,6 +152,9 @@ export interface TutorSubjectsDTO {
   avatar: string;
   slug: string;
   description: string;
+  color: string;
+  city: string;
+  country: string;
   subjects: SubjectTaughtDTO[];
 }
 

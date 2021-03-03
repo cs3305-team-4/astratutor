@@ -41,6 +41,9 @@ type TutorSubjectsResponseDTO struct {
 	Avatar      string             `json:"avatar" validate:"omitempty,base64"`
 	Slug        string             `json:"slug" validate:"len=0"`
 	Description string             `json:"description"`
+	Color       string             `json:"color"`
+	City        string             `json:"city"`
+	Country     string             `json:"country"`
 	Subjects    []SubjectTaughtDTO `json:"subjects"`
 }
 
@@ -54,6 +57,9 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 			Avatar:      profile.Avatar,
 			Slug:        profile.Slug,
 			Description: profile.Description,
+			Color:       profile.Color,
+			City:        profile.City,
+			Country:     profile.Country,
 			Subjects:    SubjectsTuaghtToDTO(&profile.Subjects),
 		})
 	}

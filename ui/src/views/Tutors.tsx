@@ -1,12 +1,29 @@
 import React, { ReactElement, useContext, useState } from 'react';
 
-import { SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
+import { ProfileResponseDTO, SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Tabs, Tag, Pagination } from 'antd';
+import {
+  Typography,
+  Layout,
+  Card,
+  Row,
+  Col,
+  List,
+  Button,
+  Input,
+  Select,
+  Space,
+  Tabs,
+  Tag,
+  Pagination,
+  Menu,
+} from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
+import { EnvironmentFilled } from '@ant-design/icons';
+import { UserAvatar } from '../components/UserAvatar';
 
 const { Title, Paragraph } = Typography;
 const { Content } = Layout;
@@ -116,6 +133,7 @@ export function Tutors(): ReactElement {
               </Select>
               <Input.Search
                 value={searchBox}
+                allowClear
                 key="2"
                 placeholder="Search for a tutor"
                 onChange={(e) => setSearchBox(e.currentTarget.value)}
@@ -141,7 +159,14 @@ export function Tutors(): ReactElement {
               <Card>
                 <List.Item
                   key={tutor.id}
-                  extra={<img width={200} src={tutor.avatar} alt="" />}
+                  extra={
+                    <Link key="1" to={`/tutors/${tutor.id}/profile`}>
+                      <UserAvatar
+                        props={{ style: { height: 200, width: 200 } }}
+                        profile={(tutor as unknown) as ProfileResponseDTO}
+                      />
+                    </Link>
+                  }
                   actions={[
                     <Link key="1" to={`/tutors/${tutor.id}/profile`}>
                       <Button type="primary">Visit Profile</Button>
@@ -150,9 +175,16 @@ export function Tutors(): ReactElement {
                 >
                   <List.Item.Meta
                     title={
-                      <Link to={`/tutors/${tutor.id}/profile`}>
-                        {tutor.first_name} {tutor.last_name}
-                      </Link>
+                      <div>
+                        <Link to={`/tutors/${tutor.id}/profile`}>
+                          <h1>
+                            {tutor.first_name} {tutor.last_name}
+                          </h1>
+                        </Link>
+                        <p style={{ color: 'rgb(64 64 64)', fontSize: '.9em' }}>
+                          <EnvironmentFilled /> {tutor.city}, {tutor.country}
+                        </p>
+                      </div>
                     }
                     description={
                       <Tabs>
@@ -161,7 +193,7 @@ export function Tutors(): ReactElement {
                           <Tabs.TabPane
                             key={subject.id}
                             tab={
-                              <Tag color={filters.includes(subject.slug) ? 'blue' : ''}>
+                              <Tag color={filters.includes(subject.slug) ? 'blue' : ''} style={{ fontSize: 15 }}>
                                 {subject.name} - €{subject.price}/Hour
                               </Tag>
                             }
