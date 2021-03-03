@@ -182,6 +182,16 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([
 		}
 	}
 
+	var totalTutors int64
+	db.Model(&SubjectTaught{}).
+		Joins("JOIN profiles ON profiles.id = subject_taughts.tutor_profile_id").
+		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
+		Scopes(
+			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
+		).
+		Distinct("tutor_profile_id").Count(&totalTutors).
+		Count(&totalTutors)
+
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
@@ -194,13 +204,13 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, page int) ([
 			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
 			Paginate(pageSize, page),
 		).
-		// Distinct("profiles.id").
-		Find(&profiles).Error
+		Find(&profiles).
+		Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return profiles, int(math.Ceil(float64(len(profiles)) / float64(pageSize))), nil
+	return profiles, int(math.Ceil(float64(totalTutors) / float64(pageSize))), nil
 }
 
 //Returns subjectTaught for specific tutors using their ID
