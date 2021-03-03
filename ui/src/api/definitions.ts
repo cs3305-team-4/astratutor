@@ -180,3 +180,7 @@ export interface TurnCredentials {
   username: string;
   password: string;
 }
+
+export interface SubjectRequestDTO {
+  name: string;
+}
