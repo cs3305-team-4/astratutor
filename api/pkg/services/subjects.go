@@ -19,7 +19,7 @@ type Subject struct {
 type SubjectRequest struct {
 	database.Model
 	RequesterID uuid.UUID
-	Requester   Account `gorm:"foreignKey:RequesterId"`
+	Requester   Account `gorm:"foreignKey:RequesterID"`
 	Name        string  `gorm:"not null;"`
 	Status      SubjectRequestStatus
 	Reason      string
