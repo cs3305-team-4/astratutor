@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useState } from 'react';
 
 import 'antd/dist/antd.css';
 import { Layout, PageHeader, Button, Divider, Row, Col } from 'antd';
@@ -21,6 +21,9 @@ import './App.css';
 import { APIContext, useApiValues, PrivateRoute } from './api/api';
 
 import { useAsync } from 'react-async-hook';
+import { Profile } from './components/Profile';
+import { ProfileResponseDTO } from './api/definitions';
+import { UserAvatar } from './components/UserAvatar';
 
 const { Footer, Content } = Layout;
 
@@ -28,6 +31,7 @@ function App(): React.ReactElement {
   const history = useHistory();
   const api = useApiValues();
   const location = useLocation();
+  const [profile, setProfile] = useState<ProfileResponseDTO>();
 
   useAsync(async () => {
     try {
@@ -46,6 +50,7 @@ function App(): React.ReactElement {
           history.replace('/account/profile/create');
         }
       }
+      setProfile(await api.services.readProfileByAccountID(api.account.id, api.account?.type));
     }
   }, [api, location.pathname]);
 
@@ -53,7 +58,7 @@ function App(): React.ReactElement {
   if (!api.loginSilentFinished()) return <APIContext.Provider value={api}></APIContext.Provider>;
 
   let headerLinks: ReactElement[] = [];
-  if (api.isLoggedIn()) {
+  if (api.isLoggedIn() && profile) {
     headerLinks = [
       <Link to="/" key="home">
         <Button type="text">Home</Button>
@@ -68,9 +73,9 @@ function App(): React.ReactElement {
         <Button type="text">My Lessons</Button>
       </Link>,
       <Link to="/account/profile" key="account">
-        <Button type="primary">
-          <UserOutlined />
-          Account
+        <Button type="link">
+          <UserAvatar props={{ size: 20, style: { marginRight: 7 } }} profile={profile} />
+          {profile?.first_name} {profile?.last_name}
         </Button>
       </Link>,
       <Button key="logout" onClick={() => api.logout()}>

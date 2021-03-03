@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
+import { UserAvatar } from './UserAvatar';
 
 import {
   Typography,
@@ -19,10 +20,17 @@ import {
   message,
 } from 'antd';
 
-import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
+import {
+  LessonResponseDTO,
+  ProfileRequestDTO,
+  ProfileResponseDTO,
+  LessonRequestStage,
+  AccountType,
+} from '../api/definitions';
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
+import { Link } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -63,7 +71,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       key="enter classroom"
       style={{ margin: '0.2rem' }}
       onClick={() => {
-        history.push(`/lessons/${props.lesson.id}/classroom`);
+        history.push(`/lessons/${props.lesson.id}/lobby`);
       }}
     >
       Enter Classroom
@@ -238,7 +246,11 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       title={
         <>
           <Title level={5}>
-            <Avatar src={profile.avatar} size={96}></Avatar>
+            <Link
+              to={`/${api.account?.type === AccountType.Tutor ? 'students' : 'tutors'}/${profile.account_id}/profile`}
+            >
+              <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
+            </Link>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>
