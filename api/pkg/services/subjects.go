@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
@@ -139,15 +140,22 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 		subject_ids = append(subject_ids, subject.ID.String())
 	}
 
+	scopes := []func(*gorm.DB) *gorm.DB{}
+	for _, q := range strings.Split(query, " ") {
+		scopes = append(scopes, Search(SearchQuery{"profiles.first_name", q}, SearchQuery{"profiles.last_name", q}, SearchQuery{"profiles.country", q}, SearchQuery{"profiles.city", q}, SearchQuery{"profiles.description", q}))
+	}
+
 	var totalTutors int64
 	db.Model(&SubjectTaught{}).
 		Joins("JOIN profiles ON profiles.id = subject_taughts.tutor_profile_id").
 		Where("subject_taughts.subject_id IN (?)", subject_ids).
 		Scopes(
-			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}),
+			scopes...,
 		).
 		Distinct("tutor_profile_id").Count(&totalTutors)
 
+	scopes = append(scopes, Paginate(pageSize, page))
+	scopes = append(scopes, SortTutors(sort))
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
@@ -159,9 +167,7 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 		Preload("Subjects").Preload("Subjects.Subject").
 		Group("profiles.id").
 		Scopes(
-			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}),
-			Paginate(pageSize, page),
-			SortTutors(sort),
+			scopes...,
 		).
 		Find(&profiles).Error
 	if err != nil {
@@ -194,15 +200,22 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, sort string,
 		}
 	}
 
+	scopes := []func(*gorm.DB) *gorm.DB{}
+	for _, q := range strings.Split(query, " ") {
+		scopes = append(scopes, Search(SearchQuery{"profiles.first_name", q}, SearchQuery{"profiles.last_name", q}, SearchQuery{"profiles.country", q}, SearchQuery{"profiles.city", q}, SearchQuery{"profiles.description", q}, SearchQuery{"subjects.name", q}))
+	}
+
 	var totalTutors int64
 	db.Model(&SubjectTaught{}).
 		Joins("JOIN profiles ON profiles.id = subject_taughts.tutor_profile_id").
 		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
 		Scopes(
-			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
+			scopes...,
 		).
 		Distinct("tutor_profile_id").Count(&totalTutors)
 
+	scopes = append(scopes, Paginate(pageSize, page))
+	scopes = append(scopes, SortTutors(sort))
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
@@ -212,13 +225,10 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, sort string,
 		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
 		Group("profiles.id").
 		Scopes(
-			Search(SearchQuery{"profiles.first_name", query}, SearchQuery{"profiles.last_name", query}, SearchQuery{"profiles.country", query}, SearchQuery{"profiles.city", query}, SearchQuery{"profiles.description", query}, SearchQuery{"subjects.name", query}),
-			Paginate(pageSize, page),
-			SortTutors(sort),
+			scopes...,
 		).
 		Find(&profiles).
 		Error
-	fmt.Println(profiles)
 	if err != nil {
 		return nil, 0, err
 	}
