@@ -51,7 +51,7 @@ type SubjectTaughtRequestDTO struct {
 	Price       float32 `json:"price"`
 }
 
-// SubjectTaughtPriceUpdateRequestDTO represents a subject a Tutor wishes to update the description for
+// SubjectTaughtDescriptionUpdateRequestDTO represents a subject a Tutor wishes to update the description for
 type SubjectTaughtDescriptionUpdateRequestDTO struct {
 	Description string `json:"description"`
 }

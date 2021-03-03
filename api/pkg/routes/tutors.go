@@ -321,11 +321,6 @@ func handleTutorSubjectUpdateDescription(w http.ResponseWriter, r *http.Request)
 
 	var subjectTaughtUpdateRequest SubjectTaughtDescriptionUpdateRequestDTO
 
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
-
 	id, err := getUUID(r, "uuid")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
