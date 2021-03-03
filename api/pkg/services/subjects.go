@@ -367,3 +367,27 @@ func CreateSubjectTestAccounts() error {
 
 	return nil
 }
+
+// Request a subject to be added
+func RequestSubject(tutor *Account, name string) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	// Check if a subject matching this name is already in the database
+	var subject Subject
+	res := db.Where(&Subject{Name: name}).Find(&subject)
+	if res.Error != nil {
+		return err
+	}
+	if res.RowsAffected > 0 {
+		return fmt.Errorf("A subject matching that name already exists")
+	}
+
+	return db.Create(&SubjectRequest{
+		RequesterID: tutor.ID,
+		Name:        name,
+		Status:      SubjectRequestPending,
+	}).Error
+}
