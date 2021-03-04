@@ -13,6 +13,7 @@ func InjectReviewsRoutes(subrouter *mux.Router) {
 	subrouter.HandleFunc("/{tid}", handleReviewGetAll).Methods("GET")
 	subrouter.HandleFunc("/{tid}/average", handleReviewAverage).Methods("GET")
 	subrouter.HandleFunc("/{tid}/{rid}", handleReviewGetSingle).Methods("GET")
+	subrouter.HandleFunc("/{tid}/author/{sid}", handleReviewGetByStudent).Methods("GET")
 
 	authRoutes := subrouter.NewRoute().Subrouter()
 	authRoutes.Use(authRequired)
@@ -23,6 +24,7 @@ func InjectReviewsRoutes(subrouter *mux.Router) {
 	authRoutes.HandleFunc("/{tid}/{rid}", handleReviewDelete).Methods("DELETE")
 }
 
+//TODO(james): Pagination
 func handleReviewGetAll(w http.ResponseWriter, r *http.Request) {
 	tid, err := getUUID(r, "tid")
 	if err != nil {
@@ -64,6 +66,25 @@ func handleReviewGetSingle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	review, err := services.TutorSingleReview(tid, rid)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	WriteBody(w, r, review)
+}
+
+func handleReviewGetByStudent(w http.ResponseWriter, r *http.Request) {
+	tid, err := getUUID(r, "tid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	sid, err := getUUID(r, "sid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	review, err := services.TutorReviewByStudent(tid, sid)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

@@ -194,7 +194,15 @@ export interface ReviewDTO {
   created_at: string; // RFC3339 timestap
   rating: number;
   comment: string;
-  student_id: string;
+  student: ProfileMin;
+}
+
+export interface ProfileMin {
+  account_id: string;
+  avatar: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
 }
 
 export interface ReviewUpdateDTO {

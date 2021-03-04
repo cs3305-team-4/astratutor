@@ -5,6 +5,7 @@ import (
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Review struct {
@@ -12,8 +13,10 @@ type Review struct {
 	Rating  int    `gorm:"not null;check:rating >= 0; check:rating <= 5;"`
 	Comment string `gorm:""`
 
-	TutorProfileID   uuid.UUID `gorm:"type:uuid;index"`
-	StudentProfileID uuid.UUID `gorm:"type:uuid"`
+	TutorProfileID uuid.UUID `gorm:"type:uuid;index;uniqueIndex:tutor_student_single"`
+
+	StudentProfileID uuid.UUID `gorm:"type:uuid;uniqueIndex:tutor_student_single"`
+	Student          Profile   `gorm:"foreignKey:StudentProfileID;references:AccountID"`
 }
 
 type ReviewError string
@@ -34,11 +37,19 @@ type ReviewCreateDTO struct {
 }
 
 type ReviewDTO struct {
-	ID               uuid.UUID `json:"id" gorm:"type:uuid"`
-	CreatedAt        time.Time `json:"created_at"`
-	Rating           int       `json:"rating"`
-	Comment          string    `json:"comment"`
-	StudentProfileID uuid.UUID `json:"student_id" gorm:"type:uuid"`
+	ID                    uuid.UUID `json:"id" gorm:"type:uuid;column:id"`
+	CreatedAt             time.Time `json:"created_at"`
+	Rating                int       `json:"rating"`
+	Comment               string    `json:"comment"`
+	ProfileResponseDTOMin `json:"student" gorm:"EMBEDDED;EMBEDDED_PREFIX:profiles"`
+}
+
+type ProfileResponseDTOMin struct {
+	AccountID string `json:"account_id"`
+	Avatar    string `json:"avatar" validate:"omitempty"`
+	Slug      string `json:"slug"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 type ReviewUpdateDTO struct {
@@ -59,6 +70,11 @@ func CreateReview(review *Review) error {
 	return conn.Create(review).Error
 }
 
+func joinReviewProfile(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN profiles ON profiles.account_id = reviews.student_profile_id").
+		Select([]string{"reviews.*", "profiles.account_id", "profiles.avatar", "profiles.slug", "profiles.first_name", "profiles.last_name"})
+}
+
 func TutorAllReviews(id uuid.UUID) ([]ReviewDTO, error) {
 	conn, err := database.Open()
 	if err != nil {
@@ -66,9 +82,11 @@ func TutorAllReviews(id uuid.UUID) ([]ReviewDTO, error) {
 	}
 
 	var reviews []ReviewDTO
-	err = conn.Model(&Review{}).Where(&Review{
+	err = conn.Table("reviews").
+		Scopes(joinReviewProfile).
+		Order("reviews.created_at desc").Where(&Review{
 		TutorProfileID: id,
-	}).Find(&reviews).Error
+	}).Scan(&reviews).Error
 	return reviews, err
 }
 
@@ -82,7 +100,9 @@ func TutorSingleReview(tid uuid.UUID, rid uuid.UUID) (ReviewDTO, error) {
 	query := Review{}
 	query.ID = rid
 	query.TutorProfileID = tid
-	err = conn.Model(&Review{}).Where(&query).First(&review).Error
+	err = conn.Table("reviews").
+		Scopes(joinReviewProfile).
+		Where(&query).Limit(1).Scan(&review).Error
 	return review, err
 }
 
@@ -98,6 +118,22 @@ func TutorReviewsAverage(tid uuid.UUID) (ReviewAverageDTO, error) {
 	}).Select("avg(rating) as average").Row().Scan(&average.Average)
 
 	return average, err
+}
+
+func TutorReviewByStudent(tid uuid.UUID, sid uuid.UUID) (ReviewDTO, error) {
+	conn, err := database.Open()
+	if err != nil {
+		return ReviewDTO{}, err
+	}
+
+	var review ReviewDTO
+	query := Review{}
+	query.TutorProfileID = tid
+	query.StudentProfileID = sid
+	err = conn.Table("reviews").
+		Scopes(joinReviewProfile).
+		Where(&query).Limit(1).Scan(&review).Error
+	return review, err
 }
 
 func UpdateReviewRating(rid uuid.UUID, rating int, sid uuid.UUID) error {
