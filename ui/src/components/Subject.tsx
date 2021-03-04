@@ -9,6 +9,23 @@ import { SubjectDTO } from '../api/definitions';
 const { Title, Paragraph, Text } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
 
+const colors = [
+  '#ef25a4',
+  '#1c73cd',
+  '#05c760',
+  '#17eaaa',
+  '#bd00ff',
+  '#ff9a00',
+  '#8900ff',
+  '#d9534f',
+  '#5cb85c',
+  '#ff4d00',
+  '#ffc100',
+  '#00e6f9',
+  '#e51894',
+  '#29e518',
+  '#e56b18',
+];
 const StyledRow = styled(Row)<{ color: string }>`
   height: 100px;
   font-size: 1.5em;
@@ -31,9 +48,15 @@ export interface SubjectProps {
 
 export default function Subject(props: SubjectProps): ReactElement {
   return (
-    <Link to={`/subjects/tutors?filter=${props.subject.slug}`}>
+    <Link to={`/subjects/tutors?filter=${props.subject.slug}&sort=featured`}>
       <StyledRow
-        color={'#' + ('00000' + ((Math.random() * (1 << 24) - 40000) | 0).toString(16)).slice(-6)}
+        color={(() => {
+          let s = 0;
+          for (const i in props.subject.name.split('')) {
+            s += props.subject.name.charCodeAt(+i);
+          }
+          return colors[s % (colors.length - 1)];
+        })()}
         align="middle"
       >
         <Col span={24} style={{ padding: '20px' }}>
