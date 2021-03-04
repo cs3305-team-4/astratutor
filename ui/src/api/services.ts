@@ -239,10 +239,10 @@ export class Services {
     return (await res.json()) as TurnCredentials;
   }
 
-  async readSubjects(): Promise<SubjectDTO[]> {
-    const res = await fetchRest(`${config.apiUrl}/subjects`);
+  async readSubjects(query: string): Promise<SubjectDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects?query=${query}`);
 
-    return (await res.json()) as SubjectDTO[];
+    return await res.json();
   }
 
   async readTutors(

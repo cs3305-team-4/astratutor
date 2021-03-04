@@ -33,7 +33,7 @@ export default function Subject(props: SubjectProps): ReactElement {
   return (
     <Link to={`/subjects/tutors?filter=${props.subject.slug}`}>
       <StyledRow
-        color={'#' + ('00000' + ((Math.random() * (1 << 24) - 2000) | 0).toString(16)).slice(-6)}
+        color={'#' + ('00000' + ((Math.random() * (1 << 24) - 40000) | 0).toString(16)).slice(-6)}
         align="middle"
       >
         <Col span={24} style={{ padding: '20px' }}>

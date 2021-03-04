@@ -60,7 +60,7 @@ type TutorSubjects struct {
 }
 
 //gets all subjects in the DB
-func GetSubjects(db *gorm.DB) ([]Subject, error) {
+func GetSubjects(query string, db *gorm.DB) ([]Subject, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -69,7 +69,17 @@ func GetSubjects(db *gorm.DB) ([]Subject, error) {
 		}
 	}
 	var subject []Subject
-	return subject, db.Find(&subject).Error
+	err := db.
+		Scopes(
+			Search(SearchQuery{"name", query}),
+		).
+		Find(&subject).
+		Error
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(subject, query)
+	return subject, nil
 }
 
 // returns a subject when given a subjects slug

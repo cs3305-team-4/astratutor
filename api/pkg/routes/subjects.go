@@ -106,7 +106,9 @@ func SubjectsToDTO(subjects []services.Subject) []SubjectResponseDTO {
 
 //returns all subjects
 func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
-	serviceSubjects, err := services.GetSubjects(nil)
+	q := r.URL.Query()
+	query := q.Get("query")
+	serviceSubjects, err := services.GetSubjects(query, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

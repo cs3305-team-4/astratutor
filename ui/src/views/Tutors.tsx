@@ -94,7 +94,7 @@ export function Tutors(): ReactElement {
       setSort(query.get('sort') ?? '');
     }
 
-    setSubjects(await api.services.readSubjects());
+    setSubjects(await api.services.readSubjects(''));
   }, []);
 
   // Called every tune dependencies change
