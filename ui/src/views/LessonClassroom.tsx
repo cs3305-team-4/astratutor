@@ -491,7 +491,7 @@ export function LessonClassroom(): ReactElement {
 
   const hangup = () => {
     handler.current?.close();
-    settings.webcamStream?.getVideoTracks().forEach((v) => {
+    settings.webcamStream?.getTracks().forEach((v) => {
       v.stop();
     });
     signalling?.send(MESSAGE_TYPE.LEAVE, '', api.account?.id);

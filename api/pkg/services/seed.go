@@ -74,16 +74,24 @@ func RandomizeProfile(account *Account) {
 	var workExperience []WorkExperience
 	availability := make(Availability, 168)
 	if account.Type == Tutor {
-		for s := 1; s < rand.Intn(4)+1; s++ {
-			subjectsTaught = append(subjectsTaught, SubjectTaught{
+		for s := 1; s < rand.Intn(4)+2; s++ {
+		createNew:
+			subject := SubjectTaught{
 				Subject:     subjects[rand.Intn(len(subjects))],
 				Description: CreateDesc(300),
 				Price:       float32(rand.Intn(30) + 20),
-			})
+			}
+			// Ensure tutor isnt already teaching this subject
+			for _, subjectTaught := range subjectsTaught {
+				if subjectTaught.Subject == subject.Subject {
+					goto createNew
+				}
+			}
+			subjectsTaught = append(subjectsTaught, subject)
 		}
 
 		// Generate random qualifications
-		for q := 1; q < rand.Intn(6)+1; q++ {
+		for q := 1; q < rand.Intn(6)+2; q++ {
 			qualifications = append(qualifications, Qualification{
 				Field:    seedSubjects[rand.Intn(len(seedSubjects))],
 				Degree:   seedDegrees[rand.Intn(len(seedDegrees))],
@@ -225,6 +233,9 @@ func SeedDatabase() error {
 		return err
 	}
 
+	// Setting a fixed seed so that seeding is derterministic
+	rand.Seed(2131287698123)
+
 	// Create Subjects
 	log.Info("Seeding Subjects...")
 	for s := 0; s < len(seedSubjects); s++ {
@@ -327,7 +338,7 @@ func SeedDatabase() error {
 	// Create lessons between students and tutors
 	log.Info("Seeding lessons...")
 	for i, tutor := range tutors {
-		for l := 5; l < rand.Intn(6)+5; l++ {
+		for l := 5; l < rand.Intn(6)+6; l++ {
 			id := uuid.MustParse("11111111-1111-1111-1111-" + fmt.Sprintf("%012d", l+((i+1)*10)))
 			student := students[rand.Intn(len(students))]
 
@@ -360,5 +371,7 @@ func SeedDatabase() error {
 
 	db.CreateInBatches(lessons, 20)
 
+	// Setting seed to be current time so that rand is no longer deterministic
+	rand.Seed(time.Now().UnixNano())
 	return nil
 }
