@@ -121,6 +121,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const [reviews, setReviews] = React.useState<ReviewDTO[] | undefined>(undefined);
   const [loggedInReview, setLoggedInReview] = React.useState<ReviewDTO | undefined>(undefined);
   const [editReview, setEditReview] = React.useState<ReviewDTO | undefined>(undefined);
+  const [form] = Form.useForm();
 
   const reviewByLoggedInStudent = async (): Promise<ReviewDTO | undefined> => {
     if (api.account?.type !== AccountType.Student) return;
@@ -871,6 +872,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   content={
                     <>
                       <Form
+                        form={form}
                         onFinish={async (values: { rating: number; comment: string }) => {
                           if (loggedInReview) {
                             // Edit
@@ -878,7 +880,6 @@ export function Profile(props: ProfileProps): React.ReactElement {
                               const res = await api.services.tutorReviewUpdateComment(props.uuid, loggedInReview.id, {
                                 comment: values.comment,
                               });
-                              console.log(res);
                               if (res === 200) {
                                 message.success('Successfully updated comment');
                               } else {
@@ -909,9 +910,21 @@ export function Profile(props: ProfileProps): React.ReactElement {
                           }
                           await reloadProfile();
                         }}
-                        initialValues={{ rating: loggedInReview?.rating, comment: loggedInReview?.comment }}
+                        initialValues={{ rating: loggedInReview?.rating || 0, comment: loggedInReview?.comment || '' }}
                       >
-                        <Form.Item name="rating" rules={[{ required: true, message: 'Please include a rating' }]}>
+                        <Form.Item
+                          name="rating"
+                          rules={[
+                            { required: true, message: 'Please include a rating' },
+                            {
+                              validator: async (rule, value) => {
+                                if (value > 5 || value < 1) {
+                                  throw new Error('Please set a rating');
+                                }
+                              },
+                            },
+                          ]}
+                        >
                           <Rate className="review" />
                         </Form.Item>
                         <Form.Item name="comment">
@@ -933,6 +946,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                                     message.error('Failed to delete review');
                                   }
                                   await reloadProfile();
+                                  form.resetFields();
                                 }}
                               >
                                 Delete Review
