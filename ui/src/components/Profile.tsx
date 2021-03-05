@@ -371,14 +371,13 @@ export function Profile(props: ProfileProps): React.ReactElement {
               {!editSubtitle ? (
                 <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{profile.subtitle}</Paragraph>
               ) : (
-                <TextArea
-                  maxLength={100}
+                <input
+                  maxLength={300}
                   onChange={(ev) => {
                     setNewSubtitle(ev.target.value);
                   }}
                   style={{ minHeight: '240px', margin: '0.5rem 0' }}
                   value={newSubtitle}
-                  size="small"
                 />
               )}
             </Title>

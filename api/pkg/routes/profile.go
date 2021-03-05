@@ -23,7 +23,7 @@ type ProfileRequestDTO struct {
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
 	Country     string `json:"country" validate:"required"`
-	Subtitle    string `json:"subtitle" validate:"omitempty,lte=100"`
+	Subtitle    string `json:"subtitle" validate:"omitempty,lte=300"`
 	Description string `json:"description" validate:"omitempty,lte=1000"`
 }
 
@@ -37,7 +37,7 @@ type ProfileResponseDTO struct {
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
 	Country     string `json:"country" validate:"required"`
-	Subtitle    string `json:"subtitle" validate:"omitempty,lte=100"`
+	Subtitle    string `json:"subtitle" validate:"omitempty,lte=300"`
 	Description string `json:"description" validate:"omitempty,lte=1000"`
 	Color       string `json:"color" validate:"required"`
 }
