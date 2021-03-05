@@ -284,21 +284,25 @@ export class Services {
     return (await res.json()) as TurnCredentials;
   }
 
-  async readSubjects(): Promise<SubjectDTO[]> {
-    const res = await fetchRest(`${config.apiUrl}/subjects`);
+  async readSubjects(query: string): Promise<SubjectDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects?query=${query}`);
 
-    return (await res.json()) as SubjectDTO[];
+    return await res.json();
   }
 
   async readTutors(
     page: number,
     pageSize: number,
     filters?: string[],
+    query?: string,
+    sort?: string,
   ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
     // const url = filters
     //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
     //   : `${config.apiUrl}/subjects/tutors`;
-    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(',')}`;
+    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(
+      ',',
+    )}&query=${query}&sort=${sort}`;
     const res = await fetchRest(url);
 
     return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;

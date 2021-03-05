@@ -161,6 +161,13 @@ export function LessonLobby(): ReactElement {
       setWebcamStream(stream);
     }
   }, []);
+  useEffect(() => {
+    return () => {
+      webcamStream?.getTracks().forEach((v) => {
+        v.stop();
+      });
+    };
+  }, [webcamStream]);
 
   useAsync(async () => {
     if (webcamStream) {

@@ -42,6 +42,9 @@ type TutorSubjectsResponseDTO struct {
 	Avatar      string             `json:"avatar" validate:"omitempty,base64"`
 	Slug        string             `json:"slug" validate:"len=0"`
 	Description string             `json:"description"`
+	Color       string             `json:"color"`
+	City        string             `json:"city"`
+	Country     string             `json:"country"`
 	Subjects    []SubjectTaughtDTO `json:"subjects"`
 }
 
@@ -71,6 +74,9 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 			Avatar:      profile.Avatar,
 			Slug:        profile.Slug,
 			Description: profile.Description,
+			Color:       profile.Color,
+			City:        profile.City,
+			Country:     profile.Country,
 			Subjects:    SubjectsTuaghtToDTO(&profile.Subjects),
 		})
 	}
@@ -118,7 +124,9 @@ func SubjectsToDTO(subjects []services.Subject) []SubjectResponseDTO {
 
 //returns all subjects
 func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
-	serviceSubjects, err := services.GetSubjects(nil)
+	q := r.URL.Query()
+	query := q.Get("query")
+	serviceSubjects, err := services.GetSubjects(query, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -135,6 +143,8 @@ func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
 func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
+	query := q.Get("query")
+	sort := q.Get("sort")
 
 	pageSize, err := strconv.Atoi(q.Get("page_size"))
 	if err != nil || pageSize <= 0 {
@@ -152,7 +162,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, nil)
+		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, query, sort, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
@@ -165,7 +175,7 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, page)
+		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, query, sort, page)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return

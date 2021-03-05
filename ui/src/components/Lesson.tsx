@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
+import { UserAvatar } from './UserAvatar';
 
 import {
   Typography,
@@ -19,10 +20,17 @@ import {
   message,
 } from 'antd';
 
-import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
+import {
+  LessonResponseDTO,
+  ProfileRequestDTO,
+  ProfileResponseDTO,
+  LessonRequestStage,
+  AccountType,
+} from '../api/definitions';
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
+import { Link } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -58,17 +66,6 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   };
 
   const buttons = [];
-  buttons.push(
-    <Button
-      key="enter classroom"
-      style={{ margin: '0.2rem' }}
-      onClick={() => {
-        history.push(`/lessons/${props.lesson.id}/classroom`);
-      }}
-    >
-      Enter Classroom
-    </Button>,
-  );
 
   const requestPendingButton = (
     <>
@@ -229,6 +226,19 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       }
       break;
     case LessonRequestStage.Accepted:
+      buttons.push(
+        <Button
+          ghost
+          type="primary"
+          key="enter classroom"
+          style={{ margin: '0.2rem' }}
+          onClick={() => {
+            history.push(`/lessons/${props.lesson.id}/lobby`);
+          }}
+        >
+          Enter Classroom
+        </Button>,
+      );
       // Once the lesson is accepted either party can cancel or reschedule a lesson
       buttons.push(cancelButton, rescheduleButton);
   }
@@ -238,7 +248,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       title={
         <>
           <Title level={5}>
-            <Avatar src={profile.avatar} size={96}></Avatar>
+            <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>
@@ -263,7 +273,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
             />
           </Col>
         </Row>,
-        <Row key="buttons" gutter={16} align="top" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
+        <Row key="buttons" gutter={16} align="bottom" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
           {buttons}
         </Row>,
       ]}
