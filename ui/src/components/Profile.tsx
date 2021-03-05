@@ -917,7 +917,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                           rules={[
                             { required: true, message: 'Please include a rating' },
                             {
-                              validator: async (rule, value) => {
+                              validator: async (_rule, value) => {
                                 if (value > 5 || value < 1) {
                                   throw new Error('Please set a rating');
                                 }
@@ -960,10 +960,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 />
               )}
               <List
-                dataSource={reviews?.filter((review) => {
-                  // return review.student.account_id != api.account?.id;
-                  return true;
-                })}
+                dataSource={reviews}
                 renderItem={(item) => (
                   <Comment
                     author={`${item.student.first_name} ${item.student.last_name}`}
