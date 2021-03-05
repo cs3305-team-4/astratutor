@@ -62,8 +62,8 @@ export function Tutors(): ReactElement {
     if (newPage > 1) {
       queries.push(`page=${newPage}`);
     }
-    if (pageSize !== 10) {
-      queries.push(`page_size=${pageSize}`);
+    if (newPageSize !== 10) {
+      queries.push(`page_size=${newPageSize}`);
     }
     if (newQuery.length > 0) {
       queries.push(`query=${newQuery}`);
@@ -81,10 +81,10 @@ export function Tutors(): ReactElement {
       setFilters((query.get('filter') ?? '').split(','));
     }
     if (query.has('page')) {
-      setCurrentPage(+(query.get('page') ?? 0));
+      setCurrentPage(+(query.get('page') ?? 1));
     }
     if (query.has('page_size')) {
-      setPageSize(+(query.get('page_size') ?? 0));
+      setPageSize(+(query.get('page_size') ?? 10));
     }
     if (query.has('query')) {
       setSearch(query.get('query') ?? '');

@@ -78,7 +78,6 @@ func GetSubjects(query string, db *gorm.DB) ([]Subject, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(subject, query)
 	return subject, nil
 }
 

@@ -248,11 +248,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       title={
         <>
           <Title level={5}>
-            <Link
-              to={`/${api.account?.type === AccountType.Tutor ? 'students' : 'tutors'}/${profile.account_id}/profile`}
-            >
-              <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
-            </Link>
+            <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>

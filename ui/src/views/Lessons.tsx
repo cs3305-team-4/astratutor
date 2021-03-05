@@ -75,12 +75,18 @@ export function Lessons(): React.ReactElement {
         <Menu selectedKeys={[menu]} mode="inline">
           <Menu.Item
             disabled={
-              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.Requested)
-                .length === 0
+              Object.values(lessonProps).filter(
+                (v) =>
+                  v.lesson.request_stage === LessonRequestStage.Requested ||
+                  v.lesson.request_stage === LessonRequestStage.Rescheduled,
+              ).length === 0
             }
             title={
-              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.Requested)
-                .length === 0
+              Object.values(lessonProps).filter(
+                (v) =>
+                  v.lesson.request_stage === LessonRequestStage.Requested ||
+                  v.lesson.request_stage === LessonRequestStage.Rescheduled,
+              ).length === 0
                 ? 'No requests right now!'
                 : ''
             }
@@ -92,7 +98,11 @@ export function Lessons(): React.ReactElement {
               style={{ background: '#1890ff' }}
               offset={[60, 7]}
               count={
-                Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.Requested).length
+                Object.values(lessonProps).filter(
+                  (v) =>
+                    v.lesson.request_stage === LessonRequestStage.Requested ||
+                    v.lesson.request_stage === LessonRequestStage.Rescheduled,
+                ).length
               }
             >
               Requests
