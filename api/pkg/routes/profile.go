@@ -129,6 +129,7 @@ func dtoFromProfile(p *services.Profile, accountType services.AccountType) inter
 				LastName:    p.LastName,
 				City:        p.City,
 				Country:     p.Country,
+				Subtitle:    p.Subtitle,
 				Description: p.Description,
 				Color:       p.Color,
 			},

@@ -220,6 +220,18 @@ export function Profile(props: ProfileProps): React.ReactElement {
     }
   };
 
+  const commitSubtitle = async (Subtitle: string) => {
+    try {
+      await api.services.updateSubtitleOnProfileID(props.uuid, props.type, Subtitle);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set subtitle: ${e}`,
+      });
+    }
+  };
+
   const commitSubPrice = async (price: SubjectTaughtPriceUpdateRequestDTO) => {
     try {
       await api.services.updateSubjectPriceOnProfileID(props.uuid, TutorSubjectID, props.type, price);
@@ -337,17 +349,16 @@ export function Profile(props: ProfileProps): React.ReactElement {
             </div>
             {`${profile.first_name} ${profile.last_name}`}
             <Title level={5} style={{ fontWeight: 300, margin: '0 0 0.5rem 0' }}>
-              {!editSubtitle ? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' : <Input size="large" />}
               <Button
                 hidden={!isSelf}
                 onClick={async () => {
-                  if (editDesc === false) {
+                  if (editSubtitle === false) {
                     setNewSubtitle(profile.subtitle);
                   } else {
-                    // await commitSubtitle();
+                    await commitSubtitle(newSubtitle);
                   }
 
-                  setEditSubtitle(!editSubtitle);
+                  setEditSubtitle(editSubtitle ? false : true);
                 }}
                 size="small"
                 style={{ margin: '0 0.5rem' }}
@@ -356,6 +367,19 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 <EditOutlined />
                 {!editSubtitle ? 'Edit' : 'Finish'}
               </Button>
+              {!editSubtitle ? (
+                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{profile.subtitle}</Paragraph>
+              ) : (
+                <TextArea
+                  maxLength={100}
+                  onChange={(ev) => {
+                    setNewSubtitle(ev.target.value);
+                  }}
+                  style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                  value={newSubtitle}
+                  size="small"
+                />
+              )}
             </Title>
             {props.type === AccountType.Tutor && (
               <Content style={{ display: 'flex', flexWrap: 'wrap' }}>
