@@ -165,17 +165,25 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 		Distinct("tutor_profile_id").Count(&totalTutors)
 
 	scopes = append(scopes, Paginate(pageSize, page))
-	scopes = append(scopes, SortTutors(sort))
-	// Get tutors who are teaching subjects paginated
+	asc := ""
+	switch sort {
+	case "low":
+		asc = "asc"
+	case "high":
+		asc = "desc"
+	}
+	scopes = append(scopes, Sort("AVG( subject_taughts.price )", asc, Join{
+		new:     Table{"subject_taughts", "tutor_profile_id"},
+		current: Table{"profiles", "id"},
+	}))
+	// Get tutors who are teaching subjects paginated,
 	var profiles []Profile
 	err := db.
 		Where("profiles.id IN (?)",
 			db.Model(&SubjectTaught{}).
 				Where("subject_id IN (?)", subject_ids).
 				Select("tutor_profile_id")).
-		Joins("JOIN subject_taughts ON subject_taughts.tutor_profile_id = profiles.id").
 		Preload("Subjects").Preload("Subjects.Subject").
-		Group("profiles.id").
 		Scopes(
 			scopes...,
 		).
@@ -225,15 +233,28 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, sort string,
 		Distinct("tutor_profile_id").Count(&totalTutors)
 
 	scopes = append(scopes, Paginate(pageSize, page))
-	scopes = append(scopes, SortTutors(sort))
+	asc := ""
+	switch sort {
+	case "low":
+		asc = "asc"
+	case "high":
+		asc = "desc"
+	}
+	scopes = append(scopes, Sort("AVG( subject_taughts.price )", asc,
+		Join{
+			new:     Table{"subject_taughts", "tutor_profile_id"},
+			current: Table{"profiles", "id"},
+		},
+		Join{
+			new:     Table{"subjects", "id"},
+			current: Table{"subject_taughts", "subject_id"},
+		},
+	))
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
 		Where("profiles.id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
-		Joins("JOIN subject_taughts ON subject_taughts.tutor_profile_id = profiles.id").
-		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
-		Group("profiles.id").
 		Scopes(
 			scopes...,
 		).

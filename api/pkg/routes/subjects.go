@@ -125,7 +125,7 @@ func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
 func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
-	query := q.Get("q")
+	query := q.Get("query")
 	sort := q.Get("sort")
 
 	pageSize, err := strconv.Atoi(q.Get("page_size"))

@@ -257,7 +257,7 @@ export class Services {
     //   : `${config.apiUrl}/subjects/tutors`;
     const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(
       ',',
-    )}&q=${query}&sort=${sort}`;
+    )}&query=${query}&sort=${sort}`;
     const res = await fetchRest(url);
 
     return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
