@@ -110,7 +110,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
       setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
-      setSubjects(await api.services.readSubjects());
+      setSubjects(await api.services.readSubjects(''));
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -376,7 +376,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   onChange={(ev) => {
                     setNewSubtitle(ev.target.value);
                   }}
-                  style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                  style={{ minHeight: '50px', minWidth: '800px', margin: '0.5rem 0' }}
                   value={newSubtitle}
                 />
               )}
