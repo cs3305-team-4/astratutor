@@ -13,9 +13,9 @@ type Review struct {
 	Rating  int    `gorm:"not null;check:rating >= 0; check:rating <= 5;"`
 	Comment string `gorm:""`
 
-	TutorProfileID uuid.UUID `gorm:"type:uuid;index;uniqueIndex:tutor_student_single"`
+	TutorProfileID uuid.UUID `gorm:"type:uuid;index"`
 
-	StudentProfileID uuid.UUID `gorm:"type:uuid;uniqueIndex:tutor_student_single"`
+	StudentProfileID uuid.UUID `gorm:"type:uuid;index"`
 	Student          Profile   `gorm:"foreignKey:StudentProfileID;references:AccountID"`
 }
 
@@ -29,10 +29,11 @@ const (
 	ReviewErrorTutorNotFound     ReviewError = "Tutor account does not exist"
 	ReviewErrorNoCompletedLesson ReviewError = "Student has not completed a lesson with this tutor"
 	ReviewErrorStudentsOnly      ReviewError = "Only students can review tutors"
+	ReviewErrorOnce              ReviewError = "You can onyl review a tutor once"
 )
 
 type ReviewCreateDTO struct {
-	Rating  int    `json:"rating" validate:"required,gte=0,lte=5"`
+	Rating  int    `json:"rating" validate:"required,gte=1,lte=5"`
 	Comment string `json:"comment"`
 }
 
@@ -66,6 +67,10 @@ func CreateReview(review *Review) error {
 	if err != nil {
 		return err
 	}
+	query := conn.Debug().Model(&Review{}).Where(review)
+	if query.RowsAffected != 0 {
+		return ReviewErrorOnce
+	}
 
 	return conn.Create(review).Error
 }
@@ -83,10 +88,12 @@ func TutorAllReviews(id uuid.UUID) ([]ReviewDTO, error) {
 
 	var reviews []ReviewDTO
 	err = conn.Table("reviews").
+		Debug().
 		Scopes(joinReviewProfile).
+		Where("reviews.deleted_at IS NULL").
 		Order("reviews.created_at desc").Where(&Review{
 		TutorProfileID: id,
-	}).Scan(&reviews).Error
+	}).Find(&reviews).Error
 	return reviews, err
 }
 
@@ -101,8 +108,9 @@ func TutorSingleReview(tid uuid.UUID, rid uuid.UUID) (ReviewDTO, error) {
 	query.ID = rid
 	query.TutorProfileID = tid
 	err = conn.Table("reviews").
+		Where("reviews.deleted_at IS NULL").
 		Scopes(joinReviewProfile).
-		Where(&query).Limit(1).Scan(&review).Error
+		Where(&query).Limit(1).Find(&review).Error
 	return review, err
 }
 
@@ -131,8 +139,9 @@ func TutorReviewByStudent(tid uuid.UUID, sid uuid.UUID) (ReviewDTO, error) {
 	query.TutorProfileID = tid
 	query.StudentProfileID = sid
 	err = conn.Table("reviews").
+		Where("reviews.deleted_at IS NULL").
 		Scopes(joinReviewProfile).
-		Where(&query).Limit(1).Scan(&review).Error
+		Where(&query).Limit(1).Find(&review).Error
 	return review, err
 }
 
