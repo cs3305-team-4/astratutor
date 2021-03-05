@@ -282,6 +282,7 @@ type Profile struct {
 	LastName       string
 	City           string
 	Country        string
+	Subtitle       string
 	Description    string
 	Color          string
 	Subjects       []SubjectTaught  `gorm:"foreignKey:TutorProfileID"`

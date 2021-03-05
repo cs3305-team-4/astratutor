@@ -152,6 +152,16 @@ export class Services {
     });
   }
 
+  async updateSubtitleOnProfileID(profileId: string, accountType: AccountType, subtitle: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/profile/subtitle`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        value: subtitle,
+      }),
+    });
+  }
+
   async updateSubjectDescriptionOnProfileID(
     profileId: string,
     subjectTaughtID: string,
