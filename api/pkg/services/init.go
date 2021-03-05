@@ -19,7 +19,7 @@ func init() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Could not read config file %s\n", err))
+		panic(fmt.Errorf("could not read config file %s\n", err))
 	}
 
 Conn:

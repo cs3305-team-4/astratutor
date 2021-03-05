@@ -58,7 +58,7 @@ export function Account(): React.ReactElement {
             <Row>
               <Col md={9} sm={6} xs={0} />
               <Col md={24} sm={24} xs={24} style={{ padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                {api.isLoggedIn() && <CreateProfileForm type={api.account.type} />}
+                {api.isLoggedIn() && <CreateProfileForm />}
               </Col>
               <Col md={9} sm={6} xs={0} />
             </Row>

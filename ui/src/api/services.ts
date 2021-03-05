@@ -1,3 +1,5 @@
+import { PaymentMethod } from '@stripe/stripe-js';
+
 import config from '../config';
 import { fetchRest } from './rest';
 import {
@@ -16,10 +18,19 @@ import {
   SubjectDTO,
   SubjectTaughtDTO,
   TutorSubjectsDTO,
-  TutorBillingOnboardURLResponseDTO,
-  TutorBillingPanelURLResponseDTO,
+  BillingTutorOnboardURLResponseDTO,
+  BillingTutorPanelURLResponseDTO,
   LessonCancelRequestDTO,
   LessonRescheduleRequestDTO,
+  BillingLessonPaymentIntentSecretResponseDTO,
+  BillingCardSetupSessionRequestDTO,
+  BillingCardSetupSessionResponseDTO,
+  BillingCardsResponseDTO,
+  BillingPayeePayment,
+  BillingPayerPayment,
+  BillingPayeesPaymentsResponseDTO,
+  BillingPayersPaymentsResponseDTO,
+  BillingPayoutInfoResponseDTO,
 } from './definitions';
 
 export class Services {
@@ -187,12 +198,12 @@ export class Services {
     return (await res.json()) as LessonResponseDTO;
   }
 
-  async updateLessonStageAccept(lesson_id: string): Promise<void> {
-    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/accept`, {
+  async updateLessonStagePaymentRequired(lesson_id: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/payment-required`, {
       headers: this.headers,
       method: 'POST',
       body: JSON.stringify({
-        stage_detail: 'Lesson accepted',
+        stage_detail: 'Lesson payment requested',
       }),
     });
   }
@@ -236,7 +247,7 @@ export class Services {
     return (await res.json()) as TutorSubjectsDTO[];
   }
 
-  async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
+  async readSubjectsTaughtByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
     const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
     return (await res.json()) as SubjectTaughtDTO[];
   }
@@ -251,7 +262,7 @@ export class Services {
       [200, 404],
     );
 
-    if (res.status == 200) {
+    if (res.status === 200) {
       return true;
     } else {
       return false;
@@ -268,7 +279,7 @@ export class Services {
       [200, 404],
     );
 
-    if (res.status == 200) {
+    if (res.status === 200) {
       return true;
     } else {
       return false;
@@ -281,7 +292,7 @@ export class Services {
       method: 'GET',
     });
 
-    return ((await res.json()) as TutorBillingOnboardURLResponseDTO).url;
+    return ((await res.json()) as BillingTutorOnboardURLResponseDTO).url;
   }
 
   async readTutorBillingPanelUrl(account_id: string): Promise<string> {
@@ -290,6 +301,94 @@ export class Services {
       method: 'GET',
     });
 
-    return ((await res.json()) as TutorBillingPanelURLResponseDTO).url;
+    return ((await res.json()) as BillingTutorPanelURLResponseDTO).url;
+  }
+
+  // async createLessonPaymenCheckoutSession(lesson_id: string): Promise<string> {
+  //   const res = await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/checkout-session`, {
+  //     headers: this.headers,
+  //     method: 'POST',
+  //   });
+
+  //   return ((await res.json()) as LessonPaymentCheckoutSessionResponseDTO).id;
+  // }
+
+  async readLessonBillingPaymentIntentSecret(lesson_id: string): Promise<string> {
+    const res = await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/payment-intent-secret`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as BillingLessonPaymentIntentSecretResponseDTO).id;
+  }
+
+  async updateLessonStageScheduled(lesson_id: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/schedule`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        stage_detail: 'Lesson scheduled',
+      }),
+    });
+  }
+
+  async createCardSetupSession(account_id: string, paths: BillingCardSetupSessionRequestDTO): Promise<string> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/card-setup-session`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(paths),
+    });
+
+    return ((await res.json()) as BillingCardSetupSessionResponseDTO).id;
+  }
+
+  async readCardsByAccount(account_id: string): Promise<PaymentMethod[]> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/cards`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as BillingCardsResponseDTO).cards;
+  }
+
+  async deleteCardByAccount(account_id: string, payment_method_id: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/cards/${payment_method_id}`, {
+      headers: this.headers,
+      method: 'DELETE',
+    });
+  }
+
+  async createPayout(account_id: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/payout`, {
+      headers: this.headers,
+      method: 'POST',
+    });
+  }
+
+  async readPayoutInfo(account_id: string): Promise<BillingPayoutInfoResponseDTO> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/payout-info`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return (await res.json()) as BillingPayoutInfoResponseDTO;
+  }
+
+  async readPayeesPayments(account_id: string): Promise<BillingPayeePayment[]> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/payees-payments`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as BillingPayeesPaymentsResponseDTO).payments;
+  }
+
+  async readPayersPayments(account_id: string): Promise<BillingPayerPayment[]> {
+    const res = await fetchRest(`${config.apiUrl}/accounts/${account_id}/billing/payers-payments`, {
+      headers: this.headers,
+      method: 'GET',
+    });
+
+    return ((await res.json()) as BillingPayersPaymentsResponseDTO).payments;
   }
 }

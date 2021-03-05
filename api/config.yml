@@ -7,7 +7,11 @@ database:
   password: grindsapp
   database: grindsapp
   port: 5432
+ui:
+  base_url: "https://grindsapp.netsoc.cloud"
 billing:
+  allow_instance_payouts: true
+  profit_margin: 16
   stripe:
     publishable_key: pk_test_51ILSkYKHbgvdgLLAjc8dIh9ectl7gFQA0YbaohGIIVTAt21u2occaDi8MaKo0m30spgfiIrLmVgPNXoBWccmU5dZ00AJURLb0q
     secret_key: sk_test_51ILSkYKHbgvdgLLA7GvSL7nEqa3byPMguk4Q4o0CXbV7hCzv4lSRetaEdz37yqHmX0Ep2lLDuofoDztto9rHcfB600mxs4cP9d

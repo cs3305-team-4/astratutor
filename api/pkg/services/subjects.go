@@ -41,21 +41,24 @@ type SubjectTaught struct {
 	Subject   Subject `gorm:"foreignKey:SubjectID"`
 	SubjectID uuid.UUID
 
-	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
-	TutorProfileID uuid.UUID
+	Tutor   Account `gorm:"foreignKey:TutorID"`
+	TutorID uuid.UUID
 
-	Description string  `gorm:"not null;"`
-	Price       float32 `gorn:"not null;"`
+	TutorProfile   Profile   `gorm:"foreignKey:TutorProfileID"`
+	TutorProfileID uuid.UUID // Foreign key for the Profile table
+
+	Description string `gorm:"not null;"`
+	Price       int64  `gorn:"not null;"`
 }
 
-type TutorSubjects struct {
-	database.Model
+// type TutorSubjects struct {
+// 	database.Model
 
-	TutorProfile   Profile `gorm:"foreignKey:TutorProfileID"`
-	TutorProfileID uuid.UUID
+// 	Tutor   Profile `gorm:"foreignKey:TutorID"`
+// 	TutorID uuid.UUID
 
-	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
-}
+// 	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
+// }
 
 //gets all subjects in the DB
 func GetSubjects(db *gorm.DB) ([]Subject, error) {
@@ -168,7 +171,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 		}
 	}
 	subjectTaught := &SubjectTaught{}
-	return subjectTaught, db.Where(&SubjectTaught{Model: database.Model{ID: stid}}).Find(&subjectTaught).Error
+	return subjectTaught, db.Preload("TutorProfile").Where(&SubjectTaught{Model: database.Model{ID: stid}}).Find(&subjectTaught).Error
 }
 
 //Returns all subjectTaught
@@ -218,11 +221,11 @@ func GetSubjectsTaughtByTutorID(tpid uuid.UUID, db *gorm.DB, preloads ...string)
 	}
 
 	var subjectTaught []SubjectTaught
-	return subjectTaught, db.Where(&SubjectTaught{TutorProfileID: tpid}).Find(&subjectTaught).Error
+	return subjectTaught, db.Where(&SubjectTaught{TutorID: tpid}).Find(&subjectTaught).Error
 }
 
 //creats a StudentTaught based on the subject and tutor with a set price description.
-func TeachSubject(subject *Subject, tutor *Account, description string, price float32, db *gorm.DB) error {
+func TeachSubject(subject *Subject, tutor *Account, description string, price int64, db *gorm.DB) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -242,9 +245,9 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price fl
 		}
 
 		err = tx.Create(&SubjectTaught{
-			Subject:      *subject,
-			TutorProfile: *tutor.Profile,
-			Price:        price,
+			Subject: *subject,
+			Tutor:   *tutor,
+			Price:   price,
 		}).Error
 
 		if err != nil {

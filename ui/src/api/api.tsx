@@ -53,9 +53,15 @@ export function useApiValues(): APIContextValues {
           const claims = jwt_decode(jwt) as AuthClaims;
 
           const services = new Services(jwt);
-          const account = await services.readAccountByID(claims.sub);
+          let account = undefined;
 
-          window.localStorage.setItem('auth-jwt', jwt);
+          try {
+            account = await services.readAccountByID(claims.sub);
+            window.localStorage.setItem('auth-jwt', jwt);
+          } catch (e) {
+            window.location.href = '/';
+            window.localStorage.removeItem('auth-jwt');
+          }
 
           setAuthValues({
             claims,

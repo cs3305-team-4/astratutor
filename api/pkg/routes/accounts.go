@@ -8,6 +8,8 @@ import (
 
 	"github.com/cs3305-team-4/api/pkg/services"
 	"github.com/gorilla/mux"
+
+	stripe "github.com/stripe/stripe-go/v72"
 )
 
 func InjectAccountsRoutes(subrouter *mux.Router) {
@@ -26,7 +28,13 @@ func InjectAccountsRoutes(subrouter *mux.Router) {
 	accountResource.HandleFunc("/billing/tutor-onboard-url", handleTutorBillingGetOnboardURL).Methods("GET")
 	accountResource.HandleFunc("/billing/tutor-requirements-met", handleTutorBillingGetRequirementsMet).Methods("GET")
 	accountResource.HandleFunc("/billing/tutor-panel-url", handleTutorBillingGetPanelURL).Methods("GET")
-	accountResource.HandleFunc("/billing/payouts", handleTutorBillingCreatePayout).Methods("POST")
+	accountResource.HandleFunc("/billing/payout-info", handleTutorBillingGetPayoutInfo).Methods("GET")
+	accountResource.HandleFunc("/billing/payout", handleTutorBillingCreatePayout).Methods("POST")
+	accountResource.HandleFunc("/billing/payees-payments", handleStudentBillingGetPayeesPayments).Methods("GET")
+	accountResource.HandleFunc("/billing/payers-payments", handleTutorBillingGetPayersPayments).Methods("GET")
+	accountResource.HandleFunc("/billing/card-setup-session", handleStudentBillingCreateCardSetupSession).Methods("POST")
+	accountResource.HandleFunc("/billing/cards", handleStudentBillingGetCards).Methods("GET")
+	accountResource.HandleFunc("/billing/cards/{cid}", handleStudentBillingDeleteCard).Methods("DELETE")
 }
 
 // AccountDTO return DTO.
@@ -51,6 +59,171 @@ func dtoFromAccount(a *services.Account) *AccountResponseDTO {
 		Email: a.Email,
 		Type:  string(a.Type),
 	}
+}
+
+func handleTutorBillingGetPayoutInfo(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	payoutInfo, err := serviceAccount.GetPayoutInfo()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, payoutInfo)
+}
+
+type BillingPayeesPaymentsResponseDTO struct {
+	Payments []services.PayeePayment `json:"payments"`
+}
+
+func handleStudentBillingGetPayeesPayments(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	payments, err := serviceAccount.GetPayeesPayments()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &BillingPayeesPaymentsResponseDTO{
+		Payments: payments,
+	})
+}
+
+type BillingPayersPaymentsResponseDTO struct {
+	Payments []services.PayerPayment `json:"payments"`
+}
+
+func handleTutorBillingGetPayersPayments(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	payments, err := serviceAccount.GetPayersPayments()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &BillingPayersPaymentsResponseDTO{
+		Payments: payments,
+	})
+}
+
+type AccountCardsResponseDTO struct {
+	Cards []stripe.PaymentMethod `json:"cards" `
+}
+
+func handleStudentBillingGetCards(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	cards, err := serviceAccount.GetCards()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &AccountCardsResponseDTO{
+		Cards: cards,
+	})
+}
+
+func handleStudentBillingDeleteCard(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	vars := mux.Vars(r)
+	cid, ok := vars["cid"]
+	if !ok {
+		restError(w, r, errors.New("card not specified"), http.StatusNotFound)
+		return
+	}
+
+	err = serviceAccount.DeleteCard(cid)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+type AccountCardSetupSessionRequestDTO struct {
+	SuccessPath string `json:"success_path" validate:"required"`
+	CancelPath  string `json:"cancel_path" validate:"required"`
+}
+
+type AccountCardSetupSessionResponseDTO struct {
+	ID string `json:"id"`
+}
+
+func handleStudentBillingCreateCardSetupSession(w http.ResponseWriter, r *http.Request) {
+	setupRequest := &AccountCardSetupSessionRequestDTO{}
+	if !ParseBody(w, r, setupRequest) {
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	serviceAccount, err := services.ReadAccountByID(id, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusNotFound)
+		return
+	}
+
+	setupSessionID, err := serviceAccount.CreateCardSetupSession(setupRequest.CancelPath, setupRequest.CancelPath)
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &AccountCardSetupSessionResponseDTO{
+		ID: setupSessionID,
+	})
 }
 
 func handleTutorBillingGetOnboard(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +272,12 @@ func handleTutorBillingCreatePayout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ready {
+		err = serviceAccount.Payout()
+		if err != nil {
+			restError(w, r, err, http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 		return
 	}

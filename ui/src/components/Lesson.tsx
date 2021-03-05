@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
 
+import { PaymentIntent, PaymentMethod, CreatePaymentMethodCardData } from '@stripe/stripe-js';
+
+import { useAsync } from 'react-async-hook';
+
 import {
   Typography,
   Layout,
@@ -10,15 +14,29 @@ import {
   Avatar,
   PageHeader,
   Button,
+  Card,
   Statistic,
   Divider,
   Modal,
   Form,
   Input,
   DatePicker,
+  Radio,
+  RadioChangeEvent,
 } from 'antd';
 
-import { LessonResponseDTO, ProfileRequestDTO, ProfileResponseDTO, LessonRequestStage } from '../api/definitions';
+import { CreditCardFilled, CreditCardOutlined } from '@ant-design/icons';
+
+import { Elements, useStripe, CardElement, useElements } from '@stripe/react-stripe-js';
+
+import {
+  LessonResponseDTO,
+  ProfileRequestDTO,
+  ProfileResponseDTO,
+  LessonRequestStage,
+  SubjectTaughtDTO,
+  AccountType,
+} from '../api/definitions';
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
@@ -39,6 +57,8 @@ export interface LessonProps {
 
 export default function Lesson(props: LessonProps): React.ReactElement {
   const api = React.useContext(APIContext);
+  const stripe = useStripe();
+  const elements = useElements();
   const history = useHistory();
   const profile = props.otherProfile;
   const lesson = props.lesson;
@@ -52,9 +72,28 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   const [showRescheduleModal, setShowRescheduleModal] = useState<boolean>(false);
   const [rescheduleForm] = useForm();
 
+  const [showPayModal, setShowPayModal] = useState<boolean>(false);
+  const [selectedCard, setSelectedCard] = useState<number>(0);
+  const [cards, setCards] = useState<PaymentMethod[]>([]);
+  const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | undefined>(undefined);
+  const [showNewCard, setShowNewCard] = useState<boolean>(false);
+  //const [subject, setSubject] = useState<SubjectResponseDTO | undefined>(undefined);
+
   const reload = async () => {
     props.onUpdate(await api.services.readLessonByAccountId(props.lesson.id), props.otherProfile);
   };
+
+  useAsync(async () => {
+    switch (props.lesson.request_stage) {
+      case LessonRequestStage.PaymentRequired: {
+        // Ask the server to refresh the paid status (used to check if the user paid their bill on return from checkout)
+        // We do this by requesting the server to advance the lesson to scheduled
+        await api.services.updateLessonStageScheduled(props.lesson.id);
+        await reload();
+        break;
+      }
+    }
+  }, []);
 
   const buttons = [];
   buttons.push(
@@ -77,17 +116,25 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     </>
   );
 
+  const paymentPendingButton = (
+    <>
+      <Button type="text" disabled style={{ margin: '0.2rem' }}>
+        Awaiting Payment from Student
+      </Button>
+    </>
+  );
+
   const acceptButton = (
     <>
       <Button
         type="primary"
         style={{ margin: '0.2rem' }}
         onClick={async () => {
-          await api.services.updateLessonStageAccept(props.lesson.id);
+          await api.services.updateLessonStagePaymentRequired(props.lesson.id);
           await reload();
         }}
       >
-        Accept
+        Accept &amp; Request Payment
       </Button>
     </>
   );
@@ -200,6 +247,147 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     </>
   );
 
+  const pay = async ({ cardName }: { cardName?: string }) => {
+    const secret_id = await api.services.readLessonBillingPaymentIntentSecret(props.lesson.id);
+
+    // if they selected the add a card option use that info or else the saved id of a previous payment method
+    const payment_method:
+      | string
+      | Pick<CreatePaymentMethodCardData, 'card' | 'billing_details' | 'metadata' | 'payment_method'> =
+      selectedCard === cards.length
+        ? {
+            card: elements.getElement(CardElement),
+            billing_details: {
+              name: cardName,
+            },
+          }
+        : cards[selectedCard].id;
+
+    console.log(selectedCard, payment_method, cards);
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(secret_id, {
+        payment_method,
+        setup_future_usage: 'off_session',
+        receipt_email: api.account.email,
+      });
+
+      if (error !== undefined) {
+        Modal.error({
+          title: 'Error',
+          content: `Could not complete transaction : ${error.message}`,
+        });
+      } else {
+        // Try to mark the lesson as scheduled and reload
+        await api.services.updateLessonStageScheduled(props.lesson.id);
+        await reload();
+
+        Modal.info({
+          title: 'Lesson Scheduled',
+          content: `The lesson has now been paid for and scheduled, you can visit the Scheduled Lessons page to access information prior to the lesson`,
+        });
+      }
+
+      setShowPayModal(false);
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not complete transaction : ${e}`,
+      });
+    }
+  };
+
+  const payButton = (
+    <>
+      <Button
+        style={{ margin: '0.2rem' }}
+        type="dashed"
+        onClick={async () => {
+          const cards = await api.services.readCardsByAccount(api.account.id);
+          const secret_id = await api.services.readLessonBillingPaymentIntentSecret(props.lesson.id);
+          setPaymentIntent(await (await stripe.retrievePaymentIntent(secret_id)).paymentIntent);
+          setCards(cards);
+          setSelectedCard(0);
+          setShowPayModal(true);
+        }}
+      >
+        Pay
+      </Button>
+      <Modal
+        title="Pay for Lesson"
+        visible={showPayModal}
+        onCancel={() => setShowPayModal(false)}
+        footer={[
+          <Button form="pay" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+            Pay
+          </Button>,
+        ]}
+      >
+        <Form onFinish={pay} layout="vertical" name="pay" preserve={false}>
+          <Title level={5}>Payment</Title>
+          <Typography.Paragraph>Select payment method to continue:</Typography.Paragraph>
+          <Form.Item name="card" rules={[{ required: true, message: 'Please supply a card!' }]}>
+            <Radio.Group
+              value={selectedCard}
+              onChange={(e: RadioChangeEvent) => {
+                setSelectedCard(e.target.value);
+              }}
+            >
+              {cards.map((pm: PaymentMethod, index: number) => (
+                <Radio key={index} style={{ display: 'block' }} value={index}>
+                  <CreditCardFilled style={{ marginRight: '0.5rem' }} />
+                  {pm.card.brand.toUpperCase()} **** **** **** {pm.card.last4} &bull; {pm.card.exp_month}/
+                  {pm.card.exp_year} &bull; {pm.billing_details.name}
+                </Radio>
+              ))}
+              <Radio key={cards.length} style={{ display: 'block' }} value={cards.length}>
+                <CreditCardOutlined style={{ marginRight: '0.5rem' }} />
+                Use new card
+              </Radio>
+            </Radio.Group>
+          </Form.Item>
+          {selectedCard === cards.length && (
+            <>
+              <Form.Item
+                label="Name on card"
+                name="cardName"
+                rules={[{ required: selectedCard === cards.length, message: 'Please supply the name on the card!' }]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item>
+                <CardElement
+                  options={{
+                    hidePostalCode: true,
+                    style: {
+                      base: {
+                        color: 'black',
+                        fontFamily:
+                          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'",
+                        fontSize: '16px',
+                        '::placeholder': {
+                          color: '#aab7c4',
+                        },
+                      },
+                      invalid: {
+                        color: '#9e2146',
+                      },
+                    },
+                  }}
+                />
+              </Form.Item>
+            </>
+          )}
+        </Form>
+
+        {paymentIntent !== undefined && (
+          <Title level={2} style={{ textAlign: 'center', margin: '1rem 0 0 0' }}>
+            {paymentIntent.amount / 100} {paymentIntent.currency.toUpperCase()}
+          </Title>
+        )}
+      </Modal>
+    </>
+  );
+
   switch (props.lesson.request_stage) {
     case LessonRequestStage.Rescheduled:
     case LessonRequestStage.Requested:
@@ -211,9 +399,17 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         buttons.push(cancelButton, requestPendingButton);
       }
       break;
-    case LessonRequestStage.Accepted:
-      // Once the lesson is accepted either party can cancel or reschedule a lesson
+    case LessonRequestStage.Scheduled:
+      // Once the lesson is scheduled either party can cancel or reschedule a lesson
       buttons.push(cancelButton, rescheduleButton);
+      break;
+    case LessonRequestStage.PaymentRequired:
+      if (api.account.type == AccountType.Student) {
+        buttons.push(payButton, cancelButton);
+      } else {
+        buttons.push(paymentPendingButton, cancelButton);
+      }
+      break;
   }
 
   return (
@@ -230,7 +426,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       extra={[
         <Row key="stats" gutter={32} style={{ marginTop: '1rem' }} align="top" justify="start">
           <Col>
-            <Statistic title="Subject" value={`L.C. - English`} />
+            <Statistic title="Subject" value={props.otherProfile.s} />
           </Col>
           <Col>
             <Statistic

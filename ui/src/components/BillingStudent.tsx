@@ -8,6 +8,7 @@ import {
   Layout,
   Row,
   Col,
+  Card,
   Avatar,
   PageHeader,
   Input,
@@ -21,8 +22,10 @@ import {
   Skeleton,
 } from 'antd';
 
-import { BankOutlined } from '@ant-design/icons';
+import { BankOutlined, CreditCardFilled, DeleteFilled } from '@ant-design/icons';
 
+import { PaymentMethod } from '@stripe/stripe-js';
+import { Elements, useStripe } from '@stripe/react-stripe-js';
 import { AccountType, ProfileRequestDTO } from '../api/definitions';
 import { APIContext } from '../api/api';
 import DefaultAvatar from '../assets/default_avatar.png';
@@ -34,38 +37,44 @@ const { Header, Footer, Sider, Content } = Layout;
 const { TextArea } = Input;
 
 export function BillingStudent(): React.ReactElement {
+  const stripe = useStripe();
   const [error, setError] = React.useState<string>('');
 
-  const [billingRequirementsMet, setBillingRequirementsMet] = React.useState<boolean>(true);
-  const [ready, setReady] = React.useState<boolean>(false);
+  const [ready, setReady] = React.useState<boolean>(true);
+
+  const [cards, setCards] = React.useState<PaymentMethod[]>([]);
   const api = React.useContext(APIContext);
   const history = useHistory();
 
+  const redirectCardSetupSession = async () => {
+    const id = await api.services.createCardSetupSession(api.account.id, {
+      success_path: '/account/billing',
+      cancel_path: '/account/billing',
+    });
+    stripe.redirectToCheckout({
+      sessionId: id,
+    });
+  };
+
+  const reload = async () => {
+    setCards(await api.services.readCardsByAccount(api.account.id));
+  };
+
   useAsync(async () => {
+    await reload();
     setReady(true);
-    // const onboard = await api.services.readTutorBillingOnboardStatus(api.account.id);
-    // setBillingOnboard(onboard);
-    // if (!onboard) {
-    //   setBillingOnboardUrl(await api.services.readTutorBillingOnboardUrl(api.account.id));
-    //   setReady(true);
-    // } else {
-    //   const reqsMet = await api.services.readTutorBillingRequirementsMetStatus(api.account.id);
-    //   setBillingRequirementsMet(reqsMet);
-    //   setBillingPanelUrl(await api.services.readTutorBillingPanelUrl(api.account.id));
-    //   setReady(true);
-    // }
   }, []);
 
-  const redirectBillingOnboard = () => {
-    window.location.href = billingOnboardUrl;
-  };
-
-  const redirectBillingPanelAccount = () => {
-    window.open(billingPanelUrl + '#/account');
-  };
-
-  const redirectBillingPanel = () => {
-    window.open(billingPanelUrl + '#/account');
+  const removeCard = async (pm: PaymentMethod) => {
+    try {
+      await api.services.deleteCardByAccount(api.account.id, pm.id);
+      await reload();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not retrieve your cards: ${e}`,
+      });
+    }
   };
 
   if (!ready) {
@@ -83,43 +92,62 @@ export function BillingStudent(): React.ReactElement {
           <Title level={3}>
             <BankOutlined /> Billing
           </Title>
+        </Row>
+        <Row gutter={16} style={{ margin: '1rem' }}>
           <Col md={24} sm={24} xs={24}>
-            {!false && (
-              <>
-                <Alert
-                  message="No Debit/Credit Card Available"
-                  description="You do not have a debit or credit card linked to your account, you will need to link a card when requesting a lesson"
-                  type="warning"
-                  showIcon
-                  style={{ margin: '1rem 0' }}
-                />
-              </>
-            )}
+            <Title level={5}>Saved Cards</Title>
           </Col>
-          <Col md={24} sm={24} xs={24}>
-            {!false && (
-              <>
-                <Button style={{ margin: '0.5em' }} onClick={redirectBillingPanelAccount}>
-                  Modify Card Details
-                </Button>
-              </>
-            )}
+          {cards.map((pm: PaymentMethod, index: number) => (
+            <Col key={pm.id}>
+              <Card
+                title={
+                  <>
+                    <CreditCardFilled style={{ marginRight: '0.5rem' }} />
+                    {pm.card.brand.toUpperCase()}
+                    <Button style={{ marginLeft: '1rem' }} size="small" onClick={() => removeCard(pm)}>
+                      <DeleteFilled />
+                      Remove
+                    </Button>
+                  </>
+                }
+                bordered
+                style={{ boxShadow: '0 0 4px rgba(0,0,0,0.35)' }}
+              >
+                **** **** **** {pm.card.last4} &bull; {pm.card.exp_month}/{pm.card.exp_year} <br />
+                <br />
+                {pm.billing_details.name}
+              </Card>
+            </Col>
+          ))}
+          {cards.length === 0 && (
+            <Alert
+              message="No Debit/Credit Cards Saved"
+              description="You have not yet setup billing with a debit or credit card, you will need to do this once you request a lesson."
+              type="warning"
+              showIcon
+              style={{ margin: '1rem 0' }}
+            />
+          )}
+        </Row>
+        <Row gutter={16} style={{ margin: '0 1rem' }}>
+          <Col md={24}>
+            <Button style={{ margin: '0.5em 0' }} onClick={redirectCardSetupSession}>
+              Add Card
+            </Button>
           </Col>
         </Row>
         <Row gutter={16} style={{ margin: '1rem' }}>
-          <Title level={3}>Invoices</Title>
           <Col md={24} sm={24} xs={24}>
+            <Title level={5}>Payments</Title>
             <Table
               locale={{
                 emptyText: 'No invoices available',
               }}
               columns={[
-                { title: 'Lesson', key: 'degree', dataIndex: 'degree' },
+                { title: 'Description', key: 'description', dataIndex: 'description' },
                 { title: 'Date', key: 'field', dataIndex: 'field' },
                 { title: 'Amount', key: 'school', dataIndex: 'school' },
-                { title: 'Available for Payout', key: 'verified', dataIndex: 'verified' },
-                { title: 'Paid Out', key: 'verified', dataIndex: 'verified' },
-                { title: '', key: 'delete', dataIndex: 'delete' },
+                { title: 'Remarks', key: 'remarks', dataIndex: 'remarks' },
               ]}
               size="small"
               style={{ width: '100%' }}

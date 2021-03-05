@@ -23,7 +23,13 @@ import {
 
 import { BankOutlined } from '@ant-design/icons';
 
-import { AccountType, ProfileRequestDTO } from '../api/definitions';
+import {
+  AccountType,
+  BillingPayerPayment,
+  BillingPayersPaymentsResponseDTO,
+  BillingPayoutInfoResponseDTO,
+  ProfileRequestDTO,
+} from '../api/definitions';
 import { APIContext } from '../api/api';
 import DefaultAvatar from '../assets/default_avatar.png';
 
@@ -40,11 +46,13 @@ export function BillingTutor(): React.ReactElement {
   const [billingOnboardUrl, setBillingOnboardUrl] = React.useState<string>('');
   const [billingRequirementsMet, setBillingRequirementsMet] = React.useState<boolean>(true);
   const [billingPanelUrl, setBillingPanelUrl] = React.useState<string>('');
+  const [payoutInfo, setPayoutInfo] = React.useState<BillingPayoutInfoResponseDTO | undefined>(undefined);
+  const [payersPayments, setPayersPayments] = React.useState<BillingPayerPayment[] | undefined>(undefined);
   const [ready, setReady] = React.useState<boolean>(false);
   const api = React.useContext(APIContext);
   const history = useHistory();
 
-  useAsync(async () => {
+  const reload = async () => {
     const onboard = await api.services.readTutorBillingOnboardStatus(api.account.id);
     setBillingOnboard(onboard);
 
@@ -55,8 +63,14 @@ export function BillingTutor(): React.ReactElement {
       const reqsMet = await api.services.readTutorBillingRequirementsMetStatus(api.account.id);
       setBillingRequirementsMet(reqsMet);
       setBillingPanelUrl(await api.services.readTutorBillingPanelUrl(api.account.id));
+      setPayoutInfo(await api.services.readPayoutInfo(api.account.id));
+      setPayersPayments(await api.services.readPayersPayments(api.account.id));
       setReady(true);
     }
+  };
+
+  useAsync(async () => {
+    await reload();
   }, []);
 
   const redirectBillingOnboard = () => {
@@ -69,6 +83,17 @@ export function BillingTutor(): React.ReactElement {
 
   const redirectBillingPanel = () => {
     window.open(billingPanelUrl + '#/account');
+  };
+
+  const payout = async () => {
+    try {
+      await api.services.createPayout(api.account.id);
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not payout: ${e}`,
+      });
+    }
   };
 
   if (!ready) {
@@ -115,15 +140,15 @@ export function BillingTutor(): React.ReactElement {
               style={{ margin: '0 auto' }}
               valueStyle={{ fontSize: '4rem' }}
               title="Balance For Payout"
-              value={'€30.87'}
+              value={`€${payoutInfo !== undefined ? payoutInfo.payout_balance / 100 : '-.--'}`}
             />
           </Col>
-          <Col md={8} sm={24} xs={24}>
+          {/* <Col md={8} sm={24} xs={24}>
             <Statistic valueStyle={{ fontSize: '4rem' }} title="Total This Month" value={'€0.00'} />
           </Col>
           <Col md={8} sm={24} xs={24}>
             <Statistic valueStyle={{ fontSize: '4rem' }} title="Total This Year" value={'€0.00'} />
-          </Col>
+          </Col> */}
           <Col md={24} sm={24} xs={24}>
             {!billingOnboard && (
               <>
@@ -134,7 +159,12 @@ export function BillingTutor(): React.ReactElement {
             )}
             {billingOnboard && billingRequirementsMet && (
               <>
-                <Button type="primary" onClick={redirectBillingOnboard} style={{ margin: '0.5em' }}>
+                <Button
+                  type="primary"
+                  onClick={payout}
+                  style={{ margin: '0.5em' }}
+                  disabled={payoutInfo !== undefined && payoutInfo.payout_balance <= 0}
+                >
                   Payout
                 </Button>
                 <Button style={{ margin: '0.5em' }} onClick={redirectBillingPanelAccount}>
@@ -162,32 +192,33 @@ export function BillingTutor(): React.ReactElement {
                 emptyText: 'No invoices available',
               }}
               columns={[
-                { title: 'Lesson', key: 'degree', dataIndex: 'degree' },
-                { title: 'Date', key: 'field', dataIndex: 'field' },
-                { title: 'Amount', key: 'school', dataIndex: 'school' },
-                { title: 'Available for Payout', key: 'verified', dataIndex: 'verified' },
-                { title: 'Paid Out', key: 'verified', dataIndex: 'verified' },
-                { title: '', key: 'delete', dataIndex: 'delete' },
+                { title: 'Description', key: 'description', dataIndex: 'description' },
+                { title: 'Date', key: 'date', dataIndex: 'date' },
+                { title: 'Amount', key: 'amount', dataIndex: 'amount' },
+                { title: 'Available for Payout', key: 'available_for_payout', dataIndex: 'available_for_payout' },
+                { title: 'Paid Out', key: 'paid_out', dataIndex: 'paid_out' },
+                { title: 'Actions', key: 'actions', dataIndex: 'actions' },
               ]}
               size="small"
               style={{ width: '100%' }}
               pagination={false}
-              // dataSource={profile.qualifications.map((quali: QualificationResponseDTO) => {
-              //   return {
-              //     degree: quali.degree,
-              //     field: quali.field,
-              //     school: quali.school,
-              //     verified: quali.verified ? '\u2713' : '\u2717',
-              //     delete: editQualis ? (
-              //       <Button onClick={() => deleteQuali(quali.id)} style={{ margin: '0 0.5rem' }} size="small">
-              //         <DeleteOutlined />
-              //         Remove
-              //       </Button>
-              //     ) : (
-              //       <></>
-              //     ),
-              // //   };
-              // })}
+              dataSource={payersPayments.map((payment: BillingPayerPayment) => {
+                return {
+                  ...payment,
+                  amount: `€${payment.amount / 100}`,
+                  available_for_payout: payment.available_for_payout ? '\u2713' : '\u2717',
+                  paid_out: payment.paid_out ? '\u2713' : '\u2717',
+                  date: new Intl.DateTimeFormat('en-IE', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    weekday: 'long',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                  }).format(new Date(payment.date)),
+                  actions: <></>,
+                };
+              })}
             ></Table>
           </Col>
         </Row>

@@ -30,8 +30,11 @@ type LessonResponseDTO struct {
 	// StudentID
 	StudentID uuid.UUID `json:"student_id"`
 
-	// TutorID
+	// TutorID represents the id of the tutor teaching the lesson
 	TutorID uuid.UUID `json:"tutor_id"`
+
+	// SubjectTaughtID
+	SubjectID uuid.UUID `json:"subject_id"`
 
 	// LessonDetail contains notes about what the student needs out of this lesson
 	LessonDetail string `json:"lesson_detail"`
@@ -65,7 +68,7 @@ type LessonRequestDTO struct {
 
 	// The ID of the person requesting the lesson, can be a teacher or a student
 	// RequesterID must be a student if RequesteeID is a teacher and vice-versa
-	TutorID uuid.UUID `json:"tutor_id"`
+	SubjectTaughtID uuid.UUID `json:"subject_taught_id"`
 
 	// LessonDetail contains info about what the lesson should be about
 	LessonDetail string `json:"lesson_detail"`
@@ -106,6 +109,7 @@ func dtoFromLesson(l *services.Lesson) *LessonResponseDTO {
 		TutorID:               l.TutorID,
 		StudentID:             l.StudentID,
 		RequesterID:           l.RequesterID,
+		SubjectID:             l.SubjectTaught.SubjectID,
 		LessonDetail:          l.LessonDetail,
 		RequestStage:          l.RequestStage,
 		RequestStageDetail:    l.RequestStageDetail,
@@ -155,11 +159,11 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 	))
 
 	// GET /{uuid}
-	lessonResource.PathPrefix("").HandlerFunc(handleLessonsGet).Methods("GET")
+	lessonResource.Path("").HandlerFunc(handleLessonsGet).Methods("GET")
 
 	// POST /{uuid}/accept
-	lessonResource.HandleFunc("/accept",
-		handleLessonsAcceptRequest,
+	lessonResource.HandleFunc("/payment-required",
+		handleLessonsMarkPaymentRequired,
 	).Methods("POST")
 
 	// POST /{uuid}/deny
@@ -172,6 +176,14 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 		handleLessonsCancelRequest,
 	).Methods("POST")
 
+	lessonResource.HandleFunc("/payment-intent-secret",
+		handleLessonsBillingGetPaymentIntentSecret,
+	).Methods("GET")
+
+	lessonResource.HandleFunc("/schedule",
+		handleLessonsMarkScheduled,
+	).Methods("POST")
+
 	// POST /{uuid}/cancel
 	lessonResource.HandleFunc("/reschedule",
 		handleLessonsRescheduleRequest,
@@ -182,6 +194,92 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 
 	subrouter.HandleFunc("/resources/{rid}",
 		handleLessonsResourceGet).Methods("GET")
+}
+
+// type LessonCheckoutSessionResponseDTO struct {
+// 	ID string `json:"id"`
+// }
+
+// func handleLessonsCreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
+// 	id, err := getUUID(r, "uuid")
+// 	if err != nil {
+// 		restError(w, r, err, http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	lesson, err := services.ReadLessonByID(id)
+// 	if err != nil {
+// 		restError(w, r, err, http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	sid, err := lesson.CreateCheckoutSession()
+// 	if err != nil {
+// 		restError(w, r, err, http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	WriteBody(w, r, &LessonCheckoutSessionResponseDTO{
+// 		ID: sid,
+// 	})
+
+// 	return
+// }
+
+type LessonBillingPaymentIntentSecretDTO struct {
+	ID string `json:"id"`
+}
+
+func handleLessonsBillingGetPaymentIntentSecret(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	pid, err := lesson.GetPaymentIntentClientSecret()
+	if err != nil {
+		restError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	WriteBody(w, r, &LessonBillingPaymentIntentSecretDTO{
+		ID: pid,
+	})
+
+	return
+}
+
+func handleLessonsMarkScheduled(w http.ResponseWriter, r *http.Request) {
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err = lesson.MarkScheduled(authContext.Account)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
 }
 
 func handleLessonsGet(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +314,13 @@ func handleLessonsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !(authContext.Account.ID == lessonRequest.StudentID || authContext.Account.ID == lessonRequest.TutorID) {
+	subjectTaught, err := services.GetSubjectTaughtByID(lessonRequest.SubjectTaughtID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	if !(authContext.Account.ID == lessonRequest.StudentID || authContext.Account.ID == subjectTaught.TutorProfile.AccountID) {
 		restError(w, r, errors.New("only allowed operate on a lesson that has your account as a participant"), http.StatusBadRequest)
 		return
 	}
@@ -227,20 +331,20 @@ func handleLessonsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tutor, err := services.ReadAccountByID(lessonRequest.TutorID, nil)
-	if err != nil {
-		restError(w, r, err, http.StatusBadRequest)
-		return
-	}
+	// tutor, err := services.ReadAccountByID(subjectTaught.TutorProfile.AccountID, nil)
+	// if err != nil {
+	// 	restError(w, r, err, http.StatusBadRequest)
+	// 	return
+	// }
 
-	err = services.CreateLesson(authContext.Account, student, tutor, lessonRequest.StartTime, lessonRequest.LessonDetail)
+	err = services.RequestLesson(authContext.Account, student, subjectTaught, lessonRequest.StartTime, lessonRequest.LessonDetail)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
 	}
 }
 
-func handleLessonsAcceptRequest(w http.ResponseWriter, r *http.Request) {
+func handleLessonsMarkPaymentRequired(w http.ResponseWriter, r *http.Request) {
 	authContext, err := ReadRequestAuthContext(r)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
@@ -259,7 +363,7 @@ func handleLessonsAcceptRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lesson.Accept(authContext.Account)
+	err = lesson.MarkPaymentRequired(authContext.Account)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -290,7 +394,7 @@ func handleLessonsDenyRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lesson.Deny(authContext.Account, denyRequest.Reason)
+	err = lesson.MarkDenied(authContext.Account, denyRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -321,7 +425,7 @@ func handleLessonsCancelRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lesson.Cancel(authContext.Account, cancelRequest.Reason)
+	err = lesson.MarkCancelled(authContext.Account, cancelRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -352,7 +456,7 @@ func handleLessonsRescheduleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lesson.Reschedule(authContext.Account, rescheduleRequest.NewTime, rescheduleRequest.Reason)
+	err = lesson.MarkRescheduled(authContext.Account, rescheduleRequest.NewTime, rescheduleRequest.Reason)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

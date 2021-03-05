@@ -16,13 +16,16 @@ const (
 	// The lesson has been requested by the sending party
 	Requested LessonRequestStage = "requested"
 
-	// The lesson has been accepted by the reciever party
-	Accepted LessonRequestStage = "accepted"
+	// The lesson request has been accepted by the reciever party and now the student needs to pay
+	PaymentRequired LessonRequestStage = "payment-required"
 
 	// The lesson (request) has been denied
 	Denied LessonRequestStage = "denied"
 
-	// The Lesson has been rescheduled
+	// The student has paid for the lesson and the lesson is now scheduled
+	Scheduled LessonRequestStage = "scheduled"
+
+	// The lesson has been rescheduled
 	Rescheduled LessonRequestStage = "rescheduled"
 
 	// The lesson has been cancelled
@@ -53,6 +56,32 @@ type Lesson struct {
 	Student   Account `gorm:"foreignKey:StudentID"`
 	StudentID uuid.UUID
 
+	SubjectTaught   SubjectTaught `gorm:"foreignKey:SubjectTaughtID"`
+	SubjectTaughtID uuid.UUID
+
+	PaymentIntentID string
+
+	// Paid status, used to minimize the number of API Calls towards stripe
+	Paid bool
+
+	// PaidOut - has the tutor been paid for this lesson
+	PaidOut bool
+
+	// DatePaidOut - date the lesson was paid out
+	DatePaidOut *time.Time
+
+	// Approximate time the lesson was paid for
+	DatePaid *time.Time
+
+	// PriceAmount is the cost of the lesson
+	PriceAmount int64
+
+	// PayoutAmount is the amount the tutor will earn on this lesson
+	PayoutAmount int64
+
+	// Refunded status
+	Refunded bool
+
 	Tutor   Account `gorm:"foreignKey:TutorID"`
 	TutorID uuid.UUID
 
@@ -75,8 +104,6 @@ type Lesson struct {
 
 	// Resources are
 	Resources []ResourceMetadata `gorm:"foreignKey:LessonID"`
-
-	/*Subject Subject `gorm:"foreignKey:ID"`*/
 }
 
 // ResourceMetadata contains metadata about a resource
@@ -120,9 +147,14 @@ func LessonAtTime(acc *Account, startTime time.Time, endTime time.Time) (bool, e
 	return false, nil
 }
 
-func CreateLesson(requester *Account, student *Account, tutor *Account, startTime time.Time /*subject *Subject*/, lessonDetail string) error {
+func RequestLesson(requester *Account, student *Account, subjectTaught *SubjectTaught, startTime time.Time, lessonDetail string) error {
 	if !startTime.After(time.Now()) {
 		return fmt.Errorf("can't request a lesson in the past")
+	}
+
+	tutor, err := ReadAccountByID(subjectTaught.TutorID, nil)
+	if err != nil {
+		return err
 	}
 
 	if !(requester.ID == student.ID || requester.ID == tutor.ID) {
@@ -171,18 +203,30 @@ func CreateLesson(requester *Account, student *Account, tutor *Account, startTim
 			return fmt.Errorf("cannot create lesson: the teacher has a lesson at that time")
 		}
 
-		err = tx.Create(&Lesson{
+		// First create stripe invoice for the lesson
+
+		l := &Lesson{
 			StartTime:           startTime,
 			EndTime:             endTime,
-			Requester:           *requester,
-			Student:             *student,
-			Tutor:               *tutor,
+			RequesterID:         requester.ID,
+			StudentID:           student.ID,
+			TutorID:             tutor.ID,
+			SubjectTaughtID:     subjectTaught.ID,
+			Paid:                false,
 			LessonDetail:        lessonDetail,
 			RequestStage:        Requested,
 			RequestStageDetail:  lessonDetail,
 			Resources:           []ResourceMetadata{},
 			RequestStageChanger: *requester,
-		}).Error
+		}
+
+		err = l.SetupPaymentIntent()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Create(l).Error
 
 		if err != nil {
 			tx.Rollback()
@@ -253,10 +297,80 @@ func (l *Lesson) CreateResource(name string, mime string, data []byte) error {
 
 // ChangeRequestStage changes the stage the lesson is at
 // i.e a requester can request the lesson move from the Requested state to the Acceptd state to confirm that the lesson will take place
-func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage LessonRequestStage, detail string) error {
+// func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage LessonRequestStage, detail string) error {
+// 	db, err := database.Open()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	err = db.Transaction(func(tx *gorm.DB) error {
+// 		// re-read the lesson, stops data races
+// 		lesson, err := ReadLessonByID(l.ID)
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return err
+// 		}
+
+// 		// Make a decision based off the current stage the lesson is at
+// 		switch lesson.RequestStage {
+// 		// If the lesson stage was 'requested'
+// 		case Requested:
+// 			switch newStage {
+// 			case Scheduled:
+// 				if stageRequester.ID == lesson.RequesterID {
+// 					return errors.New("you can not mark a lesson as scheduled if you were the one who created the lesson")
+// 				}
+
+// 			case Denied:
+// 				if stageRequester.ID == lesson.RequesterID {
+// 					return errors.New("you can not deny a lesson if you were the one who created the lesson")
+// 				}
+
+// 			case Cancelled:
+// 				if stageRequester.ID != lesson.RequesterID {
+// 					return errors.New("only the person who requested the lesson can cancel the request")
+// 				}
+
+// 			default:
+// 				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
+// 			}
+
+// 		case Scheduled:
+// 			switch newStage {
+// 			case Cancelled:
+
+// 			default:
+// 				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
+// 			}
+
+// 		default:
+// 			return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
+// 		}
+
+// 		db.Model(&lesson).Updates(&Lesson{
+// 			RequestStage:          newStage,
+// 			RequestStageDetail:    detail,
+// 			RequestStageChangerID: stageRequester.ID,
+// 		})
+// 		return nil
+// 	})
+
+// 	return err
+// }
+
+func (l *Lesson) MarkScheduled(requester *Account) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
+	}
+
+	err = l.RefreshPaidStatus()
+	if err != nil {
+		return err
+	}
+
+	if l.Paid == false {
+		return errors.New("cannot mark a lesson as scheduled if the lesson has not been paid for by the student")
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
@@ -269,44 +383,16 @@ func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage L
 
 		// Make a decision based off the current stage the lesson is at
 		switch lesson.RequestStage {
-		// If the lesson stage was 'requested'
-		case Requested:
-			switch newStage {
-			case Accepted:
-				if stageRequester.ID == lesson.RequesterID {
-					return errors.New("you can not mark a lesson as accepted if you were the one who created the lesson")
-				}
-
-			case Denied:
-				if stageRequester.ID == lesson.RequesterID {
-					return errors.New("you can not deny a lesson if you were the one who created the lesson")
-				}
-
-			case Cancelled:
-				if stageRequester.ID != lesson.RequesterID {
-					return errors.New("only the person who requested the lesson can cancel the request")
-				}
-
-			default:
-				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
-			}
-
-		case Accepted:
-			switch newStage {
-			case Cancelled:
-
-			default:
-				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
-			}
+		case PaymentRequired:
+			// Can only mark a lesson as scheduled if it previously required payment
 
 		default:
-			return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
+			return fmt.Errorf("unsupported stage %s from %s", Scheduled, lesson.RequestStage)
 		}
 
 		db.Model(&lesson).Updates(&Lesson{
-			RequestStage:          newStage,
-			RequestStageDetail:    detail,
-			RequestStageChangerID: stageRequester.ID,
+			RequestStage:          Scheduled,
+			RequestStageChangerID: requester.ID,
 		})
 		return nil
 	})
@@ -314,7 +400,7 @@ func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage L
 	return err
 }
 
-func (l *Lesson) Accept(acceptor *Account) error {
+func (l *Lesson) MarkPaymentRequired(acceptor *Account) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -332,20 +418,20 @@ func (l *Lesson) Accept(acceptor *Account) error {
 		switch lesson.RequestStage {
 		case Requested:
 			if acceptor.ID == lesson.RequesterID {
-				return errors.New("you can not mark a lesson as accepted if you were the one who created the lesson")
+				return errors.New("you can not mark a lesson as scheduled if you were the one who created the lesson")
 			}
 
 		case Rescheduled:
 			if acceptor.ID == lesson.RequestStageChangerID {
-				return errors.New("you can not mark a lesson as accepted if you were the one who rescheduled the lesson")
+				return errors.New("you can not mark a lesson as scheduled if you were the one who rescheduled the lesson")
 			}
 
 		default:
-			return fmt.Errorf("unsupported stage %s from %s", Accepted, lesson.RequestStage)
+			return fmt.Errorf("unsupported stage %s from %s", Scheduled, lesson.RequestStage)
 		}
 
 		db.Model(&lesson).Updates(&Lesson{
-			RequestStage:          Accepted,
+			RequestStage:          PaymentRequired,
 			RequestStageChangerID: acceptor.ID,
 		})
 		return nil
@@ -354,7 +440,7 @@ func (l *Lesson) Accept(acceptor *Account) error {
 	return err
 }
 
-func (l *Lesson) Deny(denier *Account, reason string) error {
+func (l *Lesson) MarkDenied(denier *Account, reason string) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -395,7 +481,7 @@ func (l *Lesson) Deny(denier *Account, reason string) error {
 	return err
 }
 
-func (l *Lesson) Cancel(cancelee *Account, reason string) error {
+func (l *Lesson) MarkCancelled(cancelee *Account, reason string) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -411,9 +497,14 @@ func (l *Lesson) Cancel(cancelee *Account, reason string) error {
 
 		// Make a decision based off the current stage the lesson is at
 		switch lesson.RequestStage {
-		case Accepted:
-			break
+		case Scheduled:
+
 		case Requested:
+			if cancelee.ID != lesson.RequesterID {
+				return errors.New("only the person who requested the lesson can cancel the request")
+			}
+
+		case PaymentRequired:
 			if cancelee.ID != lesson.RequesterID {
 				return errors.New("only the person who requested the lesson can cancel the request")
 			}
@@ -427,6 +518,14 @@ func (l *Lesson) Cancel(cancelee *Account, reason string) error {
 			return fmt.Errorf("unsupported stage %s from %s", Cancelled, lesson.RequestStage)
 		}
 
+		if l.Paid == true {
+			err = l.Refund()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
 		db.Model(&lesson).Updates(&Lesson{
 			RequestStage:          Cancelled,
 			RequestStageDetail:    reason,
@@ -438,7 +537,7 @@ func (l *Lesson) Cancel(cancelee *Account, reason string) error {
 	return err
 }
 
-func (l *Lesson) Reschedule(reschedulee *Account, newTime time.Time, reason string) error {
+func (l *Lesson) MarkRescheduled(reschedulee *Account, newTime time.Time, reason string) error {
 	db, err := database.Open()
 	if err != nil {
 		return err
@@ -458,7 +557,7 @@ func (l *Lesson) Reschedule(reschedulee *Account, newTime time.Time, reason stri
 
 		// Make a decision based off the current stage the lesson is at
 		switch lesson.RequestStage {
-		case Accepted:
+		case Scheduled:
 			break
 		case Requested:
 			break

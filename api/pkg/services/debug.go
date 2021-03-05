@@ -1,8 +1,6 @@
 package services
 
 import (
-	"time"
-
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -29,6 +27,7 @@ func CreateDebugData() error {
 		Type:          Student,
 		Suspended:     false,
 		PasswordHash:  *hash,
+		StripeID:      "cus_J3lQ7FQfTrf7oQ",
 		Profile: &Profile{
 			Avatar:         "",
 			Slug:           "john-student",
@@ -55,6 +54,7 @@ func CreateDebugData() error {
 			ID: uuid.MustParse("11111111-1111-1111-1111-111111111111"),
 		},
 		Email:         "tutor@grindsapp.localhost",
+		StripeID:      "acct_1IOWqu2eWOUbUNz7",
 		EmailVerified: true,
 		Type:          Tutor,
 		Suspended:     false,
@@ -206,31 +206,38 @@ func CreateDebugData() error {
 	err = db.FirstOrCreate(&SubjectTaught{
 		Model:        database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
 		Subject:      *english,
+		Tutor:        *john,
 		TutorProfile: *john.Profile,
 		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:        45,
+		Price:        4500,
 	}).Error
 	if err != nil {
 		return err
 	}
 	log.Info("John Tutor now teaching Leaving Certificate English")
-	err = db.FirstOrCreate(&SubjectTaught{
+
+	irishSubjectTaught := &SubjectTaught{
 		Model:        database.Model{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222")},
 		Subject:      *irish,
+		Tutor:        *john,
 		TutorProfile: *john.Profile,
 		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:        50,
-	}).Error
+		Price:        5000,
+	}
+
+	err = db.FirstOrCreate(irishSubjectTaught).Error
 	if err != nil {
 		return err
 	}
 	log.Info("John Tutor now teaching Leaving Certificate Irish")
+
 	err = db.FirstOrCreate(&SubjectTaught{
 		Model:        database.Model{ID: uuid.MustParse("33333333-3333-3333-3333-333333333333")},
 		Subject:      *physics,
+		Tutor:        *jane,
 		TutorProfile: *jane.Profile,
 		Description:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum dignissim ipsum, sit amet scelerisque quam auctor id. Suspendisse laoreet commodo libero vitae volutpat. Integer hendrerit congue posuere. Pellentesque vestibulum leo at nunc interdum, gravida consequat dui egestas. Donec vel lobortis lorem. Donec suscipit, arcu vel dignissim ultricies, mi nibh tincidunt velit, eu dapibus justo metus id metus. Pellentesque porttitor nec augue eu molestie. Morbi eget lacinia arcu. Aliquam ornare risus mi, aliquam eleifend dolor consequat at.",
-		Price:        35,
+		Price:        3500,
 	}).Error
 	if err != nil {
 		return err
@@ -238,35 +245,36 @@ func CreateDebugData() error {
 	log.Info("Jane Smith now teaching Leaving Certificate Physics")
 
 	// Add lesson between student and tutor
-	student, err := ReadAccountByID(uuid.MustParse("22222222-2222-2222-2222-222222222222"), nil)
-	if err != nil {
-		return err
-	}
+	// student, err := ReadAccountByID(uuid.MustParse("22222222-2222-2222-2222-222222222222"), nil)
+	// if err != nil {
+	// 	return err
+	// }
 
-	startTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:00:00")
-	if err != nil {
-		return err
-	}
-	endTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:59:00")
-	if err != nil {
-		return err
-	}
-	err = db.FirstOrCreate(&Lesson{
-		//Model:               database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
-		StartTime:           startTime,
-		EndTime:             endTime,
-		Student:             *student,
-		Tutor:               *john,
-		LessonDetail:        "Quick question",
-		RequestStage:        Accepted,
-		RequestStageDetail:  "",
-		Requester:           *student,
-		RequestStageChanger: *john,
-	}).Error
-	if err != nil {
-		return err
-	}
-	log.Info("John Tutor has lesson with John Student")
+	// startTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:00:00")
+	// if err != nil {
+	// 	return err
+	// }
+	// endTime, err := time.Parse("02 Jan 2006 15:04:05", "24 Feb 2021 17:59:00")
+	// if err != nil {
+	// 	return err
+	// }
+	// err = db.FirstOrCreate(&Lesson{
+	// 	//Model:               database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
+	// 	StartTime:           startTime,
+	// 	EndTime:             endTime,
+	// 	Student:             *student,
+	// 	Tutor:               *john,
+	// 	LessonDetail:        "Quick question",
+	// 	SubjectTaught:       *irishSubjectTaught,
+	// 	RequestStage:        Scheduled,
+	// 	RequestStageDetail:  "",
+	// 	Requester:           *student,
+	// 	RequestStageChanger: *john,
+	// }).Error
+	// if err != nil {
+	// 	return err
+	// }
+	// log.Info("John Tutor has lesson with John Student")
 
 	return nil
 }

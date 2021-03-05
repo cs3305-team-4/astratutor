@@ -232,10 +232,10 @@ func (a *Availability) Scan(value interface{}) error {
 	}
 	text, ok := value.(string)
 	if !ok {
-		return errors.New("Invalid value for availability.")
+		return errors.New("invalid value for availability.")
 	}
 	if len(text) < (AvailabilityLength*2)-1 {
-		return errors.New("Invalid availability length.")
+		return errors.New("invalid availability length.")
 	}
 	out := make(Availability, 0)
 	text = text[1 : len(text)-1]
@@ -291,7 +291,7 @@ type Profile struct {
 	Qualifications []Qualification  `gorm:"foreignKey:ProfileID"`
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
-	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
+	// Contains the next 14x24 hrs of availbility modulus to 1 week
 	Availability *Availability `gorm:"type:int[]"`
 }
 

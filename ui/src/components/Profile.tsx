@@ -97,7 +97,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const reloadProfile = async () => {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
-      setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
+      setTutorSubjects(await api.services.readSubjectsTaughtByAccountId(props.uuid));
     } catch (e) {
       Modal.error({
         title: 'Error',
