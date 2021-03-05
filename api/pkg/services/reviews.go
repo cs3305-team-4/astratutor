@@ -42,7 +42,7 @@ type ReviewDTO struct {
 	CreatedAt             time.Time `json:"created_at"`
 	Rating                int       `json:"rating"`
 	Comment               string    `json:"comment"`
-	ProfileResponseDTOMin `json:"student" gorm:"EMBEDDED;EMBEDDED_PREFIX:profiles"`
+	ProfileResponseDTOMin `json:"student" gorm:""`
 }
 
 type ProfileResponseDTOMin struct {
