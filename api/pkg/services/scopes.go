@@ -59,13 +59,13 @@ type Join struct {
 
 func Sort(sort string, asc string, joins ...Join) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
+		for _, join := range joins {
+			db = db.Joins(fmt.Sprintf("JOIN %s ON %s.%s = %s.%s", join.new.table, join.new.table, join.new.column, join.current.table, join.current.column))
+		}
+		if len(joins) > 0 {
+			db.Group(fmt.Sprintf("%s.%s", joins[0].current.table, joins[0].current.column))
+		}
 		if asc != "" {
-			for _, join := range joins {
-				db = db.Joins(fmt.Sprintf("JOIN %s ON %s.%s = %s.%s", join.new.table, join.new.table, join.new.column, join.current.table, join.current.column))
-			}
-			if len(joins) > 0 {
-				db.Group(fmt.Sprintf("%s.%s", joins[0].current.table, joins[0].current.column))
-			}
 			db = db.Order(fmt.Sprintf("%s %s", sort, asc))
 		}
 		return db
