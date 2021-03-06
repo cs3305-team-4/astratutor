@@ -295,6 +295,11 @@ func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage L
 			switch newStage {
 			case Cancelled:
 
+			case Completed:
+				if lesson.TutorID != stageRequester.ID {
+					return fmt.Errorf("only the tutor of the lesson can mark it as completed")
+				}
+
 			default:
 				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
 			}

@@ -10,6 +10,7 @@ import { AccountType, LessonRequestStage, LessonResponseDTO, ProfileResponseDTO 
 import { useAsync } from 'react-async-hook';
 import Lesson, { LessonProps } from '../components/Lesson';
 import Link from 'antd/lib/typography/Link';
+import { useLocation } from 'react-router-dom';
 
 const { Sider, Content } = Layout;
 
@@ -34,6 +35,8 @@ export function Lessons(): React.ReactElement {
   const [menu, setMenu] = React.useState<Menus>(Menus.Scheduled);
 
   const [lessonProps, setLessonProps] = React.useState<{ [uuid: string]: LessonProps }>({});
+
+  const query = useLocation();
 
   useAsync(async () => {
     const lessons: LessonResponseDTO[] = await api.services.readLessonsByAccountId(api.account.id);
@@ -67,6 +70,26 @@ export function Lessons(): React.ReactElement {
     }
 
     setLessonProps(lprops);
+  }, []);
+
+  useAsync(() => {
+    switch (query.pathname) {
+      case '/lessons/requests':
+        setMenu(Menus.Requests);
+        break;
+      case '/lessons/scheduled':
+        setMenu(Menus.Scheduled);
+        break;
+      case '/lessons/completed':
+        setMenu(Menus.Completed);
+        break;
+      case '/lessons/cancelled':
+        setMenu(Menus.Cancelled);
+        break;
+      case '/lessons/denied':
+        setMenu(Menus.Denied);
+        break;
+    }
   }, []);
 
   return (

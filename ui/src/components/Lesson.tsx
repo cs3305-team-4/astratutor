@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useHistory } from 'react-router';
 import { UserAvatar } from './UserAvatar';
@@ -30,7 +30,7 @@ import {
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -60,6 +60,8 @@ export default function Lesson(props: LessonProps): React.ReactElement {
 
   const [showRescheduleModal, setShowRescheduleModal] = useState<boolean>(false);
   const [rescheduleForm] = useForm();
+
+  const query = new URLSearchParams(useLocation().search);
 
   const reload = async () => {
     props.onUpdate(await api.services.readLessonByAccountId(props.lesson.id), props.otherProfile);
@@ -243,12 +245,22 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       buttons.push(cancelButton, rescheduleButton);
   }
 
+  useEffect(() => {
+    console.log(profile);
+    if (query.has('reschedule') && query.get('reschedule') === lesson.id) {
+      console.log(profile);
+      setShowRescheduleModal(true);
+    }
+  }, []);
+
   return (
     <PageHeader
       title={
         <>
           <Title level={5}>
-            <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
+            <Link to={api.account?.type === AccountType.Student && `/tutors/${profile.account_id}/profile`}>
+              <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
+            </Link>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>

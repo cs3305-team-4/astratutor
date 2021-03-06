@@ -205,9 +205,28 @@ export function LessonLobby(): ReactElement {
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
               Thanks for attending {metadata?.lesson_detail}!
             </Typography.Title>
-            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="link">
-              Schedule my next lesson
+            <Button style={{ width: '50%', margin: '.3em auto' }} ghost type="link">
+              <Link to={`/lessons/completed?reschedule=${metadata?.id}`}>Schedule my next lesson</Link>
             </Button>
+            {api.account?.type === AccountType.Student && (
+              <Button style={{ width: '', margin: '.3em auto' }} type="primary">
+                <Link to={`/tutors/${metadata?.tutor_id}/profile`}>Rate my tutor</Link>
+              </Button>
+            )}
+
+            {api.account?.type === AccountType.Tutor && (
+              <Button
+                onClick={async () => {
+                  await api.services.updateLessonStageCompleted(metadata?.id ?? '');
+                  history.push('/lessons/completed');
+                }}
+                style={{ width: '', margin: '.3em auto' }}
+                type="primary"
+              >
+                Mark lesson as completed
+              </Button>
+            )}
+
             <StyledDivider />
             <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
               <Link to={`/lessons`}>Go back to my lessons</Link>

@@ -95,7 +95,10 @@ function App(): React.ReactElement {
         <Button type={history.location.pathname.startsWith('/subjects/tutors') ? 'link' : 'text'}>Find A Tutor</Button>
       </Link>,
       <Link to="/login" key="login">
-        <Button type="primary">Log in</Button>
+        <Divider type="vertical" style={{ borderLeft: '1px solid rgb(169 169 169)', marginRight: 20 }} />
+        <Button style={{ marginLeft: 20 }} type="primary">
+          Log in
+        </Button>
       </Link>,
       <Link to="/register" key="register">
         <Button>Register</Button>
@@ -133,10 +136,10 @@ function App(): React.ReactElement {
               <Route path="/subjects/:subject_slug/tutors"></Route>
               <Route exact path="/tutors/:slug"></Route>
               <Route exact path="/tutors/:uuid/profile" component={ViewProfile} />
-              <PrivateRoute exact path="/lessons" component={Lessons} />
               <PrivateRoute exact path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
                 <LessonLobby />
               </PrivateRoute>
+              <PrivateRoute path="/lessons" component={Lessons} />
               <Route path="/login" component={Login} />
               <Route path="/register" component={Register} />
             </Switch>
