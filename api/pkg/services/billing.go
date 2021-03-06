@@ -269,7 +269,7 @@ func (acc *Account) GetPayeesPayments() ([]PayeePayment, error) {
 
 	for _, lesson := range lessons {
 		payees = append(payees, PayeePayment{
-			Description: "Lesson Payment",
+			Description: lesson.StartTime.Format("Lesson on 2006-01-02"),
 			Date:        *lesson.DatePaid,
 			Amount:      lesson.PriceAmount,
 			Remarks:     "",

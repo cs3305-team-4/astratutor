@@ -26,7 +26,12 @@ import { BankOutlined, CreditCardFilled, DeleteFilled } from '@ant-design/icons'
 
 import { PaymentMethod } from '@stripe/stripe-js';
 import { Elements, useStripe } from '@stripe/react-stripe-js';
-import { AccountType, ProfileRequestDTO } from '../api/definitions';
+import {
+  AccountType,
+  ProfileRequestDTO,
+  BillingPayeePayment,
+  BillingPayeesPaymentsResponseDTO,
+} from '../api/definitions';
 import { APIContext } from '../api/api';
 import DefaultAvatar from '../assets/default_avatar.png';
 
@@ -40,7 +45,8 @@ export function BillingStudent(): React.ReactElement {
   const stripe = useStripe();
   const [error, setError] = React.useState<string>('');
 
-  const [ready, setReady] = React.useState<boolean>(true);
+  const [payeesPayments, setPayeesPayments] = React.useState<BillingPayeePayment[] | undefined>(undefined);
+  const [ready, setReady] = React.useState<boolean>(false);
 
   const [cards, setCards] = React.useState<PaymentMethod[]>([]);
   const api = React.useContext(APIContext);
@@ -58,6 +64,7 @@ export function BillingStudent(): React.ReactElement {
 
   const reload = async () => {
     setCards(await api.services.readCardsByAccount(api.account.id));
+    setPayeesPayments(await api.services.readPayeesPayments(api.account.id));
   };
 
   useAsync(async () => {
@@ -137,37 +144,37 @@ export function BillingStudent(): React.ReactElement {
           </Col>
         </Row>
         <Row gutter={16} style={{ margin: '1rem' }}>
+          <Title level={3}>Invoices</Title>
           <Col md={24} sm={24} xs={24}>
-            <Title level={5}>Payments</Title>
             <Table
               locale={{
                 emptyText: 'No invoices available',
               }}
               columns={[
                 { title: 'Description', key: 'description', dataIndex: 'description' },
-                { title: 'Date', key: 'field', dataIndex: 'field' },
-                { title: 'Amount', key: 'school', dataIndex: 'school' },
+                { title: 'Date', key: 'date', dataIndex: 'date' },
+                { title: 'Amount', key: 'amount', dataIndex: 'amount' },
                 { title: 'Remarks', key: 'remarks', dataIndex: 'remarks' },
+                // { title: 'Actions', key: 'actions', dataIndex: 'actions' },
               ]}
               size="small"
               style={{ width: '100%' }}
               pagination={false}
-              // dataSource={profile.qualifications.map((quali: QualificationResponseDTO) => {
-              //   return {
-              //     degree: quali.degree,
-              //     field: quali.field,
-              //     school: quali.school,
-              //     verified: quali.verified ? '\u2713' : '\u2717',
-              //     delete: editQualis ? (
-              //       <Button onClick={() => deleteQuali(quali.id)} style={{ margin: '0 0.5rem' }} size="small">
-              //         <DeleteOutlined />
-              //         Remove
-              //       </Button>
-              //     ) : (
-              //       <></>
-              //     ),
-              // //   };
-              // })}
+              dataSource={payeesPayments.map((payment: BillingPayeePayment) => {
+                return {
+                  ...payment,
+                  amount: `€${payment.amount / 100}`,
+                  date: new Intl.DateTimeFormat('en-IE', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    weekday: 'long',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                  }).format(new Date(payment.date)),
+                  actions: <></>,
+                };
+              })}
             ></Table>
           </Col>
         </Row>
