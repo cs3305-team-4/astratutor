@@ -25,6 +25,7 @@ func InjectTutorsRoutes(subrouter *mux.Router) {
 	accountResource.HandleFunc("/profile/city", handleProfileUpdateCity).Methods("POST")
 	accountResource.HandleFunc("/profile/country", handleProfileUpdateCountry).Methods("POST")
 	accountResource.HandleFunc("/profile/description", handleProfileUpdateDescription).Methods("POST")
+	accountResource.HandleFunc("/profile/subtitle", handleProfileUpdateSubtitle).Methods("POST")
 	accountResource.HandleFunc("/profile/availability", handleTutorProfileAvailabilityPost).Methods("POST")
 
 	accountResource.HandleFunc("/profile/qualifications", handleTutorProfileQualificationsPost).Methods("POST")
