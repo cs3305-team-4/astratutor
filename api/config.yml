@@ -10,7 +10,7 @@ database:
 ui:
   base_url: "https://grindsapp.netsoc.cloud"
 billing:
-  allow_instance_payouts: true
+  allow_instant_payouts: true
   profit_margin: 16
   stripe:
     publishable_key: pk_test_51ILSkYKHbgvdgLLAjc8dIh9ectl7gFQA0YbaohGIIVTAt21u2occaDi8MaKo0m30spgfiIrLmVgPNXoBWccmU5dZ00AJURLb0q

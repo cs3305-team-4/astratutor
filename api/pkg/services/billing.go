@@ -20,6 +20,7 @@ import (
 	stripePaymentMethod "github.com/stripe/stripe-go/v72/paymentmethod"
 	stripePayout "github.com/stripe/stripe-go/v72/payout"
 	stripeRefund "github.com/stripe/stripe-go/v72/refund"
+	stripeTransfer "github.com/stripe/stripe-go/v72/transfer"
 )
 
 // SetupBilling sets up billing for an account
@@ -289,7 +290,9 @@ func (acc *Account) GetPayoutInfo() (*PayoutInfo, error) {
 	cents = 0
 
 	for _, payer := range payers {
-		cents += payer.Amount
+		if payer.AvailableForPayout && !payer.PaidOut {
+			cents += payer.Amount
+		}
 	}
 
 	return &PayoutInfo{
@@ -310,11 +313,11 @@ func (acc *Account) Payout() error {
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// Find every lesson the tutor has that has been paid for
 		var unpaidOutlessons []Lesson
-		err := db.Where(&Lesson{
+		err := tx.Where(&Lesson{
 			TutorID: acc.ID,
 			Paid:    true,
 			PaidOut: false,
-		}).Find(&unpaidOutlessons).Error
+		}, "TutorID", "Paid", "PaidOut").Find(&unpaidOutlessons).Error
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -341,7 +344,19 @@ func (acc *Account) Payout() error {
 
 		now := time.Now()
 
-		err = db.Model(Lesson{}).Where("id IN ?", paidLessonIds).Updates(Lesson{PaidOut: true, DatePaidOut: &now}).Error
+		err = tx.Model(Lesson{}).Where("id IN ?", paidLessonIds).Updates(Lesson{PaidOut: true, DatePaidOut: &now}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		transferParams := &stripe.TransferParams{
+			Amount:      stripe.Int64(amount),
+			Currency:    stripe.String(string(stripe.CurrencyEUR)),
+			Destination: stripe.String(acc.StripeID),
+		}
+
+		_, err = stripeTransfer.New(transferParams)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -349,7 +364,7 @@ func (acc *Account) Payout() error {
 
 		params := &stripe.PayoutParams{
 			Amount:   stripe.Int64(amount),
-			Currency: stripe.String(string(stripe.CurrencyUSD)),
+			Currency: stripe.String(string(stripe.CurrencyEUR)),
 		}
 		params.SetStripeAccount(acc.StripeID)
 
@@ -395,7 +410,7 @@ func (acc *Account) GetPayersPayments() ([]PayerPayment, error) {
 	for _, lesson := range lessons {
 		if lesson.PaidOut {
 			payers = append(payers, PayerPayment{
-				Description:        "Lesson Payment",
+				Description:        lesson.StartTime.Format("Lesson on 2006-01-02"),
 				Date:               *lesson.DatePaid,
 				Amount:             lesson.PayoutAmount,
 				Remarks:            "",
@@ -410,9 +425,9 @@ func (acc *Account) GetPayersPayments() ([]PayerPayment, error) {
 			duration := time.Now().Sub(lesson.StartTime)
 			numDays := int(duration.Hours()) / 24
 
-			if numDays > 14 {
+			if numDays >= 14 {
 				payers = append(payers, PayerPayment{
-					Description:        "Lesson Payment",
+					Description:        lesson.StartTime.Format("Lesson on 2006-01-02"),
 					Date:               *lesson.DatePaid,
 					Amount:             lesson.PayoutAmount,
 					Remarks:            "",
@@ -421,17 +436,17 @@ func (acc *Account) GetPayersPayments() ([]PayerPayment, error) {
 				})
 			} else {
 				payers = append(payers, PayerPayment{
-					Description:        "Lesson Payment",
+					Description:        lesson.StartTime.Format("Lesson on 2006-01-02"),
 					Date:               *lesson.DatePaid,
 					Amount:             lesson.PayoutAmount,
-					Remarks:            fmt.Sprintf("Available for payout in %i days", (numDays - 14)),
+					Remarks:            fmt.Sprintf("Available for payout in %d days", (14 - numDays)),
 					AvailableForPayout: false,
 					PaidOut:            false,
 				})
 			}
 		} else {
 			payers = append(payers, PayerPayment{
-				Description:        "Lesson Payment",
+				Description:        lesson.StartTime.Format("Lesson on 2006-01-02"),
 				Date:               *lesson.DatePaid,
 				Amount:             lesson.PayoutAmount,
 				Remarks:            "",

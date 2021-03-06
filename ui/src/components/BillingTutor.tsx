@@ -88,10 +88,15 @@ export function BillingTutor(): React.ReactElement {
   const payout = async () => {
     try {
       await api.services.createPayout(api.account.id);
+      Modal.info({
+        title: 'Payout successful',
+        content: `Your payout has been successful, you will recieve the funds to your linked bank account within 1-5 days`,
+      });
+      await reload();
     } catch (e) {
       Modal.error({
         title: 'Error',
-        content: `Could not payout: ${e}`,
+        content: `Could not payout to bank account: ${e}`,
       });
     }
   };
@@ -197,7 +202,8 @@ export function BillingTutor(): React.ReactElement {
                 { title: 'Amount', key: 'amount', dataIndex: 'amount' },
                 { title: 'Available for Payout', key: 'available_for_payout', dataIndex: 'available_for_payout' },
                 { title: 'Paid Out', key: 'paid_out', dataIndex: 'paid_out' },
-                { title: 'Actions', key: 'actions', dataIndex: 'actions' },
+                { title: 'Remarks', key: 'remarks', dataIndex: 'remarks' },
+                // { title: 'Actions', key: 'actions', dataIndex: 'actions' },
               ]}
               size="small"
               style={{ width: '100%' }}
