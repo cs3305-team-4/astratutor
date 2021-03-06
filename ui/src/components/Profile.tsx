@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { useAsync } from 'react-async-hook';
@@ -9,6 +9,8 @@ import {
   Layout,
   Row,
   Col,
+  Comment,
+  List,
   Avatar,
   PageHeader,
   Input,
@@ -22,9 +24,13 @@ import {
   Tag,
   Skeleton,
   InputNumber,
+  Rate,
   AvatarProps,
   Table,
   Progress,
+  Space,
+  Tooltip,
+  message,
 } from 'antd';
 
 import { UploadRequestOption } from 'rc-upload/lib/interface';
@@ -55,6 +61,9 @@ import {
   ProfileResponseDTO,
   SubjectTaughtDTO,
   SubjectDTO,
+  ReviewAverageDTO,
+  ReviewDTO,
+  ReviewCreateDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
@@ -62,6 +71,8 @@ import { RequestLessonModal } from './RequestLessonModal';
 import { APIContext } from '../api/api';
 import { Availability } from './Availability';
 import { UserAvatar } from './UserAvatar';
+
+import moment from 'moment';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -78,6 +89,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const history = useHistory();
 
   const [profile, setProfile] = React.useState<ProfileResponseDTO | undefined>(undefined);
+  const [rating, setRating] = React.useState<ReviewAverageDTO | undefined>(undefined);
   const [activeTab, setActiveTab] = React.useState<string>('outline');
   const [tutorSubjects, setTutorSubjects] = React.useState<SubjectTaughtDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = React.useState<SubjectDTO[] | undefined>(undefined);
@@ -106,11 +118,34 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const [editWork, setEditWork] = React.useState<boolean>(false);
   const [addWorkVisible, setAddWorkVisible] = React.useState<boolean>(false);
 
+  const [reviews, setReviews] = React.useState<ReviewDTO[] | undefined>(undefined);
+  const [loggedInReview, setLoggedInReview] = React.useState<ReviewDTO | undefined>(undefined);
+  const [editReview, setEditReview] = React.useState<ReviewDTO | undefined>(undefined);
+  const [form] = Form.useForm();
+
+  const reviewByLoggedInStudent = async (): Promise<ReviewDTO | undefined> => {
+    if (api.account?.type !== AccountType.Student) return;
+    const review = await api.services.tutorGetReviewByStudent(props.uuid, api.account.id);
+    if (review.student.account_id !== '') {
+      return review;
+    }
+    return undefined;
+  };
+
   const reloadProfile = async () => {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
       setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
+      setSubjects(await api.services.readSubjects());
       setSubjects(await api.services.readSubjects(''));
+      if (props.type === AccountType.Tutor) {
+        setRating(await api.services.tutorRatingAverage(props.uuid));
+        setReviews(await api.services.tutorGetAllReviews(props.uuid));
+        setLoggedInReview(await reviewByLoggedInStudent());
+      }
+
+      
+
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -289,6 +324,13 @@ export function Profile(props: ProfileProps): React.ReactElement {
     };
   };
 
+  const ratingValue = (): string => {
+    if (!rating || rating.average === 0) {
+      return 'No Ratings';
+    }
+    return `${rating.average} / 5`;
+  };
+
   if (profile === undefined) {
     return (
       <>
@@ -408,7 +450,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
             )}
             {props.type === AccountType.Tutor && (
               <Col>
-                <Statistic key="users" title="Average Review" value={'4.5/5'} />
+                <Statistic key="users" title="Average Review" value={ratingValue()} />
               </Col>
             )}
           </Row>,
@@ -848,6 +890,131 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   </Form.Item>
                 </Form>
               </Modal>
+            </>
+          )}
+          {activeTab === 'reviews' && (
+            <>
+              {api.account?.type === 'student' && (
+                <Comment
+                  content={
+                    <>
+                      <Form
+                        form={form}
+                        onFinish={async (values: { rating: number; comment: string }) => {
+                          if (loggedInReview) {
+                            // Edit
+                            if (loggedInReview.comment !== values.comment) {
+                              const res = await api.services.tutorReviewUpdateComment(props.uuid, loggedInReview.id, {
+                                comment: values.comment,
+                              });
+                              if (res === 200) {
+                                message.success('Successfully updated comment');
+                              } else {
+                                message.warn('Failed to update comment');
+                              }
+                            }
+                            if (loggedInReview.rating !== values.rating) {
+                              const res = await api.services.tutorReviewUpdateRating(props.uuid, loggedInReview.id, {
+                                rating: values.rating,
+                              });
+                              if (res === 200) {
+                                message.success('Successfully updated rating');
+                              } else {
+                                message.error('Failed to update rating');
+                              }
+                            }
+                          } else {
+                            // Create
+                            const res = await api.services.tutorCreateReview(props.uuid, {
+                              comment: values.comment,
+                              rating: values.rating,
+                            });
+                            if (res === 200) {
+                              message.success('Successfully created review');
+                            } else {
+                              message.error('Failed to create review');
+                            }
+                          }
+                          await reloadProfile();
+                        }}
+                        initialValues={{ rating: loggedInReview?.rating || 0, comment: loggedInReview?.comment || '' }}
+                      >
+                        <Form.Item
+                          name="rating"
+                          rules={[
+                            { required: true, message: 'Please include a rating' },
+                            {
+                              validator: async (_rule, value) => {
+                                if (value > 5 || value < 1) {
+                                  throw new Error('Please set a rating');
+                                }
+                              },
+                            },
+                          ]}
+                        >
+                          <Rate className="review" />
+                        </Form.Item>
+                        <Form.Item name="comment">
+                          <TextArea rows={4} />
+                        </Form.Item>
+                        <Form.Item>
+                          <Space>
+                            <Button type="primary" htmlType="submit">
+                              {loggedInReview !== undefined ? 'Update Your Review' : 'Create Review'}
+                            </Button>
+                            {loggedInReview && (
+                              <Button
+                                danger
+                                onClick={async () => {
+                                  const res = await api.services.tutorDeleteReview(props.uuid, loggedInReview.id);
+                                  if (res === 200) {
+                                    message.info('Review successfully deleted');
+                                  } else {
+                                    message.error('Failed to delete review');
+                                  }
+                                  await reloadProfile();
+                                  form.resetFields();
+                                }}
+                              >
+                                Delete Review
+                              </Button>
+                            )}
+                          </Space>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  }
+                />
+              )}
+              <List
+                dataSource={reviews}
+                renderItem={(item) => (
+                  <Comment
+                    author={`${item.student.first_name} ${item.student.last_name}`}
+                    avatar={
+                      <Avatar
+                        src={`${item.student.avatar}`}
+                        alt={`${item.student.first_name} ${item.student.last_name}`}
+                      />
+                    }
+                    content={<Paragraph>{item.comment}</Paragraph>}
+                    datetime={
+                      <>
+                        <Tooltip title={moment.utc(`${item.created_at}`).format('YYYY-MM-DD HH:mm:ss')}>
+                          <span>{moment.utc(`${item.created_at}`).fromNow()}</span>
+                        </Tooltip>
+                        <Rate
+                          className="review"
+                          disabled={true}
+                          value={item.rating}
+                          allowHalf={true}
+                          style={{ fontSize: '1em' }}
+                        />
+                      </>
+                    }
+                  />
+                )}
+              />
             </>
           )}
         </Content>

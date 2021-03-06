@@ -275,7 +275,7 @@ func (a *Availability) Get() []bool {
 // Profile model.
 type Profile struct {
 	database.Model
-	AccountID      uuid.UUID `gorm:"type:uuid"`
+	AccountID      uuid.UUID `gorm:"type:uuid;unique"`
 	Avatar         string
 	Slug           string
 	FirstName      string

@@ -23,6 +23,10 @@ import {
   PaginatedResponseDTO,
   LessonCancelRequestDTO,
   LessonRescheduleRequestDTO,
+  ReviewDTO,
+  ReviewAverageDTO,
+  ReviewUpdateDTO,
+  ReviewCreateDTO,
 } from './definitions';
 
 export class Services {
@@ -321,5 +325,60 @@ export class Services {
   async readTutorSubjectsByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
     const res = await fetchRest(`${config.apiUrl}/subjects/tutors/${account_id}`);
     return (await res.json()) as SubjectTaughtDTO[];
+  }
+
+  async tutorGetAllReviews(tid: string): Promise<ReviewDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}`);
+    return (await res.json()) as ReviewDTO[];
+  }
+
+  async tutorRatingAverage(tid: string): Promise<ReviewAverageDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/average`);
+    return (await res.json()) as ReviewAverageDTO;
+  }
+
+  async tutorGetSingleReview(tid: string, rid: string): Promise<ReviewDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}`);
+    return (await res.json()) as ReviewDTO;
+  }
+
+  async tutorGetReviewByStudent(tid: string, sid: string): Promise<ReviewDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/author/${sid}`);
+    return (await res.json()) as ReviewDTO;
+  }
+
+  async tutorCreateReview(tid: string, review: ReviewCreateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(review),
+    });
+    return res.status;
+  }
+
+  async tutorReviewUpdateRating(tid: string, rid: string, update: ReviewUpdateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}/rating`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(update),
+    });
+    return res.status;
+  }
+
+  async tutorReviewUpdateComment(tid: string, rid: string, update: ReviewUpdateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}/comment`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(update),
+    });
+    return res.status;
+  }
+
+  async tutorDeleteReview(tid: string, rid: string): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}`, {
+      headers: this.headers,
+      method: 'DELETE',
+    });
+    return res.status;
   }
 }
