@@ -221,7 +221,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     case LessonRequestStage.Requested:
       if (api.account.id !== lesson.request_stage_changer_id) {
         // If you arent the account who requested the lesson than you can accept/ deny
-        buttons.push(acceptButton, denyButton);
+        buttons.push(acceptButton, denyButton, rescheduleButton);
       } else {
         // If you are the one who requested the lesson than you can cancel or see its pending
         buttons.push(cancelButton, requestPendingButton);
