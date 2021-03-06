@@ -357,6 +357,7 @@ export function LessonClassroom(): ReactElement {
           break;
       }
     };
+    settings.setWebcamStream(settings.webcamStream ?? new MediaStream());
   }, []);
   useEffect(() => console.log(webcamDisplays), [webcamDisplays]);
 
