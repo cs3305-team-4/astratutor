@@ -192,7 +192,7 @@ export function Tutors(): ReactElement {
                   extra={
                     <Link key="1" to={`/tutors/${tutor.id}/profile`}>
                       <UserAvatar
-                        props={{ style: { height: 200, width: 200 } }}
+                        props={{ size: 200, style: { fontSize: 90 } }}
                         profile={(tutor as unknown) as ProfileResponseDTO}
                       />
                     </Link>
