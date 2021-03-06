@@ -84,6 +84,7 @@ export function LessonLobby(): ReactElement {
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [otherProfiles, setOtherProfiles] = React.useState<{ [id: string]: ProfileResponseDTO }>({});
   const [metadata, setMetadata] = useState<LessonResponseDTO>();
+  const [completed, setCompleted] = useState(false);
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -205,20 +206,22 @@ export function LessonLobby(): ReactElement {
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
               Thanks for attending {metadata?.lesson_detail}!
             </Typography.Title>
-            <Button style={{ width: '50%', margin: '.3em auto' }} ghost type="link">
-              <Link to={`/lessons/completed?reschedule=${metadata?.id}`}>Schedule my next lesson</Link>
-            </Button>
+            {(api.account?.type === AccountType.Student || completed) && (
+              <Button style={{ width: '50%', margin: '.3em auto' }} ghost type="link">
+                <Link to={`/lessons/completed?reschedule=${metadata?.id}`}>Schedule my next lesson</Link>
+              </Button>
+            )}
             {api.account?.type === AccountType.Student && (
               <Button style={{ width: '', margin: '.3em auto' }} type="primary">
                 <Link to={`/tutors/${metadata?.tutor_id}/profile`}>Rate my tutor</Link>
               </Button>
             )}
 
-            {api.account?.type === AccountType.Tutor && (
+            {api.account?.type === AccountType.Tutor && !completed && (
               <Button
                 onClick={async () => {
                   await api.services.updateLessonStageCompleted(metadata?.id ?? '');
-                  history.push('/lessons/completed');
+                  setCompleted(true);
                 }}
                 style={{ width: '', margin: '.3em auto' }}
                 type="primary"
@@ -227,10 +230,14 @@ export function LessonLobby(): ReactElement {
               </Button>
             )}
 
-            <StyledDivider />
-            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-              <Link to={`/lessons`}>Go back to my lessons</Link>
-            </Button>
+            {(api.account?.type === AccountType.Student || completed) && (
+              <>
+                <StyledDivider />
+                <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+                  <Link to={`/lessons`}>Go back to my lessons</Link>
+                </Button>
+              </>
+            )}
           </StyledLayout>
         </Route>
         <Route path="/lessons/:lid/classroom">

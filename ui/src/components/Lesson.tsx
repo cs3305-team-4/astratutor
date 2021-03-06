@@ -221,7 +221,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     case LessonRequestStage.Requested:
       if (api.account.id !== lesson.request_stage_changer_id) {
         // If you arent the account who requested the lesson than you can accept/ deny
-        buttons.push(acceptButton, denyButton, rescheduleButton);
+        buttons.push(acceptButton, denyButton);
       } else {
         // If you are the one who requested the lesson than you can cancel or see its pending
         buttons.push(cancelButton, requestPendingButton);
@@ -242,13 +242,17 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         </Button>,
       );
       // Once the lesson is accepted either party can cancel or reschedule a lesson
-      buttons.push(cancelButton, rescheduleButton);
+      buttons.push(cancelButton);
+      break;
+    default:
+      buttons.push(rescheduleButton);
+      break;
   }
 
   useEffect(() => {
     console.log(profile);
     if (query.has('reschedule') && query.get('reschedule') === lesson.id) {
-      console.log(profile);
+      console.log(lesson.id);
       setShowRescheduleModal(true);
     }
   }, []);
