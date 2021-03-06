@@ -413,21 +413,23 @@ export function Profile(props: ProfileProps): React.ReactElement {
             )}
           </Row>,
           <Row key="buttons" gutter={16} align="top" justify="end" style={{ margin: '0.5rem 0' }}>
-            <Button
-              type="primary"
-              key="request"
-              style={{ margin: '0.2rem' }}
-              onClick={() => {
-                if (!api.isLoggedIn()) {
-                  history.push('/login');
-                } else {
-                  setRequestLessonVisible(true);
-                }
-              }}
-              disabled={isSelf}
-            >
-              Request Lesson
-            </Button>
+            {(!api.account || api.account?.type === AccountType.Student || isSelf) && (
+              <Button
+                type="primary"
+                key="request"
+                style={{ margin: '0.2rem' }}
+                onClick={() => {
+                  if (!api.isLoggedIn()) {
+                    history.push('/login');
+                  } else {
+                    setRequestLessonVisible(true);
+                  }
+                }}
+                disabled={isSelf}
+              >
+                Request Lesson
+              </Button>
+            )}
           </Row>,
         ]}
         footer={
