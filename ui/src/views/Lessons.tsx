@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 
 import { Badge, Layout, Menu } from 'antd';
@@ -10,6 +10,7 @@ import { AccountType, LessonRequestStage, LessonResponseDTO, ProfileResponseDTO 
 import { useAsync } from 'react-async-hook';
 import Lesson, { LessonProps } from '../components/Lesson';
 import Link from 'antd/lib/typography/Link';
+import { useLocation } from 'react-router-dom';
 
 const { Sider, Content } = Layout;
 
@@ -35,6 +36,8 @@ export function Lessons(): React.ReactElement {
   const [menu, setMenu] = React.useState<Menus>(Menus.Scheduled);
 
   const [lessonProps, setLessonProps] = React.useState<{ [uuid: string]: LessonProps }>({});
+
+  const query = useLocation();
 
   useAsync(async () => {
     const lessons: LessonResponseDTO[] = await api.services.readLessonsByAccountId(api.account.id);
@@ -69,6 +72,29 @@ export function Lessons(): React.ReactElement {
 
     setLessonProps(lprops);
   }, []);
+
+  useEffect(() => {
+    switch (query.pathname) {
+      case '/lessons/requests':
+        setMenu(Menus.Requests);
+        break;
+      case '/lessons/scheduled':
+        setMenu(Menus.Scheduled);
+        break;
+      case '/lessons/required':
+        setMenu(Menus.PaymentRequired);
+        break;
+      case '/lessons/completed':
+        setMenu(Menus.Completed);
+        break;
+      case '/lessons/cancelled':
+        setMenu(Menus.Cancelled);
+        break;
+      case '/lessons/denied':
+        setMenu(Menus.Denied);
+        break;
+    }
+  }, [query]);
 
   return (
     <StyledLayout>
@@ -109,8 +135,31 @@ export function Lessons(): React.ReactElement {
               Requests
             </Badge>
           </Menu.Item>
-          <Menu.Item onClick={() => setMenu(Menus.PaymentRequired)} key={Menus.PaymentRequired} icon={<BankOutlined />}>
-            Payment Required
+          <Menu.Item
+            disabled={
+              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                .length === 0
+            }
+            title={
+              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                .length === 0
+                ? 'No payments required right now!'
+                : ''
+            }
+            onClick={() => setMenu(Menus.PaymentRequired)}
+            key={Menus.PaymentRequired}
+            icon={<BankOutlined />}
+          >
+            <Badge
+              style={{ background: '#1890ff' }}
+              offset={[60, 7]}
+              count={
+                Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                  .length
+              }
+            >
+              Payment Required
+            </Badge>
           </Menu.Item>
           <Menu.Item onClick={() => setMenu(Menus.Scheduled)} key={Menus.Scheduled} icon={<ScheduleOutlined />}>
             Scheduled

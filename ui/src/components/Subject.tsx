@@ -13,17 +13,17 @@ const colors = [
   '#ef25a4',
   '#1c73cd',
   '#05c760',
-  '#17eaaa',
+  '#1890ff',
   '#bd00ff',
-  '#ff9a00',
   '#8900ff',
   '#d9534f',
+  '#d9363e',
   '#5cb85c',
   '#ff4d00',
-  '#ffc100',
-  '#00e6f9',
+  '#ff9a00',
+  '#ff5722',
   '#e51894',
-  '#29e518',
+  '#1ab45a',
   '#e56b18',
 ];
 const StyledRow = styled(Row)<{ color: string }>`
@@ -35,10 +35,10 @@ const StyledRow = styled(Row)<{ color: string }>`
   border-bottom: 5px solid ${(props) => props.color};
   font-weight: bolder;
   margin: 10px;
-  transition: all 0.2s;
+  transition: all 0.1s;
   &:hover {
     border-bottom: 10px solid ${(props) => props.color};
-    font-size: 2em;
+    font-size: 1.6em;
   }
 `;
 

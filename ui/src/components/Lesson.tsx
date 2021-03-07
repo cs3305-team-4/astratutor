@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useHistory } from 'react-router';
 import { UserAvatar } from './UserAvatar';
@@ -41,7 +41,7 @@ import {
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -74,6 +74,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   const [showRescheduleModal, setShowRescheduleModal] = useState<boolean>(false);
   const [rescheduleForm] = useForm();
 
+  const query = new URLSearchParams(useLocation().search);
   const [showPayModal, setShowPayModal] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<number>(0);
   const [cards, setCards] = useState<PaymentMethod[]>([]);
@@ -312,7 +313,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     <>
       <Button
         style={{ margin: '0.2rem' }}
-        type="dashed"
+        type="primary"
         onClick={async () => {
           const cards = await api.services.readCardsByAccount(api.account.id);
           const secret_id = await api.services.readLessonBillingPaymentIntentSecret(props.lesson.id);
@@ -429,7 +430,6 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       // Once the lesson is accepted either party can cancel or reschedule a lesson
       buttons.push(cancelButton, rescheduleButton);
       break;
-
     case LessonRequestStage.PaymentRequired:
       if (api.account.type == AccountType.Student) {
         buttons.push(payButton, cancelButton);
@@ -437,14 +437,26 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         buttons.push(paymentPendingButton, cancelButton);
       }
       break;
+    default:
+      buttons.push(rescheduleButton);
   }
+
+  useEffect(() => {
+    console.log(profile);
+    if (query.has('reschedule') && query.get('reschedule') === lesson.id) {
+      console.log(lesson.id);
+      setShowRescheduleModal(true);
+    }
+  }, []);
 
   return (
     <PageHeader
       title={
         <>
           <Title level={5}>
-            <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
+            <Link to={api.account?.type === AccountType.Student && `/tutors/${profile.account_id}/profile`}>
+              <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
+            </Link>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>

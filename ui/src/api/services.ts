@@ -303,6 +303,14 @@ export class Services {
     });
   }
 
+  async updateLessonStageCompleted(lesson_id: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/lessons/${lesson_id}/completed`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
   async getTurnCredentials(): Promise<TurnCredentials> {
     const res = await fetchRest(`${config.apiUrl}/signalling/credentials`, {
       headers: this.headers,

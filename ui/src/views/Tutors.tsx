@@ -192,7 +192,7 @@ export function Tutors(): ReactElement {
                   extra={
                     <Link key="1" to={`/tutors/${tutor.id}/profile`}>
                       <UserAvatar
-                        props={{ style: { height: 200, width: 200 } }}
+                        props={{ size: 200, style: { fontSize: 90 } }}
                         profile={(tutor as unknown) as ProfileResponseDTO}
                       />
                     </Link>
@@ -224,7 +224,7 @@ export function Tutors(): ReactElement {
                             key={subject.id}
                             tab={
                               <Tag color={filters.includes(subject.slug) ? 'blue' : ''} style={{ fontSize: 15 }}>
-                                {subject.name} - €{subject.price}/Hour
+                                {subject.name} - €{subject.price / 100}/Hour
                               </Tag>
                             }
                           >

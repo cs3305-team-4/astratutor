@@ -192,6 +192,11 @@ func InjectLessonsRoutes(subrouter *mux.Router) {
 		handleLessonsRescheduleRequest,
 	).Methods("POST")
 
+	// POST /{uuid}/completed
+	lessonResource.HandleFunc("/completed",
+		handleLessonsCompletedRequest,
+	).Methods("POST")
+
 	subrouter.HandleFunc("/resources",
 		handleLessonsResourcesPost).Methods("POST")
 
@@ -292,7 +297,7 @@ func handleLessonsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lesson, err := services.ReadLessonByID(id, "SubjectTaught", "SubjectTaughgt.Subject")
+	lesson, err := services.ReadLessonByID(id, "SubjectTaught", "SubjectTaught.Subject")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -429,6 +434,34 @@ func handleLessonsCancelRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = lesson.MarkCancelled(authContext.Account, cancelRequest.Reason)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+}
+
+func handleLessonsCompletedRequest(w http.ResponseWriter, r *http.Request) {
+	id, err := getUUID(r, "uuid")
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	authContext, err := ReadRequestAuthContext(r)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	lesson, err := services.ReadLessonByID(id)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	account, err := services.ReadAccountByID(authContext.Account.ID, nil)
+	if err != nil {
+		restError(w, r, err, http.StatusBadRequest)
+		return
+	}
+	err = lesson.MarkCompleted(account)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

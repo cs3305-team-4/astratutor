@@ -29,10 +29,20 @@ import { useAsync } from 'react-async-hook';
 import { Profile } from './components/Profile';
 import { ProfileResponseDTO } from './api/definitions';
 import { UserAvatar } from './components/UserAvatar';
+import styled from 'styled-components';
 
 const stripePromise = loadStripe(config.stripePublishableKey);
 
 const { Footer, Content } = Layout;
+
+const StyledLogo = styled.img`
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+  width: 330px;
+  top: 20px;
+  left: -80px;
+`;
 
 function App(): React.ReactElement {
   const history = useHistory();
@@ -102,7 +112,10 @@ function App(): React.ReactElement {
         <Button type={history.location.pathname.startsWith('/subjects/tutors') ? 'link' : 'text'}>Find A Tutor</Button>
       </Link>,
       <Link to="/login" key="login">
-        <Button type="primary">Log in</Button>
+        <Divider type="vertical" style={{ borderLeft: '1px solid rgb(169 169 169)', marginRight: 20 }} />
+        <Button style={{ marginLeft: 20 }} type="primary">
+          Log in
+        </Button>
       </Link>,
       <Link to="/register" key="register">
         <Button>Register</Button>
@@ -119,7 +132,9 @@ function App(): React.ReactElement {
               ghost={false}
               title={
                 <Link to="/" key="logo-home">
-                  <span>AstraTutor</span>
+                  <span>
+                    <StyledLogo title="AstraTutor" src="/logo.svg" alt="AstraTutor" />
+                  </span>
                 </Link>
               }
               extra={headerLinks}

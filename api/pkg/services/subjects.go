@@ -191,7 +191,7 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 	case "high":
 		asc = "desc"
 	}
-	scopes = append(scopes, Sort("AVG( subject_taughts.price )", asc, Join{
+	scopes = append(scopes, Sort("subject_taughts.price", asc, Join{
 		new:     Table{"subject_taughts", "tutor_profile_id"},
 		current: Table{"profiles", "id"},
 	}))
@@ -206,6 +206,8 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, q
 		Scopes(
 			scopes...,
 		).
+		Group("subject_taughts.price").
+		Where("subject_taughts.subject_id IN ?", subject_ids).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err

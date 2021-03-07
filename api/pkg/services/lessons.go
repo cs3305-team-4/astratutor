@@ -488,6 +488,45 @@ func (l *Lesson) MarkDenied(denier *Account, reason string) error {
 	return err
 }
 
+func (l *Lesson) MarkCompleted(tutor *Account) error {
+	db, err := database.Open()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// re-read the lesson, stops data races
+		lesson, err := ReadLessonByID(l.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Make a decision based off the current stage the lesson is at
+		switch lesson.RequestStage {
+		case Scheduled:
+			if tutor.Type != Tutor {
+				return errors.New("only tutors can mark lesson as completed")
+			}
+			if tutor.ID != lesson.TutorID {
+				return errors.New("you are not the tutor of this lesson")
+			}
+
+		default:
+			return fmt.Errorf("unsupported stage %s from %s", Denied, lesson.RequestStage)
+		}
+
+		db.Model(&lesson).Updates(&Lesson{
+			RequestStage:          Completed,
+			RequestStageDetail:    "",
+			RequestStageChangerID: tutor.ID,
+		})
+		return nil
+	})
+
+	return err
+}
+
 func (l *Lesson) MarkCancelled(cancelee *Account, reason string) error {
 	db, err := database.Open()
 	if err != nil {
