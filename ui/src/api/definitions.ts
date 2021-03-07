@@ -1,3 +1,5 @@
+import { PaymentMethod } from '@stripe/stripe-js';
+
 export interface LoginRequestDTO {
   email: string;
   password: string;
@@ -91,10 +93,11 @@ export interface LessonRequestDTO {
 
 export enum LessonRequestStage {
   Requested = 'requested',
-  Accepted = 'accepted',
+  Scheduled = 'scheduled',
   Denied = 'denied',
   Cancelled = 'cancelled',
   Rescheduled = 'rescheduled',
+  PaymentRequired = 'payment-required',
   Completed = 'completed',
   NoShowStudent = 'no-show-student',
   NoShowTutor = 'no-show-tutor',
@@ -108,6 +111,8 @@ export interface LessonResponseDTO {
   student_id: string;
   tutor_id: string;
   lesson_detail: string;
+  subject_id: string;
+  subject_name: string;
   request_stage: LessonRequestStage;
   request_stage_detail: string;
   request_stage_changer_id: string;
@@ -160,6 +165,59 @@ export interface TutorSubjectsDTO {
   subjects: SubjectTaughtDTO[];
 }
 
+export interface BillingTutorOnboardURLResponseDTO {
+  url: string;
+}
+
+export interface BillingTutorPanelURLResponseDTO {
+  url: string;
+}
+
+export interface BillingCardSetupSessionRequestDTO {
+  success_path: string;
+  cancel_path: string;
+}
+
+export interface BillingCardSetupSessionResponseDTO {
+  id: string;
+}
+
+export interface BillingLessonPaymentIntentSecretResponseDTO {
+  id: string;
+}
+
+export interface BillingCardsResponseDTO {
+  cards: PaymentMethod[];
+}
+
+export interface BillingPayeePayment {
+  description: string;
+  date: string; // RFC3339
+  amount: number; // in cents
+  remarks: string;
+}
+
+export interface BillingPayerPayment {
+  description: string;
+  date: string; // RFC3339
+  amount: number; // in cents
+  remarks: string;
+  available_for_payout: boolean;
+  paid_out: boolean;
+}
+
+export interface BillingPayeesPaymentsResponseDTO {
+  payments: BillingPayeePayment[];
+}
+
+export interface BillingPayersPaymentsResponseDTO {
+  payments: BillingPayerPayment[];
+}
+
+export interface BillingPayoutInfoResponseDTO {
+  payout_balance: number; // in cents
+}
+
 export interface SubjectTaughtRequestDTO {
   subject_id: string;
   price: string;
@@ -182,4 +240,38 @@ export interface PaginatedResponseDTO<T> {
 export interface TurnCredentials {
   username: string;
   password: string;
+}
+
+export interface ReviewCreateDTO {
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewDTO {
+  id: string;
+  created_at: string; // RFC3339 timestap
+  rating: number;
+  comment: string;
+  student: ProfileMin;
+}
+
+export interface ProfileMin {
+  account_id: string;
+  avatar: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface ReviewUpdateDTO {
+  rating?: number;
+  comment?: string;
+}
+
+export interface ReviewAverageDTO {
+  average: number;
+}
+
+export interface SubjectRequestDTO {
+  name: string;
 }

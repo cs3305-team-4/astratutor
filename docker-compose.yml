@@ -13,6 +13,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       REACT_APP_API_URL: "http://localhost:8081"
       REACT_APP_SIGNALLING_URL: "ws://localhost:8081/signalling/ws"
+      REACT_APP_STRIPE_PUBLISHABLE_KEY: pk_test_51ILSkYKHbgvdgLLAjc8dIh9ectl7gFQA0YbaohGIIVTAt21u2occaDi8MaKo0m30spgfiIrLmVgPNXoBWccmU5dZ00AJURLb0q
     ports:
       - "8080:3000"
     depends_on:

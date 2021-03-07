@@ -38,7 +38,7 @@ type AuthClaims struct {
 }
 
 func (ac *AuthClaims) Valid() error {
-	return nil
+	return ac.StandardClaims.Valid()
 }
 
 func authLogin(w http.ResponseWriter, r *http.Request) {

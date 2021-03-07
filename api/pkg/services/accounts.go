@@ -54,8 +54,11 @@ type Account struct {
 	EmailVerified bool
 	Type          AccountType
 	Suspended     bool
-	PasswordHash  PasswordHash `gorm:"foreignKey:AccountID"`
-	Profile       *Profile     `gorm:"foreignKey:AccountID"`
+
+	// StripeID corresponds to a customer ID if the account type is a Student or a Stripe Connect account ID if the account type is a Tutor
+	StripeID     string
+	PasswordHash PasswordHash `gorm:"foreignKey:AccountID"`
+	Profile      *Profile     `gorm:"foreignKey:AccountID"`
 }
 
 func (a *Account) IsStudent() bool {
@@ -229,10 +232,10 @@ func (a *Availability) Scan(value interface{}) error {
 	}
 	text, ok := value.(string)
 	if !ok {
-		return errors.New("Invalid value for availability.")
+		return errors.New("invalid value for availability.")
 	}
 	if len(text) < (AvailabilityLength*2)-1 {
-		return errors.New("Invalid availability length.")
+		return errors.New("invalid availability length.")
 	}
 	out := make(Availability, 0)
 	text = text[1 : len(text)-1]
@@ -275,7 +278,7 @@ func (a *Availability) Get() []bool {
 // Profile model.
 type Profile struct {
 	database.Model
-	AccountID      uuid.UUID `gorm:"type:uuid"`
+	AccountID      uuid.UUID `gorm:"type:uuid;unique"`
 	Avatar         string
 	Slug           string
 	FirstName      string
@@ -289,7 +292,7 @@ type Profile struct {
 	Qualifications []Qualification  `gorm:"foreignKey:ProfileID"`
 	WorkExperience []WorkExperience `gorm:"foreignKey:ProfileID"`
 
-	// Contains the next 14x24 hrs of availbility modulus to 2 weeks
+	// Contains the next 14x24 hrs of availbility modulus to 1 week
 	Availability *Availability `gorm:"type:int[]"`
 }
 
@@ -394,7 +397,14 @@ func CreateProfile(p *Profile) error {
 		}
 		p.GenerateNewColor()
 
+		// Setup billing for the account (as the profile has the required fields we can pre-input as a customer)
 		account.Profile = p
+		err = account.SetupBilling()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		return tx.Save(account).Error
 	})
 }

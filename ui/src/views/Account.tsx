@@ -17,6 +17,9 @@ import {
 import { Profile } from '../components/Profile';
 import { CreateProfileForm } from '../components/CreateProfileForm';
 import { APIContext } from '../api/api';
+import { AccountType } from '../api/definitions';
+import { BillingTutor } from '../components/BillingTutor';
+import { BillingStudent } from '../components/BillingStudent';
 
 const { SubMenu } = Menu;
 const { Title, Paragraph, Text } = Typography;
@@ -33,6 +36,7 @@ const StyledSider = styled(Sider)`
 export function Account(): React.ReactElement {
   const history = useHistory();
   const { path, url } = useRouteMatch();
+  const api = React.useContext(APIContext);
 
   const location = useLocation();
 
@@ -54,11 +58,7 @@ export function Account(): React.ReactElement {
             <Row>
               <Col md={9} sm={6} xs={0} />
               <Col md={24} sm={24} xs={24} style={{ padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                <APIContext.Consumer>
-                  {(api) =>
-                    api.isLoggedIn() ? <CreateProfileForm uuid={api.claims.sub} type={api.account.type} /> : <></>
-                  }
-                </APIContext.Consumer>
+                {api.isLoggedIn() && <CreateProfileForm />}
               </Col>
               <Col md={9} sm={6} xs={0} />
             </Row>
@@ -66,18 +66,15 @@ export function Account(): React.ReactElement {
           <Route exact path={`${path}/profile`}>
             <Row>
               <Col md={24} sm={24} xs={24} style={{ padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                <APIContext.Consumer>
-                  {(api) =>
-                    api.isLoggedIn() ? <Profile uuid={api.claims.sub} type={api.account.type} editable={true} /> : <></>
-                  }
-                </APIContext.Consumer>
+                {api.isLoggedIn() && <Profile uuid={api.claims.sub} type={api.account.type} />}
               </Col>
             </Row>
           </Route>
           <Route exact path={`${path}/billing`}>
             <Row>
-              <Col md={24} sm={10} xs={24} style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-                Billing
+              <Col md={24} sm={24} xs={24} style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.8)' }}>
+                {api.account.type === AccountType.Student && <BillingStudent />}
+                {api.account.type === AccountType.Tutor && <BillingTutor />}
               </Col>
             </Row>
           </Route>
