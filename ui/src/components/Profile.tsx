@@ -434,14 +434,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
             <Col>
               <Statistic key="users" title="Location" value={`${profile.city}, ${profile.country}`} />
             </Col>
-            <Col>
+            {/* <Col>
               <Statistic key="users" title="User Since" value={'March 28th 2019'} />
             </Col>
             {props.type === AccountType.Tutor && (
               <Col>
                 <Statistic key="users" title="Lessons Given" value={24} />
               </Col>
-            )}
+            )} */}
             {props.type === AccountType.Tutor && (
               <Col>
                 <Statistic key="users" title="Average Review" value={ratingValue()} />
