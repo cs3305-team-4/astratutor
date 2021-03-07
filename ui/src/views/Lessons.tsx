@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 
 import { Badge, Layout, Menu } from 'antd';
@@ -72,7 +72,7 @@ export function Lessons(): React.ReactElement {
     setLessonProps(lprops);
   }, []);
 
-  useAsync(() => {
+  useEffect(() => {
     switch (query.pathname) {
       case '/lessons/requests':
         setMenu(Menus.Requests);
@@ -90,7 +90,7 @@ export function Lessons(): React.ReactElement {
         setMenu(Menus.Denied);
         break;
     }
-  }, []);
+  }, [query]);
 
   return (
     <StyledLayout>

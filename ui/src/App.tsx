@@ -24,8 +24,18 @@ import { useAsync } from 'react-async-hook';
 import { Profile } from './components/Profile';
 import { ProfileResponseDTO } from './api/definitions';
 import { UserAvatar } from './components/UserAvatar';
+import styled from 'styled-components';
 
 const { Footer, Content } = Layout;
+
+const StyledLogo = styled.img`
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+  width: 330px;
+  top: 20px;
+  left: -80px;
+`;
 
 function App(): React.ReactElement {
   const history = useHistory();
@@ -114,7 +124,9 @@ function App(): React.ReactElement {
             ghost={false}
             title={
               <Link to="/" key="logo-home">
-                <span>AstraTutor</span>
+                <span>
+                  <StyledLogo title="AstraTutor" src="/logo.svg" alt="AstraTutor" />
+                </span>
               </Link>
             }
             extra={headerLinks}
