@@ -345,6 +345,8 @@ func handleLessonsPost(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
+	log.Info(subjectTaught.TutorID)
+
 	err = services.RequestLesson(authContext.Account, student, subjectTaught, lessonRequest.StartTime, lessonRequest.LessonDetail)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)

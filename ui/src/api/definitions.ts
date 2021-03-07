@@ -86,7 +86,7 @@ export interface WorkExperienceResponseDTO {
 
 export interface LessonRequestDTO {
   start_time: string; // RFC3339 timestamp
-  tutor_id: string;
+  subject_taught_id: string;
   student_id: string;
   lesson_detail: string;
 }

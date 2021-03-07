@@ -52,7 +52,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
             millisecond: 0,
           })
           .toISOString(),
-        tutor_id,
+        subject_taught_id: values.subject,
         student_id,
         lesson_detail: values.lesson_detail,
       });
