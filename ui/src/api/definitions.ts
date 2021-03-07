@@ -158,6 +158,7 @@ export interface TutorSubjectsDTO {
   subjects: SubjectTaughtDTO[];
 }
 
+<<<<<<< HEAD
 export interface BillingTutorOnboardURLResponseDTO {
   url: string;
 }
@@ -209,4 +210,9 @@ export interface BillingPayersPaymentsResponseDTO {
 
 export interface BillingPayoutInfoResponseDTO {
   payout_balance: number; // in cents
+}
+
+export interface TurnCredentials {
+  username: string;
+  password: string;
 }
