@@ -37,8 +37,6 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/stripe/stripe-go v70.15.0+incompatible
 	github.com/stripe/stripe-go/v72 v72.34.0
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/sys v0.0.0-20210223085322-b80eb88b80d2 // indirect
 	golang.org/x/text v0.3.5 // indirect

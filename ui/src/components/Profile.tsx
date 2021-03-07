@@ -919,14 +919,18 @@ export function Profile(props: ProfileProps): React.ReactElement {
                             }
                           } else {
                             // Create
-                            const res = await api.services.tutorCreateReview(props.uuid, {
-                              comment: values.comment,
-                              rating: values.rating,
-                            });
-                            if (res === 200) {
-                              message.success('Successfully created review');
-                            } else {
-                              message.error('Failed to create review');
+                            try {
+                              const res = await api.services.tutorCreateReview(props.uuid, {
+                                comment: values.comment,
+                                rating: values.rating,
+                              });
+                              if (res === 200) {
+                                message.success('Successfully created review');
+                              } else {
+                                message.error('Failed to create review');
+                              }
+                            } catch (e) {
+                              message.error(e.message);
                             }
                           }
                           await reloadProfile();

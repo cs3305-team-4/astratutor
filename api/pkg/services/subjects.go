@@ -313,9 +313,11 @@ func TeachSubject(subject *Subject, tutor *Account, description string, price in
 		}
 
 		err = tx.Create(&SubjectTaught{
-			Subject: *subject,
-			Tutor:   *tutor,
-			Price:   price,
+			Subject:        *subject,
+			Tutor:          *tutor,
+			TutorProfileID: tutor.Profile.ID,
+			Description:    description,
+			Price:          price,
 		}).Error
 
 		if err != nil {
