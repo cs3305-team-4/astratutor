@@ -297,7 +297,7 @@ func handleLessonsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lesson, err := services.ReadLessonByID(id, "SubjectTaught", "SubjectTaughgt.Subject")
+	lesson, err := services.ReadLessonByID(id, "SubjectTaught", "SubjectTaught.Subject")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

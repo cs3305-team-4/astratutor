@@ -30,32 +30,38 @@ export function Landing(): React.ReactElement {
   return (
     <Layout>
       <Hero>
-        <Row style={{ height: 'calc(100vh - 72px)' }}>
+        <Row style={{ height: 'calc(25vh)', overflow: 'hidden' }}>
           <Col style={{ overflow: 'hidden' }}>
             <Typography
               style={{
                 position: 'absolute',
                 width: '100%',
-                height: '100vh',
+                height: '80%',
+                top: -300,
                 zIndex: 1,
                 background:
-                  'linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgb(27 27 27) 50%)',
+                  'linear-gradient(-187deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgb(240, 242, 245) 50%)',
               }}
             >
-              <img
-                src="/logo.svg"
-                alt="AstraTutor"
-                style={{ float: 'right', right: -120, marginTop: 60, height: 800, position: 'absolute' }}
-              />
-              <Title style={{ zIndex: 1000, color: '#ffffff', position: 'absolute', right: 70, top: '50%' }} level={1}>
-                Take your marks to the stars!
+              <Title
+                style={{
+                  zIndex: 1000,
+                  position: 'absolute',
+                  top: '48%',
+                  fontSize: '3em',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
+                level={1}
+              >
+                A Complete Modern Tutoring online platform
               </Title>
             </Typography>
             <canvas
               data-js-darken-top
               data-transition-in
               id="gradient"
-              style={{ position: 'relative', width: '100%', height: '100vh' }}
+              style={{ position: 'relative', width: '100%', height: '80%' }}
               ref={(r) => {
                 canvasRef.current = r ?? undefined;
               }}
