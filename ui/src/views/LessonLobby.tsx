@@ -18,7 +18,13 @@ import { LessonClassroom } from './LessonClassroom';
 import { MESSAGE_TYPE, Signalling } from '../webrtc/signalling';
 import * as Devices from '../webrtc/devices';
 import config from '../config';
-import { AccountType, ProfileResponseDTO } from '../api/definitions';
+import {
+  AccountType,
+  LessonRequestDTO,
+  LessonResponseDTO,
+  ProfileResponseDTO,
+  SubjectTaughtDTO,
+} from '../api/definitions';
 
 const { Option } = Select;
 
@@ -77,6 +83,7 @@ export function LessonLobby(): ReactElement {
   const [joined, setJoined] = useState(false);
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [otherProfiles, setOtherProfiles] = React.useState<{ [id: string]: ProfileResponseDTO }>({});
+  const [metadata, setMetadata] = useState<LessonResponseDTO>();
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -112,47 +119,63 @@ export function LessonLobby(): ReactElement {
   }, []);
 
   useAsync(async () => {
-    await Devices.devicePermissions();
-    const devices = await Devices.getDevices();
-    const vid: MediaDeviceInfo[] = [];
-    const mic: MediaDeviceInfo[] = [];
-    for (const dev of devices) {
-      switch (dev.kind) {
-        case 'videoinput':
-          vid.push(dev);
-          break;
-        case 'audioinput':
-          mic.push(dev);
-          break;
+    const getDevices = async () => {
+      await Devices.devicePermissions();
+      const devices = await Devices.getDevices();
+      const vid: MediaDeviceInfo[] = [];
+      const mic: MediaDeviceInfo[] = [];
+      for (const dev of devices) {
+        switch (dev.kind) {
+          case 'videoinput':
+            vid.push(dev);
+            break;
+          case 'audioinput':
+            mic.push(dev);
+            break;
+        }
+        setWebcams(vid);
+        setMicrophones(mic);
       }
-      setWebcams(vid);
-      setMicrophones(mic);
-    }
-    const lesson = await api.services.readLesson(lid);
-    setOtherProfiles({
-      [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
-      [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
-    });
+      const lesson = await api.services.readLesson(lid);
+      setOtherProfiles({
+        [lesson.student_id]: await api.services.readProfileByAccountID(lesson.student_id, AccountType.Student),
+        [lesson.tutor_id]: await api.services.readProfileByAccountID(lesson.tutor_id, AccountType.Tutor),
+      });
+      setMetadata(lesson);
+    };
+    getDevices();
+    navigator.mediaDevices.ondevicechange = getDevices;
   }, []);
   useAsync(async () => {
     if (!webcamStream) {
       await Devices.devicePermissions();
       const devices = await Devices.getDevices();
+      const mic = devices.filter((v) => v.kind === 'audioinput');
+      const mid = mic.length ? mic[0].deviceId : '';
+      console.log('MIC', mid);
+      setSelectedMicrophone(mid);
       const dev = devices.filter((v) => v.kind === 'videoinput');
       const id = dev.length ? dev[0].deviceId : '';
-      const stream = await Devices.cameraStream(selectedWebcam);
       setSelectedWebcam(id);
+      const stream = await Devices.cameraStream(id, mid);
       setWebcamStream(stream);
     }
   }, []);
+  useEffect(() => {
+    return () => {
+      webcamStream?.getTracks().forEach((v) => {
+        v.stop();
+      });
+    };
+  }, [webcamStream]);
 
   useAsync(async () => {
     if (webcamStream) {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
+      webcamStream.getAudioTracks().forEach((v) => v.stop());
       setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
     }
   }, [selectedWebcam, selectedMicrophone]);
-  const [title, setTitle] = useState('Mathematics 101');
   return (
     <SettingsCTX.Provider value={settingsValue}>
       <Switch>
@@ -180,7 +203,7 @@ export function LessonLobby(): ReactElement {
           </StyledNav>
           <StyledLayout>
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-              Thanks for attending {title}!
+              Thanks for attending {metadata?.lesson_detail}!
             </Typography.Title>
             <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="link">
               Schedule my next lesson
@@ -249,7 +272,7 @@ export function LessonLobby(): ReactElement {
           <StyledLayout>
             <Typography>
               <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-                Joining your {title} classroom!
+                Joining your {metadata?.lesson_detail} classroom!
               </Typography.Title>
             </Typography>
             {/* TODO(james): Send probe message to discover users */}

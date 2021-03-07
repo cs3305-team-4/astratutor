@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/services"
@@ -20,12 +21,13 @@ func InjectSubjectsRoutes(subrouter *mux.Router) {
 type SubjectResponseDTO struct {
 	Name string    `json:"name" validate:"required"`
 	Slug string    `json:"slug" validate:"len=0"`
-	ID   uuid.UUID `json:"subject_id" validate:"len=0"`
+	ID   uuid.UUID `json:"id" validate:"len=0"`
 }
 
 // Represents a tutors subject
 type SubjectTaughtDTO struct {
 	ID          uuid.UUID `json:"id" validate:"len=0"`
+	SubjectID   uuid.UUID `json:"subject_id" validate:"len=0"`
 	Name        string    `json:"name" validate:"required"`
 	Slug        string    `json:"slug" validate:"required"`
 	Description string    `json:"description"`
@@ -40,7 +42,26 @@ type TutorSubjectsResponseDTO struct {
 	Avatar      string             `json:"avatar" validate:"omitempty,base64"`
 	Slug        string             `json:"slug" validate:"len=0"`
 	Description string             `json:"description"`
+	Color       string             `json:"color"`
+	City        string             `json:"city"`
+	Country     string             `json:"country"`
 	Subjects    []SubjectTaughtDTO `json:"subjects"`
+}
+
+// SubjectTaughtRequestDTO represents a subject a Tutor wishes to teach
+type SubjectTaughtRequestDTO struct {
+	Description string  `json:"description"`
+	Price       int64 `json:"price"`
+}
+
+// SubjectTaughtDescriptionUpdateRequestDTO represents a subject a Tutor wishes to update the description for
+type SubjectTaughtDescriptionUpdateRequestDTO struct {
+	Description string `json:"description"`
+}
+
+// SubjectTaughtPriceUpdateRequestDTO represents a subject a Tutor wishes to update the Price for
+type SubjectTaughtPriceUpdateRequestDTO struct {
+	Price float32 `json:"price"`
 }
 
 func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSubjectsResponseDTO {
@@ -53,6 +74,9 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 			Avatar:      profile.Avatar,
 			Slug:        profile.Slug,
 			Description: profile.Description,
+			Color:       profile.Color,
+			City:        profile.City,
+			Country:     profile.Country,
 			Subjects:    SubjectsTuaghtToDTO(&profile.Subjects),
 		})
 	}
@@ -63,7 +87,8 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
 
 	return &SubjectTaughtDTO{
-		ID:          subjectTaught.Subject.ID,
+		ID:          subjectTaught.ID,
+		SubjectID:   subjectTaught.Subject.ID,
 		Name:        subjectTaught.Subject.Name,
 		Slug:        subjectTaught.Subject.Slug,
 		Description: subjectTaught.Description,
@@ -100,7 +125,9 @@ func SubjectsToDTO(subjects []services.Subject) []SubjectResponseDTO {
 
 //returns all subjects
 func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
-	serviceSubjects, err := services.GetSubjects(nil)
+	q := r.URL.Query()
+	query := q.Get("query")
+	serviceSubjects, err := services.GetSubjects(query, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return
@@ -117,6 +144,18 @@ func handleSubjectsGet(w http.ResponseWriter, r *http.Request) {
 func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	filter := q.Get("filter")
+	query := q.Get("query")
+	sort := q.Get("sort")
+
+	pageSize, err := strconv.Atoi(q.Get("page_size"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10
+	}
+	page, err := strconv.Atoi(q.Get("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
 	if filter != "" {
 		filtered, err := services.GetSubjectsBySlugs(strings.Split(filter, ","), nil)
 		if err != nil {
@@ -124,12 +163,12 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tutors, err := services.GetTutorsBySubjects(filtered, nil)
+		tutors, total_pages, err := services.GetTutorsBySubjectsPaginated(filtered, pageSize, page, query, sort, nil)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ToPaginatedDTO(total_pages, ProfileToTutorSubjectsResponseDTO(&tutors))
 
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
@@ -137,12 +176,12 @@ func handleSubjectTutorsGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		tutors, err := services.GetAllTutors(nil)
+		tutors, totalPages, err := services.GetAllTutorsPaginated(nil, pageSize, query, sort, page)
 		if err != nil {
 			restError(w, r, err, http.StatusBadRequest)
 			return
 		}
-		outTutors := ProfileToTutorSubjectsResponseDTO(&tutors)
+		outTutors := ToPaginatedDTO(totalPages, ProfileToTutorSubjectsResponseDTO(&tutors))
 		if err = json.NewEncoder(w).Encode(outTutors); err != nil {
 			restError(w, r, err, http.StatusInternalServerError)
 			return

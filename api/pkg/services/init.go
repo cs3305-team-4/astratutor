@@ -46,11 +46,13 @@ Conn:
 		&ResourceData{},
 		&Subject{},
 		&SubjectTaught{},
+		&Review{},
 	)
 	// Add some test users so we don't need to manually test things
-	CreateDebugData()
+	//CreateDebugData()
 
 	// Setup string key
 	stripe.Key = viper.GetString("billing.stripe.secret_key")
 
+	SeedDatabase()
 }

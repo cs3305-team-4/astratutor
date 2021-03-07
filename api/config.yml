@@ -7,7 +7,6 @@ database:
   password: grindsapp
   database: grindsapp
   port: 5432
-<<<<<<< HEAD
 ui:
   base_url: "https://grindsapp.netsoc.cloud"
 billing:
@@ -19,9 +18,7 @@ billing:
     account_link:
       return_url: "https://grindsapp.netsoc.cloud/account/billing"
       refresh_url: "https://grindsapp.netsoc.cloud/account/billing/onboarding"
-=======
 signalling_secret: "SUPERSECRETKEY"
->>>>>>> master
 auth:
   jwt:
     # jwt lifetime

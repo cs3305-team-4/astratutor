@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { useAsync } from 'react-async-hook';
@@ -9,6 +9,8 @@ import {
   Layout,
   Row,
   Col,
+  Comment,
+  List,
   Avatar,
   PageHeader,
   Input,
@@ -22,9 +24,13 @@ import {
   Tag,
   Skeleton,
   InputNumber,
+  Rate,
   AvatarProps,
   Table,
   Progress,
+  Space,
+  Tooltip,
+  message,
 } from 'antd';
 
 import { UploadRequestOption } from 'rc-upload/lib/interface';
@@ -45,18 +51,28 @@ import {
 import {
   AccountType,
   ProfileRequestDTO,
+  SubjectTaughtRequestDTO,
+  SubjectTaughtPriceUpdateRequestDTO,
+  SubjectTaughtDescriptionUpdateRequestDTO,
   WorkExperienceRequestDTO,
   WorkExperienceResponseDTO,
   QualificationRequestDTO,
   QualificationResponseDTO,
   ProfileResponseDTO,
   SubjectTaughtDTO,
+  SubjectDTO,
+  ReviewAverageDTO,
+  ReviewDTO,
+  ReviewCreateDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
 
 import { APIContext } from '../api/api';
 import { Availability } from './Availability';
+import { UserAvatar } from './UserAvatar';
+
+import moment from 'moment';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -73,8 +89,11 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const history = useHistory();
 
   const [profile, setProfile] = React.useState<ProfileResponseDTO | undefined>(undefined);
+  const [rating, setRating] = React.useState<ReviewAverageDTO | undefined>(undefined);
   const [activeTab, setActiveTab] = React.useState<string>('outline');
   const [tutorSubjects, setTutorSubjects] = React.useState<SubjectTaughtDTO[] | undefined>(undefined);
+  const [subjects, setSubjects] = React.useState<SubjectDTO[] | undefined>(undefined);
+  const [TutorSubjectID, setTutorSubjectID] = React.useState<string>();
 
   const isSelf: boolean = api.isLoggedIn() && props.uuid === api.account.id;
 
@@ -82,9 +101,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
 
   const [editSubtitle, setEditSubtitle] = React.useState<boolean>(false);
   const [newSubtitle, setNewSubtitle] = React.useState<string>('');
+  const [addSubVisible, setAddSubVisible] = React.useState<boolean>(false);
 
   const [editDesc, setEditDesc] = React.useState<boolean>(false);
   const [newDesc, setNewDesc] = React.useState<string>();
+
+  const [editSubs, setEditSubs] = React.useState<boolean>(false);
+  const [editSubDescVisible, setEditSubDescVisible] = React.useState<boolean>(false);
+  const [editSubPriceVisible, setEditSubPriceVisible] = React.useState<boolean>(false);
 
   const [editQualis, setEditQualis] = React.useState<boolean>(false);
   const [addQualiVisible, setAddQualiVisible] = React.useState<boolean>(false);
@@ -93,6 +117,20 @@ export function Profile(props: ProfileProps): React.ReactElement {
 
   const [editWork, setEditWork] = React.useState<boolean>(false);
   const [addWorkVisible, setAddWorkVisible] = React.useState<boolean>(false);
+
+  const [reviews, setReviews] = React.useState<ReviewDTO[] | undefined>(undefined);
+  const [loggedInReview, setLoggedInReview] = React.useState<ReviewDTO | undefined>(undefined);
+  const [editReview, setEditReview] = React.useState<ReviewDTO | undefined>(undefined);
+  const [form] = Form.useForm();
+
+  const reviewByLoggedInStudent = async (): Promise<ReviewDTO | undefined> => {
+    if (api.account?.type !== AccountType.Student) return;
+    const review = await api.services.tutorGetReviewByStudent(props.uuid, api.account.id);
+    if (review.student.account_id !== '') {
+      return review;
+    }
+    return undefined;
+  };
 
   const reloadProfile = async () => {
     try {
@@ -147,6 +185,16 @@ export function Profile(props: ProfileProps): React.ReactElement {
     }
   };
 
+  const subPricEdit = async (id: string) => {
+    setTutorSubjectID(id);
+    setEditSubPriceVisible(!editSubDescVisible);
+  };
+
+  const subDescEdit = async (id: string) => {
+    setTutorSubjectID(id);
+    setEditSubDescVisible(!editSubDescVisible);
+  };
+
   const commitWork = async (work: WorkExperienceRequestDTO) => {
     try {
       await api.services.createWorkExperienceOnProfileID(props.uuid, props.type, work);
@@ -156,6 +204,20 @@ export function Profile(props: ProfileProps): React.ReactElement {
       Modal.error({
         title: 'Error',
         content: `Could not create work experience: ${e}`,
+      });
+    }
+  };
+
+  const commitSub = async (subjectTaught: SubjectTaughtRequestDTO) => {
+    console.log(subjectTaught);
+    try {
+      await api.services.createSubjectTaughtOnProfileID(props.uuid, props.type, subjectTaught);
+      await reloadProfile();
+      setAddSubVisible(false);
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not teach Subject: ${e}`,
       });
     }
   };
@@ -175,6 +237,43 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const commitDesc = async (desc: string) => {
     try {
       await api.services.updateDescriptionOnProfileID(props.uuid, props.type, desc);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set description: ${e}`,
+      });
+    }
+  };
+
+  const commitSubtitle = async (Subtitle: string) => {
+    try {
+      await api.services.updateSubtitleOnProfileID(props.uuid, props.type, Subtitle);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set subtitle: ${e}`,
+      });
+    }
+  };
+
+  const commitSubPrice = async (price: SubjectTaughtPriceUpdateRequestDTO) => {
+    try {
+      await api.services.updateSubjectPriceOnProfileID(props.uuid, TutorSubjectID, props.type, price);
+      await reloadProfile();
+    } catch (e) {
+      Modal.error({
+        title: 'Error',
+        content: `Could not set description: ${e}`,
+      });
+    }
+  };
+
+  const commitSubDescription = async (desc: SubjectTaughtDescriptionUpdateRequestDTO) => {
+    console.log(desc);
+    try {
+      await api.services.updateSubjectDescriptionOnProfileID(props.uuid, TutorSubjectID, props.type, desc);
       await reloadProfile();
     } catch (e) {
       Modal.error({
@@ -213,6 +312,13 @@ export function Profile(props: ProfileProps): React.ReactElement {
     reader.onerror = (error: ProgressEvent<FileReader>) => {
       throw error;
     };
+  };
+
+  const ratingValue = (): string => {
+    if (!rating || rating.average === 0) {
+      return 'No Ratings';
+    }
+    return `${rating.average} / 5`;
   };
 
   if (profile === undefined) {
@@ -267,24 +373,23 @@ export function Profile(props: ProfileProps): React.ReactElement {
                     }}
                     size="small"
                   >
-                    <Avatar src={profile.avatar} size={96}></Avatar>
+                    <UserAvatar profile={profile} props={{ size: 96, style: { fontSize: 40 } }} />
                   </Button>
                 </Upload>
               </ImgCrop>
             </div>
             {`${profile.first_name} ${profile.last_name}`}
             <Title level={5} style={{ fontWeight: 300, margin: '0 0 0.5rem 0' }}>
-              {!editSubtitle ? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' : <Input size="large" />}
               <Button
                 hidden={!isSelf}
                 onClick={async () => {
-                  if (editDesc === false) {
+                  if (editSubtitle === false) {
                     setNewSubtitle(profile.subtitle);
                   } else {
-                    // await commitSubtitle();
+                    await commitSubtitle(newSubtitle);
                   }
 
-                  setEditSubtitle(!editSubtitle);
+                  setEditSubtitle(editSubtitle ? false : true);
                 }}
                 size="small"
                 style={{ margin: '0 0.5rem' }}
@@ -293,6 +398,18 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 <EditOutlined />
                 {!editSubtitle ? 'Edit' : 'Finish'}
               </Button>
+              {!editSubtitle ? (
+                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{profile.subtitle}</Paragraph>
+              ) : (
+                <input
+                  maxLength={300}
+                  onChange={(ev) => {
+                    setNewSubtitle(ev.target.value);
+                  }}
+                  style={{ minHeight: '50px', minWidth: '800px', margin: '0.5rem 0' }}
+                  value={newSubtitle}
+                />
+              )}
             </Title>
             {props.type === AccountType.Tutor && (
               <Content style={{ display: 'flex', flexWrap: 'wrap' }}>
@@ -321,7 +438,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
             )}
             {props.type === AccountType.Tutor && (
               <Col>
-                <Statistic key="users" title="Average Review" value={'4.5/5'} />
+                <Statistic key="users" title="Average Review" value={ratingValue()} />
               </Col>
             )}
           </Row>,
@@ -393,7 +510,69 @@ export function Profile(props: ProfileProps): React.ReactElement {
                       size="large"
                     />
                   )}
-                  <Title level={5}>Subjects</Title>
+                  <Title level={5}>
+                    Subjects
+                    <Button
+                      hidden={!isSelf}
+                      onClick={async () => {
+                        setEditSubs(editSubs ? false : true);
+                      }}
+                      size="small"
+                      style={{ margin: '0 0.5rem' }}
+                      type={editSubs ? 'primary' : 'default'}
+                    >
+                      <EditOutlined />
+                      {!editSubs ? 'Edit' : 'Finish'}
+                    </Button>
+                    {editSubs && (
+                      <Button
+                        size="small"
+                        style={{ position: 'relative', right: 0, margin: '0 0.5rem' }}
+                        onClick={() => setAddSubVisible(!addSubVisible)}
+                      >
+                        <PlusOutlined />
+                        Teach A New Subject
+                      </Button>
+                    )}
+                  </Title>
+                  <Table
+                    locale={{
+                      emptyText: 'No Subjects listed',
+                    }}
+                    columns={[
+                      { title: 'Subject', key: 'subject', dataIndex: 'subject' },
+                      { title: 'Price', key: 'price', dataIndex: 'price' },
+                      { title: 'Description', key: 'description', dataIndex: 'description' },
+                      { title: '', key: 'editPrice', dataIndex: 'editPrice' },
+                      { title: '', key: 'editDesc', dataIndex: 'editDesc' },
+                    ]}
+                    size="small"
+                    style={{ width: '100%' }}
+                    pagination={false}
+                    dataSource={tutorSubjects?.map((subject, index) => {
+                      return {
+                        price: subject.price,
+                        subject: subject.name,
+                        description: subject.description,
+                        editDesc: editSubs ? (
+                          <Button onClick={() => subDescEdit(subject.id)} style={{ margin: '0 0.5rem' }} size="small">
+                            <EditOutlined />
+                            Edit Description
+                          </Button>
+                        ) : (
+                          <></>
+                        ),
+                        editPrice: editSubs ? (
+                          <Button onClick={() => subPricEdit(subject.id)} style={{ margin: '0 0.5rem' }} size="small">
+                            <EditOutlined />
+                            Edit Price
+                          </Button>
+                        ) : (
+                          <></>
+                        ),
+                      };
+                    })}
+                  ></Table>
                   <Row style={{ margin: '0.5rem 0' }}>
                     <Title level={5}>
                       Qualifications
@@ -610,6 +789,220 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   </Form.Item>
                 </Form>
               </Modal>
+
+              <Modal
+                title="Teach a Subject"
+                visible={addSubVisible}
+                onCancel={() => setAddSubVisible(false)}
+                footer={[
+                  <Button form="add-subject" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Add
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSub} layout="vertical" name="add-subject" preserve={false}>
+                  <Form.Item name="subject_id" rules={[{ required: true, message: 'Please select Subject!' }]}>
+                    <Select size="large" showSearch style={{ width: '100%' }}>
+                      {subjects?.map((subject, index) => (
+                        <Select.Option key={index} value={subject.id}>
+                          {subject.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    name="price"
+                    rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
+                  >
+                    <InputNumber
+                      placeholder="Desired Cost of a Lesson"
+                      size="large"
+                      style={{ width: '100%' }}
+                      min={1}
+                    />
+                  </Form.Item>
+                  <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
+                    <TextArea
+                      maxLength={1000}
+                      placeholder="Description of your subject"
+                      style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="New Subject Description"
+                visible={editSubDescVisible}
+                onCancel={() => setEditSubDescVisible(false)}
+                footer={[
+                  <Button form="add-desc" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Add
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSubDescription} layout="vertical" name="add-desc" preserve={false}>
+                  <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
+                    <TextArea
+                      maxLength={1000}
+                      placeholder="Description of your subject"
+                      style={{ minHeight: '240px', margin: '0.5rem 0' }}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="New Subject Price"
+                visible={editSubPriceVisible}
+                onCancel={() => setEditSubPriceVisible(false)}
+                footer={[
+                  <Button form="add-price" key="submit" style={{ width: '100%' }} type="primary" htmlType="submit">
+                    Change
+                  </Button>,
+                ]}
+              >
+                <Form onFinish={commitSubPrice} layout="vertical" name="add-price" preserve={false}>
+                  <Form.Item
+                    name="price"
+                    rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
+                  >
+                    <InputNumber
+                      placeholder="Desired Cost of a Lesson"
+                      size="large"
+                      style={{ width: '100%' }}
+                      min={1}
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+            </>
+          )}
+          {activeTab === 'reviews' && (
+            <>
+              {api.account?.type === 'student' && (
+                <Comment
+                  content={
+                    <>
+                      <Form
+                        form={form}
+                        onFinish={async (values: { rating: number; comment: string }) => {
+                          if (loggedInReview) {
+                            // Edit
+                            if (loggedInReview.comment !== values.comment) {
+                              const res = await api.services.tutorReviewUpdateComment(props.uuid, loggedInReview.id, {
+                                comment: values.comment,
+                              });
+                              if (res === 200) {
+                                message.success('Successfully updated comment');
+                              } else {
+                                message.warn('Failed to update comment');
+                              }
+                            }
+                            if (loggedInReview.rating !== values.rating) {
+                              const res = await api.services.tutorReviewUpdateRating(props.uuid, loggedInReview.id, {
+                                rating: values.rating,
+                              });
+                              if (res === 200) {
+                                message.success('Successfully updated rating');
+                              } else {
+                                message.error('Failed to update rating');
+                              }
+                            }
+                          } else {
+                            // Create
+                            const res = await api.services.tutorCreateReview(props.uuid, {
+                              comment: values.comment,
+                              rating: values.rating,
+                            });
+                            if (res === 200) {
+                              message.success('Successfully created review');
+                            } else {
+                              message.error('Failed to create review');
+                            }
+                          }
+                          await reloadProfile();
+                        }}
+                        initialValues={{ rating: loggedInReview?.rating || 0, comment: loggedInReview?.comment || '' }}
+                      >
+                        <Form.Item
+                          name="rating"
+                          rules={[
+                            { required: true, message: 'Please include a rating' },
+                            {
+                              validator: async (_rule, value) => {
+                                if (value > 5 || value < 1) {
+                                  throw new Error('Please set a rating');
+                                }
+                              },
+                            },
+                          ]}
+                        >
+                          <Rate className="review" />
+                        </Form.Item>
+                        <Form.Item name="comment">
+                          <TextArea rows={4} />
+                        </Form.Item>
+                        <Form.Item>
+                          <Space>
+                            <Button type="primary" htmlType="submit">
+                              {loggedInReview !== undefined ? 'Update Your Review' : 'Create Review'}
+                            </Button>
+                            {loggedInReview && (
+                              <Button
+                                danger
+                                onClick={async () => {
+                                  const res = await api.services.tutorDeleteReview(props.uuid, loggedInReview.id);
+                                  if (res === 200) {
+                                    message.info('Review successfully deleted');
+                                  } else {
+                                    message.error('Failed to delete review');
+                                  }
+                                  await reloadProfile();
+                                  form.resetFields();
+                                }}
+                              >
+                                Delete Review
+                              </Button>
+                            )}
+                          </Space>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  }
+                />
+              )}
+              <List
+                dataSource={reviews}
+                renderItem={(item) => (
+                  <Comment
+                    author={`${item.student.first_name} ${item.student.last_name}`}
+                    avatar={
+                      <Avatar
+                        src={`${item.student.avatar}`}
+                        alt={`${item.student.first_name} ${item.student.last_name}`}
+                      />
+                    }
+                    content={<Paragraph>{item.comment}</Paragraph>}
+                    datetime={
+                      <>
+                        <Tooltip title={moment.utc(`${item.created_at}`).format('YYYY-MM-DD HH:mm:ss')}>
+                          <span>{moment.utc(`${item.created_at}`).fromNow()}</span>
+                        </Tooltip>
+                        <Rate
+                          className="review"
+                          disabled={true}
+                          value={item.rating}
+                          allowHalf={true}
+                          style={{ fontSize: '1em' }}
+                        />
+                      </>
+                    }
+                  />
+                )}
+              />
             </>
           )}
         </Content>

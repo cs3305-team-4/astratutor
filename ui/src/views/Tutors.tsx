@@ -1,45 +1,131 @@
 import React, { ReactElement, useContext, useState } from 'react';
 
-import { SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
+import { ProfileResponseDTO, SubjectDTO, TutorSubjectsDTO } from '../api/definitions';
 
 import { Link, useLocation, useHistory } from 'react-router-dom';
 
-import { Typography, Layout, Card, Row, Col, List, Button, Input, Select, Space, Tabs, Tag } from 'antd';
+import {
+  Typography,
+  Layout,
+  Card,
+  Row,
+  Col,
+  List,
+  Button,
+  Input,
+  Select,
+  Space,
+  Tabs,
+  Tag,
+  Pagination,
+  Menu,
+  Dropdown,
+} from 'antd';
 import { useAsync } from 'react-async-hook';
 import { APIContext } from '../api/api';
+import { DownOutlined, EnvironmentFilled } from '@ant-design/icons';
+import { UserAvatar } from '../components/UserAvatar';
 
 const { Title, Paragraph } = Typography;
 const { Content } = Layout;
+const { Option } = Select;
 
 export function Tutors(): ReactElement {
   const api = useContext(APIContext);
   const [tutors, setTutors] = useState<TutorSubjectsDTO[] | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectDTO[] | undefined>(undefined);
   const [filters, setFilters] = useState<string[]>([]);
+  const [search, setSearch] = useState<string>('');
+  const [searchBox, setSearchBox] = useState<string>('');
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [sort, setSort] = useState<string>('featured');
 
   const query = new URLSearchParams(useLocation().search);
   const history = useHistory();
 
+  const updatePath = (
+    newPage: number,
+    newPageSize: number,
+    newFilters: string[],
+    newQuery: string,
+    newSort: string,
+  ) => {
+    const path = '/subjects/tutors';
+    const queries: string[] = [];
+
+    if (newFilters.length > 0) {
+      queries.push(`filter=${newFilters.join(',')}`);
+    }
+    if (newPage > 1) {
+      queries.push(`page=${newPage}`);
+    }
+    if (newPageSize !== 10) {
+      queries.push(`page_size=${newPageSize}`);
+    }
+    if (newQuery.length > 0) {
+      queries.push(`query=${newQuery}`);
+    }
+    if (newSort.length > 0) {
+      queries.push(`sort=${newSort}`);
+    }
+    if (queries.length > 0) history.push(path + '?' + queries.join('&'));
+    else history.push(path);
+  };
+
+  // Initial Page Load
   useAsync(async () => {
     if (query.has('filter')) {
-      const filterValues = query.get('filter').split(',');
-      setFilters(filterValues);
-      setTutors(await api.services.readTutors(filterValues));
-    } else {
-      setTutors(await api.services.readTutors());
+      setFilters((query.get('filter') ?? '').split(','));
     }
-    setSubjects(await api.services.readSubjects());
+    if (query.has('page')) {
+      setCurrentPage(+(query.get('page') ?? 1));
+    }
+    if (query.has('page_size')) {
+      setPageSize(+(query.get('page_size') ?? 10));
+    }
+    if (query.has('query')) {
+      setSearch(query.get('query') ?? '');
+      setSearchBox(query.get('query') ?? '');
+    }
+    if (query.has('sort')) {
+      setSort(query.get('sort') ?? '');
+    }
+
+    setSubjects(await api.services.readSubjects(''));
   }, []);
 
+  // Called every tune dependencies change
+  useAsync(async () => {
+    const res = await api.services.readTutors(currentPage, pageSize, filters, search, sort);
+    console.log(res);
+
+    setTotalPages(res.total_pages);
+    setTutors(res.items);
+
+    updatePath(currentPage, pageSize, filters, search, sort);
+  }, [currentPage, pageSize, filters, search, sort]);
+
   const onFiltersChange = async (e: string[]) => {
-    history.push(e.length > 0 ? `/subjects/tutors?filter=${e.join(',')}` : '/subjects/tutors');
+    setCurrentPage(1);
     setFilters(e);
-    setTutors(await api.services.readTutors(e));
   };
 
   const onSearch = (searchVal: string) => {
-    console.log(searchVal);
-    // TODO: Add search functionality to /subjects/tutors endpoint
+    setCurrentPage(1);
+    setSearch(searchVal);
+  };
+
+  const onPaginationUpdate = (newPage: number, newPageSize: number) => {
+    setCurrentPage(newPage);
+    setPageSize(newPageSize);
+  };
+
+  const onSort = (sort: string) => {
+    setCurrentPage(1);
+    setSort(sort);
   };
 
   return (
@@ -50,11 +136,22 @@ export function Tutors(): ReactElement {
             <Title>Tutors</Title>
             <Space>
               <Select
+                value={sort}
+                onChange={onSort}
+                dropdownMatchSelectWidth={false}
+                style={{ width: 230 }}
+                defaultValue="featured"
+              >
+                <Option value="featured">Sort by: Featured</Option>
+                <Option value="low">Sort by: Price Low to High</Option>
+                <Option value="high">Sort by: Price High to Low</Option>
+              </Select>
+              <Select
                 key="1"
                 mode="multiple"
                 allowClear
                 value={filters}
-                placeholder="Filter"
+                placeholder="Filter by subject"
                 onChange={onFiltersChange}
                 style={{ minWidth: '200px' }}
               >
@@ -64,7 +161,14 @@ export function Tutors(): ReactElement {
                   </Select.Option>
                 ))}
               </Select>
-              <Input.Search key="2" placeholder="Search for a tutor" onSearch={onSearch} />
+              <Input.Search
+                value={searchBox}
+                allowClear
+                key="2"
+                placeholder="Search for a tutor"
+                onChange={(e) => setSearchBox(e.currentTarget.value)}
+                onSearch={onSearch}
+              />
             </Space>
           </Row>
           <List
@@ -72,11 +176,27 @@ export function Tutors(): ReactElement {
             size="large"
             loading={tutors === undefined}
             dataSource={tutors}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              pageSizeOptions: ['1', '10', '15', '25', '50', '100'],
+              onChange: onPaginationUpdate,
+              onShowSizeChange: onPaginationUpdate,
+              total: totalPages * pageSize,
+              showSizeChanger: true,
+            }}
             renderItem={(tutor: TutorSubjectsDTO) => (
               <Card>
                 <List.Item
                   key={tutor.id}
-                  extra={<img width={200} src={tutor.avatar} alt="" />}
+                  extra={
+                    <Link key="1" to={`/tutors/${tutor.id}/profile`}>
+                      <UserAvatar
+                        props={{ style: { height: 200, width: 200 } }}
+                        profile={(tutor as unknown) as ProfileResponseDTO}
+                      />
+                    </Link>
+                  }
                   actions={[
                     <Link key="1" to={`/tutors/${tutor.id}/profile`}>
                       <Button type="primary">Visit Profile</Button>
@@ -85,9 +205,16 @@ export function Tutors(): ReactElement {
                 >
                   <List.Item.Meta
                     title={
-                      <Link to={`/tutors/${tutor.id}/profile`}>
-                        {tutor.first_name} {tutor.last_name}
-                      </Link>
+                      <div>
+                        <Link to={`/tutors/${tutor.id}/profile`}>
+                          <h1>
+                            {tutor.first_name} {tutor.last_name}
+                          </h1>
+                        </Link>
+                        <p style={{ color: 'rgb(64 64 64)', fontSize: '.9em' }}>
+                          <EnvironmentFilled /> {tutor.city}, {tutor.country}
+                        </p>
+                      </div>
                     }
                     description={
                       <Tabs>
@@ -96,7 +223,7 @@ export function Tutors(): ReactElement {
                           <Tabs.TabPane
                             key={subject.id}
                             tab={
-                              <Tag color={filters.includes(subject.slug) ? 'blue' : ''}>
+                              <Tag color={filters.includes(subject.slug) ? 'blue' : ''} style={{ fontSize: 15 }}>
                                 {subject.name} - €{subject.price}/Hour
                               </Tag>
                             }

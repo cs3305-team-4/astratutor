@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import { Layout, Menu } from 'antd';
+import { Badge, Layout, Menu } from 'antd';
 
 import { MailOutlined, ScheduleOutlined, FileDoneOutlined, BankOutlined } from '@ant-design/icons';
 
@@ -9,6 +9,7 @@ import { APIContext } from '../api/api';
 import { AccountType, LessonRequestStage, LessonResponseDTO, ProfileResponseDTO } from '../api/definitions';
 import { useAsync } from 'react-async-hook';
 import Lesson, { LessonProps } from '../components/Lesson';
+import Link from 'antd/lib/typography/Link';
 
 const { Sider, Content } = Layout;
 
@@ -31,7 +32,7 @@ const StyledSider = styled(Sider)`
 
 export function Lessons(): React.ReactElement {
   const api = React.useContext(APIContext);
-  const [menu, setMenu] = React.useState<Menus>(Menus.Requests);
+  const [menu, setMenu] = React.useState<Menus>(Menus.Scheduled);
 
   const [lessonProps, setLessonProps] = React.useState<{ [uuid: string]: LessonProps }>({});
 
@@ -73,8 +74,40 @@ export function Lessons(): React.ReactElement {
     <StyledLayout>
       <StyledSider>
         <Menu selectedKeys={[menu]} mode="inline">
-          <Menu.Item onClick={() => setMenu(Menus.Requests)} key={Menus.Requests} icon={<MailOutlined />}>
-            Requests
+          <Menu.Item
+            disabled={
+              Object.values(lessonProps).filter(
+                (v) =>
+                  v.lesson.request_stage === LessonRequestStage.Requested ||
+                  v.lesson.request_stage === LessonRequestStage.Rescheduled,
+              ).length === 0
+            }
+            title={
+              Object.values(lessonProps).filter(
+                (v) =>
+                  v.lesson.request_stage === LessonRequestStage.Requested ||
+                  v.lesson.request_stage === LessonRequestStage.Rescheduled,
+              ).length === 0
+                ? 'No requests right now!'
+                : ''
+            }
+            onClick={() => setMenu(Menus.Requests)}
+            key={Menus.Requests}
+            icon={<MailOutlined />}
+          >
+            <Badge
+              style={{ background: '#1890ff' }}
+              offset={[60, 7]}
+              count={
+                Object.values(lessonProps).filter(
+                  (v) =>
+                    v.lesson.request_stage === LessonRequestStage.Requested ||
+                    v.lesson.request_stage === LessonRequestStage.Rescheduled,
+                ).length
+              }
+            >
+              Requests
+            </Badge>
           </Menu.Item>
           <Menu.Item onClick={() => setMenu(Menus.PaymentRequired)} key={Menus.PaymentRequired} icon={<BankOutlined />}>
             Payment Required
@@ -82,15 +115,32 @@ export function Lessons(): React.ReactElement {
           <Menu.Item onClick={() => setMenu(Menus.Scheduled)} key={Menus.Scheduled} icon={<ScheduleOutlined />}>
             Scheduled
           </Menu.Item>
-          <Menu.Item onClick={() => setMenu(Menus.Completed)} key={Menus.Completed} icon={<FileDoneOutlined />}>
-            Completed
-          </Menu.Item>
-          <Menu.Item onClick={() => setMenu(Menus.Cancelled)} key={Menus.Cancelled} icon={<FileDoneOutlined />}>
-            Cancelled
-          </Menu.Item>
-          <Menu.Item onClick={() => setMenu(Menus.Denied)} key={Menus.Denied} icon={<FileDoneOutlined />}>
-            Denied
-          </Menu.Item>
+          <Menu.ItemGroup title="Past Lessons">
+            <Menu.Item
+              style={{ color: 'green' }}
+              onClick={() => setMenu(Menus.Completed)}
+              key={Menus.Completed}
+              icon={<FileDoneOutlined />}
+            >
+              Completed
+            </Menu.Item>
+            <Menu.Item
+              style={{ color: 'red' }}
+              onClick={() => setMenu(Menus.Cancelled)}
+              key={Menus.Cancelled}
+              icon={<FileDoneOutlined />}
+            >
+              Cancelled
+            </Menu.Item>
+            <Menu.Item
+              style={{ color: '#424242' }}
+              onClick={() => setMenu(Menus.Denied)}
+              key={Menus.Denied}
+              icon={<FileDoneOutlined />}
+            >
+              Denied
+            </Menu.Item>
+          </Menu.ItemGroup>
         </Menu>
       </StyledSider>
       <Content style={{ minHeight: 'calc(100vh - 72px)' }}>

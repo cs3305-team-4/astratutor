@@ -135,6 +135,7 @@ export interface LessonRescheduleRequestDTO {
 }
 
 export interface SubjectDTO {
+  id: string;
   name: string;
   image: string;
   slug: string;
@@ -142,6 +143,7 @@ export interface SubjectDTO {
 
 export interface SubjectTaughtDTO {
   id: string;
+  subject_id: string;
   name: string;
   slug: string;
   description: string;
@@ -155,10 +157,12 @@ export interface TutorSubjectsDTO {
   avatar: string;
   slug: string;
   description: string;
+  color: string;
+  city: string;
+  country: string;
   subjects: SubjectTaughtDTO[];
 }
 
-<<<<<<< HEAD
 export interface BillingTutorOnboardURLResponseDTO {
   url: string;
 }
@@ -212,7 +216,56 @@ export interface BillingPayoutInfoResponseDTO {
   payout_balance: number; // in cents
 }
 
+export interface SubjectTaughtRequestDTO {
+  subject_id: string;
+  price: string;
+  description: string;
+}
+
+export interface SubjectTaughtDescriptionUpdateRequestDTO {
+  description: string;
+}
+
+export interface SubjectTaughtPriceUpdateRequestDTO {
+  price: string;
+}
+
+export interface PaginatedResponseDTO<T> {
+  total_pages: number;
+  items: T;
+}
+
 export interface TurnCredentials {
   username: string;
   password: string;
+}
+
+export interface ReviewCreateDTO {
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewDTO {
+  id: string;
+  created_at: string; // RFC3339 timestap
+  rating: number;
+  comment: string;
+  student: ProfileMin;
+}
+
+export interface ProfileMin {
+  account_id: string;
+  avatar: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface ReviewUpdateDTO {
+  rating?: number;
+  comment?: string;
+}
+
+export interface ReviewAverageDTO {
+  average: number;
 }

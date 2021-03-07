@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useHistory } from 'react-router';
+import { UserAvatar } from './UserAvatar';
 
 import { PaymentIntent, PaymentMethod, CreatePaymentMethodCardData } from '@stripe/stripe-js';
 
@@ -40,6 +41,7 @@ import {
 
 import { APIContext } from '../api/api';
 import { useForm } from 'antd/lib/form/Form';
+import { Link } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -96,17 +98,6 @@ export default function Lesson(props: LessonProps): React.ReactElement {
   }, []);
 
   const buttons = [];
-  buttons.push(
-    <Button
-      key="enter classroom"
-      style={{ margin: '0.2rem' }}
-      onClick={() => {
-        history.push(`/lessons/${props.lesson.id}/classroom`);
-      }}
-    >
-      Enter Classroom
-    </Button>,
-  );
 
   const requestPendingButton = (
     <>
@@ -150,11 +141,18 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okText="Deny"
         okType="danger"
         onOk={async () => {
-          await rescheduleForm.validateFields().then(async (values) => {
-            await api.services.updateLessonStageDeny(props.lesson.id, values);
-            await reload();
-            setShowDenyModal(false);
-          });
+          try {
+            await rescheduleForm.validateFields().then(async (values) => {
+              await api.services.updateLessonStageDeny(props.lesson.id, values);
+              await reload();
+              setShowDenyModal(false);
+            });
+          } catch (e) {
+            Modal.error({
+              title: 'Error',
+              content: `Failed to deny lesson! Please try again later.`,
+            });
+          }
         }}
         cancelText="Back"
         onCancel={() => setShowDenyModal(false)}
@@ -184,9 +182,16 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okType="danger"
         onOk={async () => {
           await rescheduleForm.validateFields().then(async (values) => {
-            await api.services.updateLessonStageCancel(props.lesson.id, values);
-            await reload();
-            setShowCancelModal(false);
+            try {
+              await api.services.updateLessonStageCancel(props.lesson.id, values);
+              await reload();
+              setShowCancelModal(false);
+            } catch (e) {
+              Modal.error({
+                title: 'Error',
+                content: `Failed to cancel lesson! Please try again later.`,
+              });
+            }
           });
         }}
         cancelText="Back"
@@ -216,16 +221,23 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         okText="Reschedule"
         onOk={async () => {
           await rescheduleForm.validateFields().then(async (values) => {
-            values.new_time = values.new_time
-              .set({
-                minute: 0,
-                second: 0,
-                millisecond: 0,
-              })
-              .toISOString();
-            await api.services.updateLessonStageReschedule(props.lesson.id, values);
-            await reload();
-            setShowRescheduleModal(false);
+            try {
+              values.new_time = values.new_time
+                .set({
+                  minute: 0,
+                  second: 0,
+                  millisecond: 0,
+                })
+                .toISOString();
+              await api.services.updateLessonStageReschedule(props.lesson.id, values);
+              await reload();
+              setShowRescheduleModal(false);
+            } catch (e) {
+              Modal.error({
+                title: 'Error',
+                content: `Failed to reschedule lesson! Please try again later.`,
+              });
+            }
           });
         }}
         cancelText="Back"
@@ -399,10 +411,25 @@ export default function Lesson(props: LessonProps): React.ReactElement {
         buttons.push(cancelButton, requestPendingButton);
       }
       break;
+
     case LessonRequestStage.Scheduled:
-      // Once the lesson is scheduled either party can cancel or reschedule a lesson
+      buttons.push(
+        <Button
+          ghost
+          type="primary"
+          key="enter classroom"
+          style={{ margin: '0.2rem' }}
+          onClick={() => {
+            history.push(`/lessons/${props.lesson.id}/lobby`);
+          }}
+        >
+          Enter Classroom
+        </Button>,
+      );
+      // Once the lesson is accepted either party can cancel or reschedule a lesson
       buttons.push(cancelButton, rescheduleButton);
       break;
+
     case LessonRequestStage.PaymentRequired:
       if (api.account.type == AccountType.Student) {
         buttons.push(payButton, cancelButton);
@@ -417,7 +444,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       title={
         <>
           <Title level={5}>
-            <Avatar src={profile.avatar} size={96}></Avatar>
+            <UserAvatar props={{ size: 96 }} profile={profile}></UserAvatar>
           </Title>
           {`${profile.first_name} ${profile.last_name}`}
         </>
@@ -442,7 +469,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
             />
           </Col>
         </Row>,
-        <Row key="buttons" gutter={16} align="top" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
+        <Row key="buttons" gutter={16} align="bottom" justify="end" style={{ margin: '0.5rem 0.2rem' }}>
           {buttons}
         </Row>,
       ]}

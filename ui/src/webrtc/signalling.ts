@@ -11,6 +11,12 @@ export enum MESSAGE_TYPE {
   SDP,
   CANDIDATE,
   STOP_STREAM,
+  DRAW,
+  WIPE,
+  UNDO,
+  CHANGE_BG,
+  INIT,
+  LEAVE,
 }
 
 export class Signalling {

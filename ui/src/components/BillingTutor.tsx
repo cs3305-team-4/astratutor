@@ -208,7 +208,7 @@ export function BillingTutor(): React.ReactElement {
               size="small"
               style={{ width: '100%' }}
               pagination={false}
-              dataSource={payersPayments.map((payment: BillingPayerPayment) => {
+              dataSource={payersPayments?.map((payment: BillingPayerPayment) => {
                 return {
                   ...payment,
                   amount: `€${payment.amount / 100}`,

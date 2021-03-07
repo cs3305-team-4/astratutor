@@ -132,16 +132,8 @@ func (ac *Account) GetTutorBillingPanelURL() (string, error) {
 }
 
 func (l *Lesson) SetupPaymentIntent() error {
-	fmt.Println(l.SubjectTaughtID)
-	subjectTaught, err := GetSubjectTaughtByID(l.SubjectTaughtID, nil)
-	if err != nil {
-		return err
-	}
-
-	student, err := ReadAccountByID(l.StudentID, nil)
-	if err != nil {
-		return err
-	}
+	subjectTaught := l.SubjectTaught
+	student := l.Student
 
 	intent, err := stripePaymentIntent.New(&stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(subjectTaught.Price),

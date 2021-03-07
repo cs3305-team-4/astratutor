@@ -21,8 +21,6 @@ import {
   TutorSubjectsDTO,
   BillingTutorOnboardURLResponseDTO,
   BillingTutorPanelURLResponseDTO,
-  LessonCancelRequestDTO,
-  LessonRescheduleRequestDTO,
   BillingLessonPaymentIntentSecretResponseDTO,
   BillingCardSetupSessionRequestDTO,
   BillingCardSetupSessionResponseDTO,
@@ -32,6 +30,16 @@ import {
   BillingPayeesPaymentsResponseDTO,
   BillingPayersPaymentsResponseDTO,
   BillingPayoutInfoResponseDTO,
+  SubjectTaughtPriceUpdateRequestDTO,
+  SubjectTaughtRequestDTO,
+  SubjectTaughtDescriptionUpdateRequestDTO,
+  PaginatedResponseDTO,
+  LessonCancelRequestDTO,
+  LessonRescheduleRequestDTO,
+  ReviewDTO,
+  ReviewAverageDTO,
+  ReviewUpdateDTO,
+  ReviewCreateDTO,
 } from './definitions';
 
 export class Services {
@@ -132,6 +140,18 @@ export class Services {
     });
   }
 
+  async createSubjectTaughtOnProfileID(
+    profileId: string,
+    accountType: AccountType,
+    SubjectTaught: SubjectTaughtRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${SubjectTaught.subject_id}`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(SubjectTaught),
+    });
+  }
+
   async deleteWorkExperienceOnProfileID(profileId: string, accountType: AccountType, expId: string): Promise<void> {
     await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/profile/work-experience/${expId}`, {
       headers: this.headers,
@@ -145,6 +165,46 @@ export class Services {
       method: 'POST',
       body: JSON.stringify({
         value: description,
+      }),
+    });
+  }
+
+  async updateSubtitleOnProfileID(profileId: string, accountType: AccountType, subtitle: string): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/profile/subtitle`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        value: subtitle,
+      }),
+    });
+  }
+
+  async updateSubjectDescriptionOnProfileID(
+    profileId: string,
+    subjectTaughtID: string,
+    accountType: AccountType,
+    UpdateDescription: SubjectTaughtDescriptionUpdateRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${subjectTaughtID}/description`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        description: UpdateDescription.description,
+      }),
+    });
+  }
+
+  async updateSubjectPriceOnProfileID(
+    profileId: string,
+    subjectTaughtID: string,
+    accountType: AccountType,
+    UpdatePrice: SubjectTaughtPriceUpdateRequestDTO,
+  ): Promise<void> {
+    await fetchRest(`${config.apiUrl}/${accountType}s/${profileId}/subjects/${subjectTaughtID}/cost`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify({
+        price: UpdatePrice.price,
       }),
     });
   }
@@ -251,19 +311,28 @@ export class Services {
     return (await res.json()) as TurnCredentials;
   }
 
-  async readSubjects(): Promise<SubjectDTO[]> {
-    const res = await fetchRest(`${config.apiUrl}/subjects`);
+  async readSubjects(query: string): Promise<SubjectDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/subjects?query=${query}`);
 
-    return (await res.json()) as SubjectDTO[];
+    return await res.json();
   }
 
-  async readTutors(filters?: string[]): Promise<TutorSubjectsDTO[]> {
-    const url = filters
-      ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
-      : `${config.apiUrl}/subjects/tutors`;
+  async readTutors(
+    page: number,
+    pageSize: number,
+    filters?: string[],
+    query?: string,
+    sort?: string,
+  ): Promise<PaginatedResponseDTO<TutorSubjectsDTO[]>> {
+    // const url = filters
+    //   ? `${config.apiUrl}/subjects/tutors?filter=${filters.join(',')}`
+    //   : `${config.apiUrl}/subjects/tutors`;
+    const url = `${config.apiUrl}/subjects/tutors?page_size=${pageSize}&page=${page}&filter=${filters?.join(
+      ',',
+    )}&query=${query}&sort=${sort}`;
     const res = await fetchRest(url);
 
-    return (await res.json()) as TutorSubjectsDTO[];
+    return (await res.json()) as PaginatedResponseDTO<TutorSubjectsDTO[]>;
   }
 
   async readSubjectsTaughtByAccountId(account_id: string): Promise<SubjectTaughtDTO[]> {
@@ -409,5 +478,60 @@ export class Services {
     });
 
     return ((await res.json()) as BillingPayersPaymentsResponseDTO).payments;
+  }
+
+  async tutorGetAllReviews(tid: string): Promise<ReviewDTO[]> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}`);
+    return (await res.json()) as ReviewDTO[];
+  }
+
+  async tutorRatingAverage(tid: string): Promise<ReviewAverageDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/average`);
+    return (await res.json()) as ReviewAverageDTO;
+  }
+
+  async tutorGetSingleReview(tid: string, rid: string): Promise<ReviewDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}`);
+    return (await res.json()) as ReviewDTO;
+  }
+
+  async tutorGetReviewByStudent(tid: string, sid: string): Promise<ReviewDTO> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/author/${sid}`);
+    return (await res.json()) as ReviewDTO;
+  }
+
+  async tutorCreateReview(tid: string, review: ReviewCreateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(review),
+    });
+    return res.status;
+  }
+
+  async tutorReviewUpdateRating(tid: string, rid: string, update: ReviewUpdateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}/rating`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(update),
+    });
+    return res.status;
+  }
+
+  async tutorReviewUpdateComment(tid: string, rid: string, update: ReviewUpdateDTO): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}/comment`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(update),
+    });
+    return res.status;
+  }
+
+  async tutorDeleteReview(tid: string, rid: string): Promise<number> {
+    const res = await fetchRest(`${config.apiUrl}/reviews/${tid}/${rid}`, {
+      headers: this.headers,
+      method: 'DELETE',
+    });
+    return res.status;
   }
 }
