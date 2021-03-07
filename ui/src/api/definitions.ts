@@ -1,3 +1,5 @@
+import { PaymentMethod } from '@stripe/stripe-js';
+
 export interface LoginRequestDTO {
   email: string;
   password: string;
@@ -91,10 +93,11 @@ export interface LessonRequestDTO {
 
 export enum LessonRequestStage {
   Requested = 'requested',
-  Accepted = 'accepted',
+  Scheduled = 'scheduled',
   Denied = 'denied',
   Cancelled = 'cancelled',
   Rescheduled = 'rescheduled',
+  PaymentRequired = 'payment-required',
   Completed = 'completed',
   NoShowStudent = 'no-show-student',
   NoShowTutor = 'no-show-tutor',
@@ -158,6 +161,59 @@ export interface TutorSubjectsDTO {
   city: string;
   country: string;
   subjects: SubjectTaughtDTO[];
+}
+
+export interface BillingTutorOnboardURLResponseDTO {
+  url: string;
+}
+
+export interface BillingTutorPanelURLResponseDTO {
+  url: string;
+}
+
+export interface BillingCardSetupSessionRequestDTO {
+  success_path: string;
+  cancel_path: string;
+}
+
+export interface BillingCardSetupSessionResponseDTO {
+  id: string;
+}
+
+export interface BillingLessonPaymentIntentSecretResponseDTO {
+  id: string;
+}
+
+export interface BillingCardsResponseDTO {
+  cards: PaymentMethod[];
+}
+
+export interface BillingPayeePayment {
+  description: string;
+  date: string; // RFC3339
+  amount: number; // in cents
+  remarks: string;
+}
+
+export interface BillingPayerPayment {
+  description: string;
+  date: string; // RFC3339
+  amount: number; // in cents
+  remarks: string;
+  available_for_payout: boolean;
+  paid_out: boolean;
+}
+
+export interface BillingPayeesPaymentsResponseDTO {
+  payments: BillingPayeePayment[];
+}
+
+export interface BillingPayersPaymentsResponseDTO {
+  payments: BillingPayerPayment[];
+}
+
+export interface BillingPayoutInfoResponseDTO {
+  payout_balance: number; // in cents
 }
 
 export interface SubjectTaughtRequestDTO {

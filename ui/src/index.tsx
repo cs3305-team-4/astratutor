@@ -4,6 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
+import stripe from '@stripe/stripe-js';
+
+import config from './config';
 
 ReactDOM.render(
   <React.StrictMode>

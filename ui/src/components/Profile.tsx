@@ -141,17 +141,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const reloadProfile = async () => {
     try {
       setProfile(await api.services.readProfileByAccountID(props.uuid, props.type));
-      setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.uuid));
-      setSubjects(await api.services.readSubjects());
-      setSubjects(await api.services.readSubjects(''));
-      if (props.type === AccountType.Tutor) {
-        setRating(await api.services.tutorRatingAverage(props.uuid));
-        setReviews(await api.services.tutorGetAllReviews(props.uuid));
-        setLoggedInReview(await reviewByLoggedInStudent());
-      }
-
-      
-
+      setTutorSubjects(await api.services.readSubjectsTaughtByAccountId(props.uuid));
     } catch (e) {
       Modal.error({
         title: 'Error',
@@ -346,16 +336,14 @@ export function Profile(props: ProfileProps): React.ReactElement {
   }
 
   return (
-    <Typography>
+    <Typography style={{ margin: '1rem' }}>
       {isSelf && (
-        <Alert
-          style={{ margin: '1rem' }}
-          message="Your Profile"
-          description="Your profile will present like this to others (without the option of editing elements)"
-          type="info"
-          showIcon
-        />
+        <div style={{ margin: '1rem' }}>
+          <Title level={3}>Profile</Title>
+          <Paragraph>Your profile will present like this to others (without the option of editing elements)</Paragraph>
+        </div>
       )}
+
       <PageHeader
         title={
           <>
