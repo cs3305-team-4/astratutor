@@ -40,17 +40,18 @@ export function Landing(): React.ReactElement {
                 top: -300,
                 zIndex: 1,
                 background:
-                  'linear-gradient(-187deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgb(240, 242, 245) 50%)',
+                  'linear-gradient(-180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgb(240, 242, 245) 50%)',
               }}
             >
               <Title
                 style={{
                   zIndex: 1000,
                   position: 'absolute',
-                  top: '48%',
+                  top: '37%',
                   fontSize: '3em',
                   width: '100%',
                   textAlign: 'center',
+                  color: 'rgba(255,255,255,0.93)',
                 }}
                 level={1}
               >
