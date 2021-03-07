@@ -17,6 +17,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
 	log "github.com/sirupsen/logrus"
+	stripe "github.com/stripe/stripe-go/v72"
+	stripeAccount "github.com/stripe/stripe-go/v72/account"
+	stripeCustomer "github.com/stripe/stripe-go/v72/customer"
 )
 
 var seedFirstNames []string
@@ -73,13 +76,28 @@ func RandomizeProfile(account *Account) {
 	var qualifications []Qualification
 	var workExperience []WorkExperience
 	availability := make(Availability, 168)
+
+	profileId, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
 	if account.Type == Tutor {
 		for s := 1; s < rand.Intn(4)+2; s++ {
 		createNew:
+			taughtId, err := uuid.NewRandom()
+			if err != nil {
+				panic(err)
+			}
 			subject := SubjectTaught{
-				Subject:     subjects[rand.Intn(len(subjects))],
-				Description: CreateDesc(300),
-				Price:       float32(rand.Intn(30) + 20),
+				Model: database.Model{
+					ID: taughtId,
+				},
+				Subject:        subjects[rand.Intn(len(subjects))],
+				Description:    CreateDesc(300),
+				Price:          int64(rand.Intn(10000) + 10000),
+				TutorID:        account.ID,
+				TutorProfileID: profileId,
 			}
 			// Ensure tutor isnt already teaching this subject
 			for _, subjectTaught := range subjectsTaught {
@@ -153,6 +171,10 @@ func RandomizeProfile(account *Account) {
 	}
 
 	account.Profile = &Profile{
+		Model: database.Model{
+			ID: profileId,
+		},
+		AccountID:      account.ID,
 		Avatar:         avatarB64,
 		Slug:           slug,
 		FirstName:      firstName,
@@ -233,6 +255,14 @@ func SeedDatabase() error {
 		return err
 	}
 
+	accList := stripeAccount.List(nil)
+	var emailToStripeConnectAccID map[string]string
+	emailToStripeConnectAccID = map[string]string{}
+	for accList.Next() {
+		a := accList.Account()
+		emailToStripeConnectAccID[a.Email] = a.ID
+	}
+
 	// Setting a fixed seed so that seeding is derterministic
 	rand.Seed(2131287698123)
 
@@ -256,6 +286,7 @@ func SeedDatabase() error {
 	}
 	db.CreateInBatches(subjects, 20)
 
+	fmt.Println(subjects)
 	// Seed main test accounts
 	log.Info("Seeding Tutor and Student account")
 	var search Account
@@ -272,7 +303,14 @@ func SeedDatabase() error {
 			Suspended:     false,
 			PasswordHash:  *hash,
 		}
+
 		RandomizeProfile(&tutor)
+		if stripeConnectAccID, ok := emailToStripeConnectAccID[tutor.Email]; ok {
+			tutor.StripeID = stripeConnectAccID
+		} else {
+			tutor.SetupBilling()
+		}
+
 		tutors = append(tutors, &tutor)
 
 		student := Account{
@@ -285,7 +323,20 @@ func SeedDatabase() error {
 			Suspended:     false,
 			PasswordHash:  *hash,
 		}
+		custList := stripeCustomer.List(&stripe.CustomerListParams{
+			Email: &student.Email,
+		})
+
+		for custList.Next() {
+			c := custList.Customer()
+			if c.Email == student.Email {
+				student.StripeID = c.ID
+			}
+		}
 		RandomizeProfile(&student)
+		if student.StripeID == "" {
+			student.SetupBilling()
+		}
 		students = append(students, &student)
 
 		// Add lesson between tutor and student
@@ -299,20 +350,29 @@ func SeedDatabase() error {
 			},
 			TutorID:               tutor.ID,
 			StudentID:             student.ID,
+			Tutor:                 tutor,
+			Student:               student,
 			StartTime:             startTime,
 			EndTime:               endTime,
 			LessonDetail:          CreateDesc(20),
-			RequestStage:          Accepted,
+			RequestStage:          Requested,
 			RequestStageDetail:    CreateDesc(10),
+			Requester:             student,
 			RequesterID:           student.ID,
-			RequestStageChangerID: tutor.ID,
+			RequestStageChangerID: student.ID,
+			SubjectTaught:         tutor.Profile.Subjects[0],
+			SubjectTaughtID:       tutor.Profile.Subjects[0].ID,
+		}
+		err = lesson.SetupPaymentIntent()
+		if err != nil {
+			panic(err)
 		}
 		lessons = append(lessons, lesson)
 	}
 
 	// Create random accounts
 	log.Info("Seeding Accounts...")
-	for i := 0; i < 250; i++ {
+	for i := 0; i < 20; i++ {
 		id := uuid.MustParse("11111111-1111-1111-1111-" + fmt.Sprintf("%012d", i))
 		// Check if already in database
 		// This is to avoid generating a random account
@@ -323,8 +383,29 @@ func SeedDatabase() error {
 
 		account := CreateRandomAccountWithID(id, i, hash)
 		if account.Type == Student {
+			custList := stripeCustomer.List(&stripe.CustomerListParams{
+				Email: &account.Email,
+			})
+
+			for custList.Next() {
+				c := custList.Customer()
+				if c.Email == account.Email {
+					account.StripeID = c.ID
+				}
+			}
+
+			if account.StripeID == "" {
+				account.SetupBilling()
+			}
+
 			students = append(students, account)
 		} else {
+			if stripeConnectAccID, ok := emailToStripeConnectAccID[account.Email]; ok {
+				account.StripeID = stripeConnectAccID
+			} else {
+				account.SetupBilling()
+			}
+
 			tutors = append(tutors, account)
 		}
 		log.Info("Seeding database with Account ID: ", id)
@@ -337,37 +418,38 @@ func SeedDatabase() error {
 
 	// Create lessons between students and tutors
 	log.Info("Seeding lessons...")
-	for i, tutor := range tutors {
-		for l := 5; l < rand.Intn(6)+6; l++ {
-			id := uuid.MustParse("11111111-1111-1111-1111-" + fmt.Sprintf("%012d", l+((i+1)*10)))
-			student := students[rand.Intn(len(students))]
+	// Disabled due to payment integration issues
+	// for i, tutor := range tutors {
+	// 	for l := 5; l < rand.Intn(6)+6; l++ {
+	// 		id := uuid.MustParse("11111111-1111-1111-1111-" + fmt.Sprintf("%012d", l+((i+1)*10)))
+	// 		student := students[rand.Intn(len(students))]
 
-			startTime := time.Now().Add(time.Duration(rand.Intn(7000)) * time.Hour)
-			endTime := startTime.Add(1 * time.Hour)
+	// 		startTime := time.Now().Add(time.Duration(rand.Intn(7000)) * time.Hour)
+	// 		endTime := startTime.Add(1 * time.Hour)
 
-			stage := []LessonRequestStage{Accepted, Denied, Cancelled, Requested}[rand.Intn(4)]
-			changer := tutor.ID
-			if stage == Requested {
-				changer = student.ID
-			}
+	// 		stage := []LessonRequestStage{Scheduled, Denied, Cancelled, Requested}[rand.Intn(4)]
+	// 		changer := tutor.ID
+	// 		if stage == Requested {
+	// 			changer = student.ID
+	// 		}
 
-			lesson := Lesson{
-				Model: database.Model{
-					ID: id,
-				},
-				TutorID:               tutor.ID,
-				StudentID:             student.ID,
-				StartTime:             startTime,
-				EndTime:               endTime,
-				LessonDetail:          CreateDesc(20),
-				RequestStage:          stage,
-				RequestStageDetail:    CreateDesc(10),
-				RequesterID:           student.ID,
-				RequestStageChangerID: changer,
-			}
-			lessons = append(lessons, lesson)
-		}
-	}
+	// 		lesson := Lesson{
+	// 			Model: database.Model{
+	// 				ID: id,
+	// 			},
+	// 			TutorID:               tutor.ID,
+	// 			StudentID:             student.ID,
+	// 			StartTime:             startTime,
+	// 			EndTime:               endTime,
+	// 			LessonDetail:          CreateDesc(20),
+	// 			RequestStage:          stage,
+	// 			RequestStageDetail:    CreateDesc(10),
+	// 			RequesterID:           student.ID,
+	// 			RequestStageChangerID: changer,
+	// 		}
+	// 		lessons = append(lessons, lesson)
+	// 	}
+	// }
 
 	db.CreateInBatches(lessons, 20)
 

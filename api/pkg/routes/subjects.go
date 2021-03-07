@@ -31,7 +31,7 @@ type SubjectTaughtDTO struct {
 	Name        string    `json:"name" validate:"required"`
 	Slug        string    `json:"slug" validate:"required"`
 	Description string    `json:"description"`
-	Price       float32   `json:"price" validate:"required"`
+	Price       int64     `json:"price" validate:"required"`
 }
 
 // Represents a Tutor and their subjects
@@ -51,7 +51,7 @@ type TutorSubjectsResponseDTO struct {
 // SubjectTaughtRequestDTO represents a subject a Tutor wishes to teach
 type SubjectTaughtRequestDTO struct {
 	Description string  `json:"description"`
-	Price       float32 `json:"price"`
+	Price       int64 `json:"price"`
 }
 
 // SubjectTaughtDescriptionUpdateRequestDTO represents a subject a Tutor wishes to update the description for
@@ -85,6 +85,7 @@ func ProfileToTutorSubjectsResponseDTO(profiles *[]services.Profile) *[]TutorSub
 }
 
 func SubjectTaughtToDTO(subjectTaught *services.SubjectTaught) *SubjectTaughtDTO {
+
 	return &SubjectTaughtDTO{
 		ID:          subjectTaught.ID,
 		SubjectID:   subjectTaught.Subject.ID,
@@ -196,13 +197,13 @@ func handleGetSubjectsForTutor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tutorProfile, err := services.ReadProfileByAccountID(tid, nil)
+	tutor, err := services.ReadAccountByID(tid, nil)
 	if err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
-	tutorSubjects, err := services.GetSubjectsTaughtByTutorID(tutorProfile.ID, nil, "Subject")
+	tutorSubjects, err := services.GetSubjectsTaughtByTutorID(tutor.ID, nil, "Subject")
 	if err != nil {
 		restError(w, r, err, http.StatusInternalServerError)
 		return

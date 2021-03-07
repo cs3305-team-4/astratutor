@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 import { Badge, Layout, Menu } from 'antd';
 
-import { MailOutlined, ScheduleOutlined, FileDoneOutlined } from '@ant-design/icons';
+import { MailOutlined, ScheduleOutlined, FileDoneOutlined, BankOutlined } from '@ant-design/icons';
 
 import { APIContext } from '../api/api';
 import { AccountType, LessonRequestStage, LessonResponseDTO, ProfileResponseDTO } from '../api/definitions';
@@ -15,6 +15,7 @@ const { Sider, Content } = Layout;
 
 enum Menus {
   Requests = 'Pending Requests',
+  PaymentRequired = 'Payment Required',
   Scheduled = 'Scheduled',
   Completed = 'Completed',
   Cancelled = 'Cancelled',
@@ -108,6 +109,9 @@ export function Lessons(): React.ReactElement {
               Requests
             </Badge>
           </Menu.Item>
+          <Menu.Item onClick={() => setMenu(Menus.PaymentRequired)} key={Menus.PaymentRequired} icon={<BankOutlined />}>
+            Payment Required
+          </Menu.Item>
           <Menu.Item onClick={() => setMenu(Menus.Scheduled)} key={Menus.Scheduled} icon={<ScheduleOutlined />}>
             Scheduled
           </Menu.Item>
@@ -151,9 +155,17 @@ export function Lessons(): React.ReactElement {
 
             return <></>;
           })}
+        {menu === Menus.PaymentRequired &&
+          Object.keys(lessonProps).map((key: string, index: number) => {
+            if (lessonProps[key].lesson.request_stage === LessonRequestStage.PaymentRequired) {
+              return <Lesson key={index} {...lessonProps[key]} />;
+            }
+
+            return <></>;
+          })}
         {menu === Menus.Scheduled &&
           Object.keys(lessonProps).map((key: string, index: number) => {
-            if (lessonProps[key].lesson.request_stage === LessonRequestStage.Accepted) {
+            if (lessonProps[key].lesson.request_stage === LessonRequestStage.Scheduled) {
               return <Lesson key={index} {...lessonProps[key]} />;
             }
 

@@ -19,8 +19,6 @@ export interface RequestLessonModalProps extends ModalProps {
 }
 
 export function RequestLessonModal(props: RequestLessonModalProps): React.ReactElement {
-  //const subjects = ['Leaving Certificate - English', 'Leaving Certificate - Irish'];
-
   const [tutorSubjects, setTutorSubjects] = useState<SubjectTaughtDTO[] | undefined>(undefined);
 
   const api = React.useContext(APIContext);
@@ -34,7 +32,7 @@ export function RequestLessonModal(props: RequestLessonModalProps): React.ReactE
 
   useAsync(async () => {
     if (props.type === AccountType.Tutor) {
-      setTutorSubjects(await api.services.readTutorSubjectsByAccountId(props.profile.account_id));
+      setTutorSubjects(await api.services.readSubjectsTaughtByAccountId(props.profile.account_id));
     }
   }, []);
 

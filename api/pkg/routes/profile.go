@@ -36,7 +36,7 @@ type ProfileResponseDTO struct {
 	FirstName   string `json:"first_name" validate:"required"`
 	LastName    string `json:"last_name" validate:"required"`
 	City        string `json:"city" validate:"required"`
-	Country     string `json:"country" validate:"required"`
+	Country     string `json:"country" validate:"required,iso3166_1_alpha2"`
 	Subtitle    string `json:"subtitle" validate:"omitempty,lte=300"`
 	Description string `json:"description" validate:"omitempty,lte=1000"`
 	Color       string `json:"color" validate:"required"`
@@ -161,7 +161,7 @@ func handleProfileGet(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	// Filter verified if same user isn't authenticated.
@@ -211,7 +211,7 @@ func handleProfilePost(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(serviceProfile, t)
@@ -243,7 +243,7 @@ func handleProfileUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -283,7 +283,7 @@ func handleProfileUpdateFirstName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -323,7 +323,7 @@ func handleProfileUpdateLastName(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -355,7 +355,7 @@ func handleProfileUpdateCity(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -387,7 +387,7 @@ func handleProfileUpdateCountry(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -419,7 +419,7 @@ func handleProfileUpdateDescription(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)
@@ -451,7 +451,7 @@ func handleProfileUpdateSubtitle(w http.ResponseWriter, r *http.Request) {
 		restError(w, r, err, http.StatusInternalServerError)
 		return
 	} else if !ok {
-		restError(w, r, errors.New("Account type does not match endpoint."), http.StatusBadRequest)
+		restError(w, r, errors.New("account type does not match endpoint."), http.StatusBadRequest)
 		return
 	}
 	outProfile := dtoFromProfile(profile, t)

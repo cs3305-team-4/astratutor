@@ -7,6 +7,9 @@ import { UserOutlined } from '@ant-design/icons';
 
 import { Switch, Route, Link, useHistory, useLocation } from 'react-router-dom';
 
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
 import { Account } from './views/Account';
 import { Landing } from './views/Landing';
 import { Login } from './views/Login';
@@ -20,10 +23,14 @@ import './App.css';
 
 import { APIContext, useApiValues, PrivateRoute } from './api/api';
 
+import config from './config';
+
 import { useAsync } from 'react-async-hook';
 import { Profile } from './components/Profile';
 import { ProfileResponseDTO } from './api/definitions';
 import { UserAvatar } from './components/UserAvatar';
+
+const stripePromise = loadStripe(config.stripePublishableKey);
 
 const { Footer, Content } = Layout;
 
@@ -106,52 +113,57 @@ function App(): React.ReactElement {
   return (
     <APIContext.Provider value={api}>
       <APIContext.Provider value={api}>
-        <Layout style={{ minHeight: '100vh' }}>
-          <PageHeader
-            ghost={false}
-            title={
-              <Link to="/" key="logo-home">
-                <span>AstraTutor</span>
-              </Link>
-            }
-            extra={headerLinks}
-            style={{ boxShadow: '0 1px 10px rgba(0,0,0,0.25)' }}
-          />
-          <Content>
-            <Switch>
-              <Route path="/" exact={true}>
-                <Landing />
-              </Route>
-              <PrivateRoute path="/account" component={Account} />
-              <Route exact path="/subjects">
-                <Subjects />
-              </Route>
-              <Route path="/subjects/tutors">
-                <Tutors />
-              </Route>
-              <Route path="/subjects"></Route>
-              <Route path="/subjects/:subject_slug/tutors"></Route>
-              <Route exact path="/tutors/:slug"></Route>
-              <Route exact path="/tutors/:uuid/profile" component={ViewProfile} />
-              <PrivateRoute exact path="/lessons" component={Lessons} />
-              <PrivateRoute exact path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}>
-                <LessonLobby />
-              </PrivateRoute>
-              <Route path="/login" component={Login} />
-              <Route path="/register" component={Register} />
-            </Switch>
-          </Content>
-          <Footer>
-            <Divider orientation="left">AstraTutor</Divider>
-            <Row>
-              <Col flex={16}>Site Map</Col>
-              <Col flex={24 - 16}>Links</Col>
-            </Row>
-            <Row style={{ margin: '0 auto', textAlign: 'center' }}>
-              <p>Made with love by CS3505 Team 4</p>
-            </Row>
-          </Footer>
-        </Layout>
+        <Elements stripe={stripePromise}>
+          <Layout style={{ minHeight: '100vh' }}>
+            <PageHeader
+              ghost={false}
+              title={
+                <Link to="/" key="logo-home">
+                  <span>AstraTutor</span>
+                </Link>
+              }
+              extra={headerLinks}
+              style={{ boxShadow: '0 1px 10px rgba(0,0,0,0.25)' }}
+            />
+            <Content>
+              <Switch>
+                <Route path="/" exact={true}>
+                  <Landing />
+                </Route>
+                <PrivateRoute path="/account" component={Account} />
+                <Route exact path="/subjects">
+                  <Subjects />
+                </Route>
+                <Route path="/subjects/tutors">
+                  <Tutors />
+                </Route>
+                <Route path="/subjects"></Route>
+                <Route path="/subjects/:subject_slug/tutors"></Route>
+                <Route exact path="/tutors/:slug"></Route>
+                <Route exact path="/tutors/:uuid/profile" component={ViewProfile} />
+                <PrivateRoute exact path="/lessons" component={Lessons} />
+                <PrivateRoute exact path="/lessons/:lid" component={Lessons} />
+                <PrivateRoute
+                  exact
+                  path={['/lessons/:lid/lobby', '/lessons/:lid/classroom', '/lessons/:lid/goodbye']}
+                  component={LessonLobby}
+                />
+                <Route path="/login" component={Login} />
+                <Route path="/register" component={Register} />
+              </Switch>
+            </Content>
+            <Footer>
+              <Divider orientation="left">AstraTutor</Divider>
+              <Row>
+                <Col flex={16}>Site Map</Col>
+                <Col flex={24 - 16}>Links</Col>
+              </Row>
+              <Row style={{ margin: '0 auto', textAlign: 'center' }}>
+                <p>Made with love by CS3505 Team 4</p>
+              </Row>
+            </Footer>
+          </Layout>
+        </Elements>
       </APIContext.Provider>
     </APIContext.Provider>
   );
