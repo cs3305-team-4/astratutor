@@ -143,9 +143,6 @@ export function Profile(props: ProfileProps): React.ReactElement {
         setReviews(await api.services.tutorGetAllReviews(props.uuid));
         setLoggedInReview(await reviewByLoggedInStudent());
       }
-
-      
-
     } catch (e) {
       Modal.error({
         title: 'Error',
