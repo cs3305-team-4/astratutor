@@ -372,7 +372,7 @@ func SeedDatabase() error {
 
 	// Create random accounts
 	log.Info("Seeding Accounts...")
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 200; i++ {
 		id := uuid.MustParse("11111111-1111-1111-1111-" + fmt.Sprintf("%012d", i))
 		// Check if already in database
 		// This is to avoid generating a random account
@@ -411,7 +411,7 @@ func SeedDatabase() error {
 		log.Info("Seeding database with Account ID: ", id)
 
 		// Pause to try avoid cached avatars being returned
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 	db.CreateInBatches(students, 20)
 	db.CreateInBatches(tutors, 20)
