@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/cs3305-team-4/api/pkg/database"
 	"github.com/google/uuid"
@@ -76,7 +77,7 @@ type TutorSubjects struct {
 }
 
 //gets all subjects in the DB
-func GetSubjects(db *gorm.DB) ([]Subject, error) {
+func GetSubjects(query string, db *gorm.DB) ([]Subject, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -85,7 +86,16 @@ func GetSubjects(db *gorm.DB) ([]Subject, error) {
 		}
 	}
 	var subject []Subject
-	return subject, db.Find(&subject).Error
+	err := db.
+		Scopes(
+			Search(SearchQuery{"name", query}),
+		).
+		Find(&subject).
+		Error
+	if err != nil {
+		return nil, err
+	}
+	return subject, nil
 }
 
 // returns a subject when given a subjects slug
@@ -142,7 +152,7 @@ func GetSubjectByID(id uuid.UUID, db *gorm.DB) (*Subject, error) {
 }
 
 //Quries the DB for SubjectTaught where the subject ID is a match
-func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, db *gorm.DB) ([]Profile, int, error) {
+func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, query string, sort string, db *gorm.DB) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -156,21 +166,43 @@ func GetTutorsBySubjectsPaginated(subjects *[]Subject, pageSize int, page int, d
 		subject_ids = append(subject_ids, subject.ID.String())
 	}
 
-	// Get total tutors who are teaching subjects that match the id
+	scopes := []func(*gorm.DB) *gorm.DB{}
+	for _, q := range strings.Split(query, " ") {
+		scopes = append(scopes, Search(SearchQuery{"profiles.first_name", q}, SearchQuery{"profiles.last_name", q}, SearchQuery{"profiles.country", q}, SearchQuery{"profiles.city", q}, SearchQuery{"profiles.description", q}))
+	}
+
 	var totalTutors int64
 	db.Model(&SubjectTaught{}).
-		Where("subject_id IN (?)", subject_ids).
+		Joins("JOIN profiles ON profiles.id = subject_taughts.tutor_profile_id").
+		Where("subject_taughts.subject_id IN (?)", subject_ids).
+		Scopes(
+			scopes...,
+		).
 		Distinct("tutor_profile_id").Count(&totalTutors)
 
-	// Get tutors who are teaching subjects paginated
+	scopes = append(scopes, Paginate(pageSize, page))
+	asc := ""
+	switch sort {
+	case "low":
+		asc = "asc"
+	case "high":
+		asc = "desc"
+	}
+	scopes = append(scopes, Sort("AVG( subject_taughts.price )", asc, Join{
+		new:     Table{"subject_taughts", "tutor_profile_id"},
+		current: Table{"profiles", "id"},
+	}))
+	// Get tutors who are teaching subjects paginated,
 	var profiles []Profile
 	err := db.
-		Where("id IN (?)",
+		Where("profiles.id IN (?)",
 			db.Model(&SubjectTaught{}).
 				Where("subject_id IN (?)", subject_ids).
 				Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
-		Scopes(Paginate(pageSize, page)).
+		Scopes(
+			scopes...,
+		).
 		Find(&profiles).Error
 	if err != nil {
 		return nil, 0, err
@@ -193,7 +225,7 @@ func GetSubjectTaughtByID(stid uuid.UUID, db *gorm.DB) (*SubjectTaught, error) {
 }
 
 //Returns all subjectTaught
-func GetAllTutorsPaginated(db *gorm.DB, pageSize int, page int) ([]Profile, int, error) {
+func GetAllTutorsPaginated(db *gorm.DB, pageSize int, query string, sort string, page int) ([]Profile, int, error) {
 	if db == nil {
 		var err error
 		db, err = database.Open()
@@ -202,17 +234,48 @@ func GetAllTutorsPaginated(db *gorm.DB, pageSize int, page int) ([]Profile, int,
 		}
 	}
 
-	// Get total tutors who are teaching subjects
-	var totalTutors int64
-	db.Model(&SubjectTaught{}).Distinct("tutor_profile_id").Count(&totalTutors)
+	scopes := []func(*gorm.DB) *gorm.DB{}
+	for _, q := range strings.Split(query, " ") {
+		scopes = append(scopes, Search(SearchQuery{"profiles.first_name", q}, SearchQuery{"profiles.last_name", q}, SearchQuery{"profiles.country", q}, SearchQuery{"profiles.city", q}, SearchQuery{"profiles.description", q}, SearchQuery{"subjects.name", q}))
+	}
 
+	var totalTutors int64
+	db.Model(&SubjectTaught{}).
+		Joins("JOIN profiles ON profiles.id = subject_taughts.tutor_profile_id").
+		Joins("JOIN subjects ON subject_taughts.subject_id = subjects.id").
+		Scopes(
+			scopes...,
+		).
+		Distinct("tutor_profile_id").Count(&totalTutors)
+
+	scopes = append(scopes, Paginate(pageSize, page))
+	asc := ""
+	switch sort {
+	case "low":
+		asc = "asc"
+	case "high":
+		asc = "desc"
+	}
+	scopes = append(scopes, Sort("AVG( subject_taughts.price )", asc,
+		Join{
+			new:     Table{"subject_taughts", "tutor_profile_id"},
+			current: Table{"profiles", "id"},
+		},
+		Join{
+			new:     Table{"subjects", "id"},
+			current: Table{"subject_taughts", "subject_id"},
+		},
+	))
 	// Get tutors who are teaching subjects paginated
 	var profiles []Profile
 	err := db.
-		Where("id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
+		Where("profiles.id IN (?)", db.Model(&SubjectTaught{}).Select("tutor_profile_id")).
 		Preload("Subjects").Preload("Subjects.Subject").
-		Scopes(Paginate(pageSize, page)).
-		Find(&profiles).Error
+		Scopes(
+			scopes...,
+		).
+		Find(&profiles).
+		Error
 	if err != nil {
 		return nil, 0, err
 	}

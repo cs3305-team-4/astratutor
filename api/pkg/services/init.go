@@ -45,6 +45,7 @@ Conn:
 		&Subject{},
 		&SubjectRequest{},
 		&SubjectTaught{},
+		&Review{},
 	)
 	// Add some test users so we don't need to manually test things
 	//CreateDebugData()

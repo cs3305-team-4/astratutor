@@ -35,6 +35,7 @@ func GetHandler() http.Handler {
 	InjectSubjectsRoutes(r.PathPrefix("/subjects").Subrouter())
 	InjectTutorsRoutes(r.PathPrefix("/tutors").Subrouter())
 	InjectSignallingRoutes(r.PathPrefix("/signalling").Subrouter())
+	InjectReviewsRoutes(r.PathPrefix("/reviews").Subrouter())
 
 	return cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

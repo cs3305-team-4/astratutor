@@ -154,6 +154,9 @@ export interface TutorSubjectsDTO {
   avatar: string;
   slug: string;
   description: string;
+  color: string;
+  city: string;
+  country: string;
   subjects: SubjectTaughtDTO[];
 }
 
@@ -181,6 +184,36 @@ export interface TurnCredentials {
   password: string;
 }
 
+
 export interface SubjectRequestDTO {
   name: string;
+}
+export interface ReviewCreateDTO {
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewDTO {
+  id: string;
+  created_at: string; // RFC3339 timestap
+  rating: number;
+  comment: string;
+  student: ProfileMin;
+}
+
+export interface ProfileMin {
+  account_id: string;
+  avatar: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface ReviewUpdateDTO {
+  rating?: number;
+  comment?: string;
+}
+
+export interface ReviewAverageDTO {
+  average: number;
 }
