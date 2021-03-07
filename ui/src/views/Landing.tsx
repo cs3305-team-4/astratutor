@@ -39,7 +39,7 @@ export function Landing(): React.ReactElement {
                 height: '100vh',
                 zIndex: 1,
                 background:
-                  'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,1) 50%)',
+                  'linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgb(27 27 27) 50%)',
               }}
             >
               <img
@@ -47,7 +47,7 @@ export function Landing(): React.ReactElement {
                 alt="AstraTutor"
                 style={{ float: 'right', right: -120, marginTop: 60, height: 800, position: 'absolute' }}
               />
-              <Title style={{ zIndex: 1000, color: '#272727', position: 'absolute', right: 70, top: '50%' }} level={1}>
+              <Title style={{ zIndex: 1000, color: '#ffffff', position: 'absolute', right: 70, top: '50%' }} level={1}>
                 Take your marks to the stars!
               </Title>
             </Typography>
