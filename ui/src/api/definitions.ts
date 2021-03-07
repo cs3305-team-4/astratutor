@@ -111,6 +111,8 @@ export interface LessonResponseDTO {
   student_id: string;
   tutor_id: string;
   lesson_detail: string;
+  subject_id: string;
+  subject_name: string;
   request_stage: LessonRequestStage;
   request_stage_detail: string;
   request_stage_changer_id: string;
