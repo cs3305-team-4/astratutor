@@ -2,52 +2,29 @@ import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 import { Typography, Layout, Row, Col } from 'antd';
+import Gradient from '../api/gradient';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
 
 const Hero = styled(Content)`
   background-color: rgba(233, 233, 233);
+  #gradient {
+    width: 100%;
+    height: 100%;
+    --gradient-color-1: #ef008f;
+    --gradient-color-2: #6ec3f4;
+    --gradient-color-3: #7038ff;
+    --gradient-color-4: #ffba27;
+  }
 `;
 
 export function Landing(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>();
 
   useEffect(() => {
-    const context = canvasRef.current?.getContext('2d');
-    if (!context) return;
-    let time = 0;
-    context.scale(5, 5);
-
-    const color = function (x: number, y: number, r: number, g: number, b: number) {
-      context.fillStyle = `rgb(${r}, ${g}, ${b})`;
-      context.fillRect(x, y, 10, 10);
-    };
-    const R = function (x: number, y: number, time: number) {
-      return Math.floor(192 + 64 * Math.cos((x * x - y * y) / 300 + time));
-    };
-
-    const G = function (x: number, y: number, time: number) {
-      return Math.floor(192 + 64 * Math.sin((x * x * Math.cos(time / 4) + y * y * Math.sin(time / 3)) / 300));
-    };
-
-    const B = function (x: number, y: number, time: number) {
-      return Math.floor(
-        192 + 64 * Math.sin(5 * Math.sin(time / 9) + ((x - 100) * (x - 100) + (y - 100) * (y - 100)) / 1100),
-      );
-    };
-
-    const startAnimation = function () {
-      for (let x = 0; x <= 30; x++) {
-        for (let y = 0; y <= 30; y++) {
-          color(x, y, R(x, y, time), G(x, y, time), B(x, y, time));
-        }
-      }
-      time = time + 0.06;
-      window.requestAnimationFrame(startAnimation);
-    };
-
-    startAnimation();
+    const gradient = new Gradient();
+    gradient.initGradient('#gradient');
   }, [canvasRef]);
 
   return (
@@ -56,7 +33,9 @@ export function Landing(): React.ReactElement {
         <Row style={{ height: 'calc(100vh - 72px)' }} align="middle" justify="center">
           <Col>
             <canvas
-              style={{ width: '100vw', height: '100vh' }}
+              data-js-darken-top
+              data-transition-in
+              id="gradient"
               ref={(r) => {
                 canvasRef.current = r ?? undefined;
               }}
