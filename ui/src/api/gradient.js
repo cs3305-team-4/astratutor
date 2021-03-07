@@ -359,7 +359,7 @@ class MiniGl {
       }),
     };
   }
-  setSize(e = 640, t = 480) {
+  setSize(e = window.innerHeight, t = 480) {
     (this.width = e),
       (this.height = t),
       (this.canvas.width = e),
@@ -436,7 +436,7 @@ export default class Gradient {
       e(this, 'last', 0),
       e(this, 'width', void 0),
       e(this, 'minWidth', 1111),
-      e(this, 'height', 600),
+      e(this, 'height', window.innerHeight),
       e(this, 'xSegCount', void 0),
       e(this, 'ySegCount', void 0),
       e(this, 'mesh', void 0),
