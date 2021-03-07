@@ -45,6 +45,7 @@ Conn:
 		&ResourceMetadata{},
 		&ResourceData{},
 		&Subject{},
+		&SubjectRequest{},
 		&SubjectTaught{},
 		&Review{},
 	)

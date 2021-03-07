@@ -269,3 +269,7 @@ export interface ReviewUpdateDTO {
 export interface ReviewAverageDTO {
   average: number;
 }
+
+export interface SubjectRequestDTO {
+  name: string;
+}

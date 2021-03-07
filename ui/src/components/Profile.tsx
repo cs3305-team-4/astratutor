@@ -30,6 +30,7 @@ import {
   Progress,
   Space,
   Tooltip,
+  notification,
   message,
 } from 'antd';
 
@@ -64,6 +65,7 @@ import {
   ReviewAverageDTO,
   ReviewDTO,
   ReviewCreateDTO,
+  SubjectRequestDTO,
 } from '../api/definitions';
 
 import { RequestLessonModal } from './RequestLessonModal';
@@ -73,6 +75,7 @@ import { Availability } from './Availability';
 import { UserAvatar } from './UserAvatar';
 
 import moment from 'moment';
+import { useForm } from 'antd/lib/form/Form';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -122,6 +125,9 @@ export function Profile(props: ProfileProps): React.ReactElement {
   const [loggedInReview, setLoggedInReview] = React.useState<ReviewDTO | undefined>(undefined);
   const [editReview, setEditReview] = React.useState<ReviewDTO | undefined>(undefined);
   const [form] = Form.useForm();
+
+  const [requestSubjectModal, setRequestSubjectModal] = React.useState<boolean>(false);
+  const [subjectRequestForm] = useForm();
 
   const reviewByLoggedInStudent = async (): Promise<ReviewDTO | undefined> => {
     if (api.account?.type !== AccountType.Student) return;
@@ -815,6 +821,39 @@ export function Profile(props: ProfileProps): React.ReactElement {
                         </Select.Option>
                       ))}
                     </Select>
+                    <Typography.Text type="secondary">
+                      Can&apos;t find your subject?{' '}
+                      <Button
+                        type="link"
+                        onClick={() => {
+                          setRequestSubjectModal(true);
+                        }}
+                      >
+                        Request it gets added
+                      </Button>
+                      <Modal
+                        title="Request a subject gets added"
+                        visible={requestSubjectModal}
+                        onOk={() => {
+                          subjectRequestForm.validateFields().then(async (values: SubjectRequestDTO) => {
+                            await api.services.requestSubjectAdded(values);
+                            setRequestSubjectModal(false);
+                            message.success('Request sent!');
+                          });
+                        }}
+                        okText="Request"
+                        onCancel={() => {
+                          setRequestSubjectModal(false);
+                        }}
+                        destroyOnClose={true}
+                      >
+                        <Form form={subjectRequestForm} preserve={false}>
+                          <Form.Item name="name" rules={[{ required: true, message: 'Please enter a subject name' }]}>
+                            <Input placeholder="Enter the name of the subject to request" />
+                          </Form.Item>
+                        </Form>
+                      </Modal>
+                    </Typography.Text>
                   </Form.Item>
                   <Form.Item
                     name="price"

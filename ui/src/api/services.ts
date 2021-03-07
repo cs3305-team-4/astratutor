@@ -40,6 +40,7 @@ import {
   ReviewAverageDTO,
   ReviewUpdateDTO,
   ReviewCreateDTO,
+  SubjectRequestDTO,
 } from './definitions';
 
 export class Services {
@@ -533,5 +534,12 @@ export class Services {
       method: 'DELETE',
     });
     return res.status;
+  }
+  async requestSubjectAdded(subjectRequest: SubjectRequestDTO): Promise<void> {
+    await fetchRest(`${config.apiUrl}/subjects`, {
+      headers: this.headers,
+      method: 'POST',
+      body: JSON.stringify(subjectRequest),
+    });
   }
 }
