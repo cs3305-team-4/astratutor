@@ -81,6 +81,9 @@ export function Lessons(): React.ReactElement {
       case '/lessons/scheduled':
         setMenu(Menus.Scheduled);
         break;
+      case '/lessons/required':
+        setMenu(Menus.PaymentRequired);
+        break;
       case '/lessons/completed':
         setMenu(Menus.Completed);
         break;
@@ -132,8 +135,31 @@ export function Lessons(): React.ReactElement {
               Requests
             </Badge>
           </Menu.Item>
-          <Menu.Item onClick={() => setMenu(Menus.PaymentRequired)} key={Menus.PaymentRequired} icon={<BankOutlined />}>
-            Payment Required
+          <Menu.Item
+            disabled={
+              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                .length === 0
+            }
+            title={
+              Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                .length === 0
+                ? 'No payments required right now!'
+                : ''
+            }
+            onClick={() => setMenu(Menus.PaymentRequired)}
+            key={Menus.PaymentRequired}
+            icon={<BankOutlined />}
+          >
+            <Badge
+              style={{ background: '#1890ff' }}
+              offset={[60, 7]}
+              count={
+                Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
+                  .length
+              }
+            >
+              Payment Required
+            </Badge>
           </Menu.Item>
           <Menu.Item onClick={() => setMenu(Menus.Scheduled)} key={Menus.Scheduled} icon={<ScheduleOutlined />}>
             Scheduled

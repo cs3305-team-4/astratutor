@@ -313,7 +313,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     <>
       <Button
         style={{ margin: '0.2rem' }}
-        type="dashed"
+        type="primary"
         onClick={async () => {
           const cards = await api.services.readCardsByAccount(api.account.id);
           const secret_id = await api.services.readLessonBillingPaymentIntentSecret(props.lesson.id);
