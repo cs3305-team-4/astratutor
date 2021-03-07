@@ -12,10 +12,10 @@ const Hero = styled(Content)`
   #gradient {
     width: 100%;
     height: 100%;
-    --gradient-color-1: #92cd00;
-    --gradient-color-2: #ffcf79;
-    --gradient-color-3: #e5e4d7;
-    --gradient-color-4: #2c6700;
+    --gradient-color-1: #00ef5c;
+    --gradient-color-2: #1fad0d;
+    --gradient-color-3: #6ff16a;
+    --gradient-color-4: #1d7711;
   }
 `;
 
