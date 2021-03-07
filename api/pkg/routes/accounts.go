@@ -501,7 +501,7 @@ func handleAccountsLessonsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lessons, err := services.ReadLessonsByAccountID(id)
+	lessons, err := services.ReadLessonsByAccountID(id, "SubjectTaught", "SubjectTaught.Subject")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

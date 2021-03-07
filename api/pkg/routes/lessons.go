@@ -36,6 +36,8 @@ type LessonResponseDTO struct {
 	// SubjectTaughtID
 	SubjectID uuid.UUID `json:"subject_id"`
 
+	SubjectName string `json:"subject_name"`
+
 	// LessonDetail contains notes about what the student needs out of this lesson
 	LessonDetail string `json:"lesson_detail"`
 
@@ -110,6 +112,7 @@ func dtoFromLesson(l *services.Lesson) *LessonResponseDTO {
 		StudentID:             l.StudentID,
 		RequesterID:           l.RequesterID,
 		SubjectID:             l.SubjectTaught.SubjectID,
+		SubjectName:           l.SubjectTaught.Subject.Name,
 		LessonDetail:          l.LessonDetail,
 		RequestStage:          l.RequestStage,
 		RequestStageDetail:    l.RequestStageDetail,
@@ -289,7 +292,7 @@ func handleLessonsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lesson, err := services.ReadLessonByID(id)
+	lesson, err := services.ReadLessonByID(id, "SubjectTaught", "SubjectTaughgt.Subject")
 	if err != nil {
 		restError(w, r, err, http.StatusBadRequest)
 		return

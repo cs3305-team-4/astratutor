@@ -261,10 +261,14 @@ func ReadLessonByID(id uuid.UUID, preloads ...string) (*Lesson, error) {
 	return &lesson, nil
 }
 
-func ReadLessonsByAccountID(id uuid.UUID) ([]Lesson, error) {
+func ReadLessonsByAccountID(id uuid.UUID, preloads ...string) ([]Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
 		return nil, err
+	}
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
 	}
 
 	var lessons []Lesson
