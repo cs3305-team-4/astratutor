@@ -453,7 +453,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       extra={[
         <Row key="stats" gutter={32} style={{ marginTop: '1rem' }} align="top" justify="start">
           <Col>
-            <Statistic title="Subject" value={props.otherProfile.s} />
+            <Statistic title="Subject" value={props.lesson.subject_name} />
           </Col>
           <Col>
             <Statistic
