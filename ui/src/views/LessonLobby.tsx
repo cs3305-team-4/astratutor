@@ -204,7 +204,7 @@ export function LessonLobby(): ReactElement {
           </StyledNav>
           <StyledLayout>
             <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-              Thanks for attending {metadata?.lesson_detail}!
+              Thanks for attending {metadata?.subject_name}!
             </Typography.Title>
             {(api.account?.type === AccountType.Student || completed) && (
               <Button style={{ width: '50%', margin: '.3em auto' }} ghost type="link">
@@ -298,7 +298,7 @@ export function LessonLobby(): ReactElement {
           <StyledLayout>
             <Typography>
               <Typography.Title style={{ color: '#fff', textAlign: 'center' }} level={1}>
-                Joining your {metadata?.lesson_detail} classroom!
+                Joining your {metadata?.subject_name} classroom!
               </Typography.Title>
             </Typography>
             {/* TODO(james): Send probe message to discover users */}
