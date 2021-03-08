@@ -823,40 +823,40 @@ export function Profile(props: ProfileProps): React.ReactElement {
                         </Select.Option>
                       ))}
                     </Select>
-                    <Typography.Text type="secondary">
-                      Can&apos;t find your subject?{' '}
-                      <Button
-                        type="link"
-                        onClick={() => {
-                          setRequestSubjectModal(true);
-                        }}
-                      >
-                        Request it gets added
-                      </Button>
-                      <Modal
-                        title="Request a subject gets added"
-                        visible={requestSubjectModal}
-                        onOk={() => {
-                          subjectRequestForm.validateFields().then(async (values: SubjectRequestDTO) => {
-                            await api.services.requestSubjectAdded(values);
-                            setRequestSubjectModal(false);
-                            message.success('Request sent!');
-                          });
-                        }}
-                        okText="Request"
-                        onCancel={() => {
-                          setRequestSubjectModal(false);
-                        }}
-                        destroyOnClose={true}
-                      >
-                        <Form form={subjectRequestForm} preserve={false}>
-                          <Form.Item name="name" rules={[{ required: true, message: 'Please enter a subject name' }]}>
-                            <Input placeholder="Enter the name of the subject to request" />
-                          </Form.Item>
-                        </Form>
-                      </Modal>
-                    </Typography.Text>
                   </Form.Item>
+                  <Typography.Text type="secondary">
+                    Can&apos;t find your subject?{' '}
+                    <Button
+                      type="link"
+                      onClick={() => {
+                        setRequestSubjectModal(true);
+                      }}
+                    >
+                      Request it gets added
+                    </Button>
+                    <Modal
+                      title="Request a subject gets added"
+                      visible={requestSubjectModal}
+                      onOk={() => {
+                        subjectRequestForm.validateFields().then(async (values: SubjectRequestDTO) => {
+                          await api.services.requestSubjectAdded(values);
+                          setRequestSubjectModal(false);
+                          message.success('Request sent!');
+                        });
+                      }}
+                      okText="Request"
+                      onCancel={() => {
+                        setRequestSubjectModal(false);
+                      }}
+                      destroyOnClose={true}
+                    >
+                      <Form form={subjectRequestForm} preserve={false}>
+                        <Form.Item name="name" rules={[{ required: true, message: 'Please enter a subject name' }]}>
+                          <Input placeholder="Enter the name of the subject to request" />
+                        </Form.Item>
+                      </Form>
+                    </Modal>
+                  </Typography.Text>
                   <Form.Item
                     name="price"
                     rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
