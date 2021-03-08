@@ -12,4 +12,7 @@ This repo serves as the monorepo for the GrindsApp application for Team 4 of the
 
 ## Tracking Scrum Progress
 
+## Documentation
+https://docs.astratutor.com/v1.pdf
+
 TODO(ocanty)
