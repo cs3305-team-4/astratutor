@@ -224,7 +224,7 @@ export function Tutors(): ReactElement {
                             key={subject.id}
                             tab={
                               <Tag color={filters.includes(subject.slug) ? 'blue' : ''} style={{ fontSize: 15 }}>
-                                {subject.name} - €{subject.price / 100}/Hour
+                                {subject.name} - €{(subject.price / 100).toFixed(2)}/Hour
                               </Tag>
                             }
                           >

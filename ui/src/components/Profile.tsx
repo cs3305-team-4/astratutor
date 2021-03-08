@@ -76,6 +76,7 @@ import { UserAvatar } from './UserAvatar';
 
 import moment from 'moment';
 import { useForm } from 'antd/lib/form/Form';
+import { Link as LinkR } from 'react-router-dom';
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -221,6 +222,8 @@ export function Profile(props: ProfileProps): React.ReactElement {
   };
 
   const commitSub = async (subjectTaught: SubjectTaughtRequestDTO) => {
+    const newPrice = parseInt(subjectTaught.price) * 100;
+    subjectTaught.price = newPrice;
     console.log(subjectTaught);
     try {
       await api.services.createSubjectTaughtOnProfileID(props.uuid, props.type, subjectTaught);
@@ -271,6 +274,9 @@ export function Profile(props: ProfileProps): React.ReactElement {
   };
 
   const commitSubPrice = async (price: SubjectTaughtPriceUpdateRequestDTO) => {
+    const newPrice = parseInt(price.price) * 100;
+    console.log(newPrice);
+    price.price = newPrice;
     try {
       await api.services.updateSubjectPriceOnProfileID(props.uuid, TutorSubjectID, props.type, price);
       await reloadProfile();
@@ -426,9 +432,11 @@ export function Profile(props: ProfileProps): React.ReactElement {
             {props.type === AccountType.Tutor && (
               <Content style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {tutorSubjects?.map((subject, index) => (
-                  <Tag style={{ margin: '0.25rem' }} key={index}>
-                    {subject.name}
-                  </Tag>
+                  <LinkR to={`/subjects/tutors?filter=${subject.name.toLowerCase()}&sort=featured`} key={subject.name}>
+                    <Tag style={{ margin: '0.25rem' }} key={index}>
+                      {subject.name}
+                    </Tag>
+                  </LinkR>
                 ))}
               </Content>
             )}
@@ -565,7 +573,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                     pagination={false}
                     dataSource={tutorSubjects?.map((subject, index) => {
                       return {
-                        price: subject.price,
+                        price: '€' + (subject.price / 100).toFixed(2),
                         subject: subject.name,
                         description: subject.description,
                         editDesc: editSubs ? (
@@ -863,6 +871,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   >
                     <InputNumber
                       placeholder="Desired Cost of a Lesson"
+                      type="number"
                       size="large"
                       style={{ width: '100%' }}
                       min={1}
@@ -917,6 +926,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                     rules={[{ required: true, message: 'Please provide how much you wish your subject to cost.' }]}
                   >
                     <InputNumber
+                      type="number"
                       placeholder="Desired Cost of a Lesson"
                       size="large"
                       style={{ width: '100%' }}

@@ -30,13 +30,12 @@ export function Landing(): React.ReactElement {
   return (
     <Layout>
       <Hero>
-        <Row style={{ height: 'calc(25vh)', overflow: 'hidden' }}>
+        <Row style={{ height: '500px', overflow: 'hidden' }}>
           <Col style={{ overflow: 'hidden' }}>
             <Typography
               style={{
                 position: 'absolute',
                 width: '100%',
-                height: '80%',
                 top: -300,
                 zIndex: 1,
                 background:
@@ -47,7 +46,7 @@ export function Landing(): React.ReactElement {
                 style={{
                   zIndex: 1000,
                   position: 'absolute',
-                  top: '37%',
+                  top: '530px',
                   fontSize: '3em',
                   width: '100%',
                   textAlign: 'center',
@@ -55,14 +54,15 @@ export function Landing(): React.ReactElement {
                 }}
                 level={1}
               >
-                A Complete Modern Tutoring online platform
+                A Complete Modern Tutoring Online Platform
               </Title>
             </Typography>
             <canvas
               data-js-darken-top
               data-transition-in
               id="gradient"
-              style={{ position: 'relative', width: '100%', height: '80%' }}
+              style={{ position: 'relative', width: '100%', height: '500px' }}
+              height={500}
               ref={(r) => {
                 canvasRef.current = r ?? undefined;
               }}
