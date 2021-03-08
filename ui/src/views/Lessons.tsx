@@ -123,7 +123,7 @@ export function Lessons(): React.ReactElement {
           >
             <Badge
               style={{ background: '#1890ff' }}
-              offset={[60, 7]}
+              offset={[72, 7]}
               count={
                 Object.values(lessonProps).filter(
                   (v) =>
@@ -152,7 +152,7 @@ export function Lessons(): React.ReactElement {
           >
             <Badge
               style={{ background: '#1890ff' }}
-              offset={[60, 7]}
+              offset={[15, 7]}
               count={
                 Object.values(lessonProps).filter((v) => v.lesson.request_stage === LessonRequestStage.PaymentRequired)
                   .length
