@@ -39,7 +39,7 @@ export class WebRTCHandler {
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
           {
-            urls: 'turns:turn.astratutor.com:16501',
+            urls: 'turns:turn.astratutor.com:16500',
             username: this.credentials.username,
             credential: this.credentials.password,
           },
