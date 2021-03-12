@@ -105,16 +105,24 @@ export function LessonLobby(): ReactElement {
     otherProfiles,
   };
 
-  useEffect(() => {
+  const connect = () => {
     signalling.current = new Signalling(api.claims?.sub ?? '', `${config.signallingUrl}/${lid}`, {
       onopen: (event: Event) => {
         console.log('Connected to WS: ', lid);
         // TODO(james): Probe Users
         // signalling.current?.send(MESSAGE_TYPE.PROBE, '', null);
       },
-      onclose: console.log,
+      onclose: () => {
+        setTimeout(() => {
+          connect();
+        }, 1000);
+      },
       onerror: console.log,
     });
+  };
+
+  useEffect(() => {
+    connect();
   }, []);
 
   useAsync(async () => {
