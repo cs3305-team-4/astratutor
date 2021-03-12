@@ -399,8 +399,6 @@ export function LessonClassroom(): ReactElement {
     const selfWebcamIndex = webcamDisplays.findIndex((webcam) => webcam.ref.key === signalling.id);
     console.log('Index:', selfWebcamIndex);
 
-    const tracks = web.stream.getTracks();
-
     setWebcamDisplays((webcams) => {
       console.log('Current', webcams);
       // If already displaying webcam
@@ -447,6 +445,11 @@ export function LessonClassroom(): ReactElement {
         stream: settings.webcamStream,
         streaming: false,
       };
+
+      // no-op until handler is created
+      while (handler.current === undefined) {
+        await sleep(200);
+      }
       addWebcam(web);
     }
   };
