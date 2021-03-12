@@ -425,6 +425,7 @@ export function LessonClassroom(): ReactElement {
   };
 
   const webcamStreamChange = async () => {
+    if (!handler.current) return;
     if (api.account && settings.webcamStream) {
       const video = (
         <video
@@ -445,18 +446,13 @@ export function LessonClassroom(): ReactElement {
         stream: settings.webcamStream,
         streaming: false,
       };
-
-      // no-op until handler is created
-      while (handler.current === undefined) {
-        await sleep(200);
-      }
       addWebcam(web);
     }
   };
 
   useAsync(async () => {
     webcamStreamChange();
-  }, [settings.webcamStream]);
+  }, [settings.webcamStream, handler.current]);
 
   useEffect(() => {
     settings.webcamStream?.getVideoTracks().forEach((track) => {
