@@ -34,7 +34,7 @@ export class Signalling {
   }
 
   send(message_type: MESSAGE_TYPE, to: string, data: any): void {
-    console.log(this.ws.readyState + ' - ' + message_type);
+    console.log('Sending: ' + this.ws.readyState + ' - ' + message_type);
     this.ws.send(JSON.stringify({ src: this.id, dest: to, type: message_type, data: data }));
   }
 

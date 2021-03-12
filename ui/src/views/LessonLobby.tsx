@@ -69,8 +69,6 @@ const StyledSelect = styled(Select)`
 
 export function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
-  // TODO(james): Connect to Websocket in lobby for probing people already in call
-  // const signalling = new Signalling(auth.claims.sub, lid, null)
   const api = useContext(APIContext);
   const history = useHistory();
   const signalling = useRef<Signalling>();
