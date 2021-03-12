@@ -124,6 +124,7 @@ const StyledStreaming = styled.div`
   bottom: 120px;
   right: 40px;
   color: #fff;
+  text-shadow: 0 0 3px #000000;
   opacity: 0;
   animation: transp 8s;
 `;
@@ -169,6 +170,25 @@ export function LessonClassroom(): ReactElement {
   const stage = useRef<StageType>();
   const layer = useRef<LayerType>();
 
+  const init = (data: IJoin) => {
+    if (lastLine === undefined) {
+      const children: string[] = JSON.parse(data.layerJson);
+      const lines: Array<Line> = [];
+      console.log(children);
+      for (const child of Object.values(children)) {
+        lines.push(new Konva.Line(JSON.parse(child)));
+      }
+      if (layer.current) {
+        for (const child of lines) {
+          layer.current.add(child);
+        }
+        layer.current.batchDraw();
+      }
+      setBg(data.background);
+      setLastLine(new Konva.Line());
+    }
+  };
+
   const wipe = () => {
     layer.current?.removeChildren();
     layer.current?.clear();
@@ -199,166 +219,164 @@ export function LessonClassroom(): ReactElement {
       return prev;
     });
   };
+
+  const signallingOnMessage = async (event: MessageEvent): Promise<void> => {
+    const message = JSON.parse(event.data);
+    // Should never be able to reveive message from self but ignore just in case
+    if (message.src === signalling.id) return;
+
+    // Ignore messages explicitly not sent to us
+    if (message.to !== undefined && message.to !== signalling.id) return;
+
+    const type: MESSAGE_TYPE = message.type;
+    switch (type) {
+      case MESSAGE_TYPE.AHOY_HOY: {
+        handler.current!.addPeer(message.src);
+        break;
+      }
+      case MESSAGE_TYPE.CHAT: {
+        console.log('New Message: ', message);
+        const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
+        setMessages((prev) => prev.concat(messageData));
+        break;
+      }
+      case MESSAGE_TYPE.SDP: {
+        await handler.current!.incomingSDP(message.src, message.data);
+        break;
+      }
+      case MESSAGE_TYPE.CANDIDATE: {
+        await handler.current!.incomingCandidate(message.src, message.data);
+        break;
+      }
+      case MESSAGE_TYPE.STOP_STREAM: {
+        console.log('MESSAGE STOP_STREAM');
+        setScreenEnabled(false);
+        break;
+      }
+      case MESSAGE_TYPE.DRAW: {
+        if (layer.current && message.data) {
+          console.log('MESSAGE DRAW', JSON.parse(message.data));
+          const line = new Konva.Line(JSON.parse(message.data));
+          layer.current.add(line);
+          layer.current.batchDraw();
+        }
+        break;
+      }
+      case MESSAGE_TYPE.UNDO: {
+        undo();
+        break;
+      }
+      case MESSAGE_TYPE.WIPE: {
+        wipe();
+        break;
+      }
+      case MESSAGE_TYPE.CHANGE_BG: {
+        setBg(message.data);
+        break;
+      }
+      case MESSAGE_TYPE.INIT: {
+        console.log('INIT RECEIVED', message.data, stage.current);
+        const data = message.data as IJoin;
+        init(data);
+        break;
+      }
+      case MESSAGE_TYPE.LEAVE: {
+        onDisconnect(message.data);
+        break;
+      }
+    }
+  };
+
+  const onTrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+    console.log('Track Received:', id, correlation, event);
+    const stream = event.streams[0];
+    switch (correlation) {
+      case StreamType.Camera:
+        const ref = (
+          <video
+            key={id}
+            ref={(ref) => {
+              if (ref) {
+                ref.srcObject = stream;
+                ref.play();
+              }
+            }}
+          />
+        );
+        const profile = settings.otherProfiles[id];
+        console.log(settings.otherProfiles);
+        setWebcamDisplays((webcams) => webcams.concat({ stream, ref, profile, streaming: true }));
+        break;
+      case StreamType.Screen:
+        console.log('Other user started screensharing');
+        if (screenRef.current) {
+          ((screenRef.current.srcObject as MediaStream) || null)?.getTracks().forEach((v) => {
+            v.enabled = false;
+            v.stop();
+            if (streamingID === '') {
+              handler.current?.removeTrack(v);
+            }
+          });
+          screenRef.current.srcObject = stream;
+          screenRef.current.play();
+        }
+        setStreamingID(id);
+        break;
+    }
+  };
+
+  const trackRemove = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
+    console.log(correlation);
+    if (correlation === StreamType.Screen) {
+      setStreamingID((prev) => {
+        console.log('Screen no longer receiving', prev);
+        if (prev !== '') {
+          prev = '';
+          if (screenRef.current?.srcObject) {
+            (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
+              v.enabled = false;
+              v.stop();
+            });
+            screenRef.current.srcObject = null;
+          }
+        }
+        return prev;
+      });
+    }
+  };
+
+  const syncCanvas = (color: string) => (polite: boolean) => {
+    if (!polite && layer.current) {
+      console.log(bg);
+      const data: IJoin = {
+        layerJson: JSON.stringify(layer.current.children),
+        background: color,
+      };
+      signalling?.send(MESSAGE_TYPE.INIT, '', data);
+    }
+  };
+
   useAsync(async () => {
     // Signalling can be none if classroom page is refreshed before being sent back to lobby
     if (signalling == null) return;
-    const credentials = await api.services.getTurnCredentials();
-    handler.current = new WebRTCHandler(signalling, credentials, () => setAddingPeer(true));
-    console.log(handler.current);
-    signalling.onmessage(async (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
-      // Should never happen but just in case
-      if (message.src === api.claims?.sub) return;
 
-      const type: MESSAGE_TYPE = message.type;
-      switch (type) {
-        case MESSAGE_TYPE.AHOY_HOY: {
-          handler.current?.addPeer(message.src);
-          break;
-        }
-        case MESSAGE_TYPE.CHAT: {
-          console.log('New Message: ', message);
-          const messageData = Object.assign(message.data, { date: new Date(message.data.date) });
-          setMessages((prev) => prev.concat(messageData));
-          break;
-        }
-        case MESSAGE_TYPE.SDP: {
-          // Only respond to SDP destined for us
-          if (message.dest !== signalling.id) return;
-          await handler.current?.incomingSDP(message.src, message.data);
-          break;
-        }
-        case MESSAGE_TYPE.CANDIDATE: {
-          // Only respond to candidates destined for us
-          if (message.dest !== signalling.id) return;
-          await handler.current?.incomingCandidate(message.src, message.data);
-          break;
-        }
-        case MESSAGE_TYPE.STOP_STREAM: {
-          if (message.dest !== signalling.id) return;
-          console.log('MESSAGE STOP_STREAM');
-          setScreenEnabled(false);
-          break;
-        }
-        case MESSAGE_TYPE.DRAW: {
-          if (layer.current && message.data) {
-            console.log('MESSAGE DRAW', message.data);
-            const line = new Konva.Line(JSON.parse(message.data));
-            layer.current.add(line);
-            layer.current.batchDraw();
-          }
-          break;
-        }
-        case MESSAGE_TYPE.UNDO: {
-          undo();
-          break;
-        }
-        case MESSAGE_TYPE.WIPE: {
-          wipe();
-          break;
-        }
-        case MESSAGE_TYPE.CHANGE_BG: {
-          setBg(message.data);
-          break;
-        }
-        case MESSAGE_TYPE.INIT: {
-          const data = message.data as IJoin;
-          if (lastLine === undefined) {
-            console.log('INIT RECEIVED', message.data, stage.current);
-            const children: string[] = JSON.parse(data.layerJson);
-            const lines: Array<Line> = [];
-            console.log(children);
-            for (const child of Object.values(children)) {
-              lines.push(new Konva.Line(JSON.parse(child)));
-            }
-            if (layer.current) {
-              for (const child of lines) {
-                layer.current.add(child);
-              }
-              layer.current.batchDraw();
-            }
-            setBg(data.background);
-            setLastLine(new Konva.Line());
-          }
-          break;
-        }
-        case MESSAGE_TYPE.LEAVE: {
-          onDisconnect(message.data);
-          break;
-        }
-      }
-    });
+    const credentials = await api.services.getTurnCredentials();
+    handler.current = new WebRTCHandler(signalling, credentials, syncCanvas(bg));
+    console.log(handler.current);
+
+    signalling.onmessage(signallingOnMessage);
     signalling.send(MESSAGE_TYPE.AHOY_HOY, '', null);
 
-    handler.current.ontrackremove = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
-      console.log(correlation);
-      switch (correlation) {
-        case StreamType.Screen:
-          setStreamingID((prev) => {
-            console.log('Screen no longer receiving', prev);
-            if (prev !== '') {
-              prev = '';
-              if (screenRef.current?.srcObject) {
-                (screenRef.current.srcObject as MediaStream).getTracks().forEach((v) => {
-                  v.enabled = false;
-                  v.stop();
-                });
-                screenRef.current.srcObject = null;
-              }
-            }
-            return prev;
-          });
-          break;
-      }
-    };
+    handler.current.ontrackremove = trackRemove;
     handler.current.ondisconnect = onDisconnect;
-    handler.current.ontrack = (id: string, correlation: StreamType, event: RTCTrackEvent) => {
-      console.log('NEW TRACK', id, correlation, event);
-      const stream = event.streams.length ? event.streams[0] : new MediaStream();
-      switch (correlation) {
-        case StreamType.Camera:
-          setWebcamDisplays((prev) => {
-            const other = prev.findIndex((v) => v.profile.account_id === id);
-            console.log(webcamDisplays, other, id);
-            if (other > -1) {
-              prev.splice(other, 1);
-            }
-            return prev;
-          });
-          const ref = (
-            <video
-              key={id}
-              ref={(ref) => {
-                if (ref) {
-                  ref.srcObject = stream;
-                  ref.play();
-                }
-              }}
-            />
-          );
-          const profile = settings.otherProfiles[id];
-          console.log(settings.otherProfiles);
-          setWebcamDisplays((prev) => prev.concat({ stream, ref, profile, streaming: true }));
-          break;
-        case StreamType.Screen:
-          console.log('Other user started screensharing');
-          if (screenRef.current) {
-            ((screenRef.current.srcObject as MediaStream) || null)?.getTracks().forEach((v) => {
-              v.enabled = false;
-              v.stop();
-              if (streamingID === '') {
-                handler.current?.removeTrack(v);
-              }
-            });
-            screenRef.current.srcObject = stream;
-            screenRef.current.play();
-          }
-          setStreamingID(id);
-          break;
-      }
-    };
+    handler.current.ontrack = onTrack;
   }, []);
-  useEffect(() => console.log(webcamDisplays), [webcamDisplays]);
+
+  useEffect(() => {
+    if (handler.current) {
+      handler.current.onAddPeer = syncCanvas(bg);
+    }
+  }, [bg]);
 
   useAsync(async () => {
     const last = messages[messages.length - 1];
@@ -373,61 +391,55 @@ export function LessonClassroom(): ReactElement {
   }, [api.account?.id, messages]);
 
   const addWebcam = (web: IWebcam) => {
-    console.log('Adding Webcam to', handler.current?.peers);
-    const other = webcamDisplays.findIndex((v) => v.ref.key === web.ref.key);
-    if (other > -1) {
-      console.log(other);
-      setWebcamDisplays((prev) => {
-        const temp = prev;
-        const tracks = web.stream.getTracks();
-        const old = temp[other];
-        if (old.streaming) {
-          tracks.forEach((v, i) => {
-            handler.current?.replaceTrack(temp[other].stream.getTracks()[i], v);
-          });
-        } else {
-          web.stream.getTracks().forEach((v) => {
-            handler.current?.addTrack(v, StreamType.Camera, web.stream);
-          });
-        }
-        delete temp[other];
-        temp[other] = web;
-        return temp;
-      });
-    } else {
-      web.streaming = Object.keys(handler.current!.peers).length > 0;
-      setWebcamDisplays((prev) => prev.concat(web));
-      web.stream.getTracks().forEach((v) => {
-        handler.current?.addTrack(v, StreamType.Camera, web.stream);
-      });
-    }
+    console.log('Adding Webcam:', web);
+
+    // Get index of self webcam if already sharing
+    console.log('Webcams:', JSON.stringify(webcamDisplays), webcamDisplays.length);
+
+    const selfWebcamIndex = webcamDisplays.findIndex((webcam) => webcam.ref.key === signalling.id);
+    console.log('Index:', selfWebcamIndex);
+
+    setWebcamDisplays((webcams) => {
+      console.log('Current', webcams);
+      // If already displaying webcam
+      if (selfWebcamIndex >= 0) {
+        const currentSelfWebcam = webcamDisplays[selfWebcamIndex];
+        console.log('Replacing Webcam Tracks', currentSelfWebcam, web);
+        handler.current!.replaceTrack(currentSelfWebcam.stream.getAudioTracks()[0], web.stream.getAudioTracks()[0]);
+        handler.current!.replaceTrack(currentSelfWebcam.stream.getVideoTracks()[0], web.stream.getVideoTracks()[0]);
+        webcams[selfWebcamIndex] = web;
+      } else {
+        console.log('Adding Webcam Tracks');
+        web.stream.getAudioTracks().forEach((track) => {
+          handler.current?.addTrack(track, StreamType.Microphone, web.stream);
+        });
+        web.stream.getVideoTracks().forEach((track) => {
+          handler.current?.addTrack(track, StreamType.Camera, web.stream);
+        });
+        web.streaming = true;
+        webcams = webcams.concat(web);
+      }
+
+      return webcams;
+    });
   };
 
-  useAsync(async () => {
-    // Get Self Profile
-    if (!webcamEnabled) {
-      settings.webcamStream?.getVideoTracks().forEach((v) => {
-        v.enabled = false;
-      });
-    } else {
-      settings.webcamStream?.getVideoTracks().forEach((v) => {
-        v.enabled = true;
-      });
-    }
-    const video = (
-      <video
-        key={'self'}
-        muted
-        ref={(ref) => {
-          if (ref) {
-            ref.srcObject = webcamEnabled ? settings.webcamStream : null;
-            webcamEnabled && ref.play();
-            navigator.mediaDevices.getSupportedConstraints();
-          }
-        }}
-      />
-    );
+  const webcamStreamChange = async () => {
+    if (!handler.current) return;
     if (api.account && settings.webcamStream) {
+      const video = (
+        <video
+          key={signalling.id}
+          muted
+          ref={(ref) => {
+            if (ref) {
+              ref.srcObject = webcamEnabled ? settings.webcamStream : null;
+              webcamEnabled && ref.play();
+              navigator.mediaDevices.getSupportedConstraints();
+            }
+          }}
+        />
+      );
       const web: IWebcam = {
         profile: await api.services.readProfileByAccount(api.account),
         ref: video,
@@ -435,42 +447,56 @@ export function LessonClassroom(): ReactElement {
         streaming: false,
       };
       addWebcam(web);
-      if (addingPeer) {
-        if (layer.current) {
-          const data: IJoin = {
-            layerJson: JSON.stringify(layer.current.children),
-            background: bg,
-          };
-          signalling?.send(MESSAGE_TYPE.INIT, '', data);
-        }
-        setAddingPeer(false);
-      }
     }
-  }, [settings.webcamStream, webcamEnabled, addingPeer, settings.selectedWebcam]);
+  };
+
+  useAsync(async () => {
+    webcamStreamChange();
+  }, [settings.webcamStream, handler.current]);
+
+  useEffect(() => {
+    settings.webcamStream?.getVideoTracks().forEach((track) => {
+      track.enabled = webcamEnabled;
+    });
+  }, [webcamEnabled, settings.webcamStream]);
+
+  useEffect(() => {
+    settings.webcamStream?.getAudioTracks().forEach((v) => {
+      v.enabled = micEnabled;
+    });
+  }, [micEnabled, settings.webcamStream]);
 
   useAsync(async () => {
     if (screenEnabled) {
       const src = await screenStream();
-      if (streamingID !== '') {
-        console.log('stopping other stream');
-        signalling?.send(MESSAGE_TYPE.STOP_STREAM, streamingID, { stop: true });
-        await sleep(500);
-      }
+
       if (!src) {
         setScreenEnabled(false);
         return;
       }
-      setStreamingID('');
+
+      // If a peer is already sharing their screen tell them to stop
+      if (streamingID !== signalling.id) {
+        console.log('stopping other stream');
+        signalling?.send(MESSAGE_TYPE.STOP_STREAM, streamingID, { stop: true });
+        await sleep(500);
+      }
+
+      setStreamingID(signalling.id);
+
       src.onremovetrack = () => {
         setScreenEnabled(false);
       };
+
       for (const track of src.getTracks()) {
         track.onended = () => {
           setScreenEnabled(false);
         };
         handler.current?.addTrack(track, StreamType.Screen, src);
       }
+
       setScreen(src);
+
       if (screenRef.current) {
         screenRef.current.srcObject = src;
         screenRef.current.play();
@@ -485,7 +511,7 @@ export function LessonClassroom(): ReactElement {
         handler.current?.removeTrack(v);
       });
       setScreen(undefined);
-      setStreamingID('');
+      setStreamingID(signalling.id);
     }
   }, [screenEnabled]);
 
@@ -497,12 +523,6 @@ export function LessonClassroom(): ReactElement {
     signalling?.send(MESSAGE_TYPE.LEAVE, '', api.account?.id);
     history.push(`/lessons/${lid}/goodbye`);
   };
-
-  useEffect(() => {
-    settings.webcamStream?.getAudioTracks().forEach((v) => {
-      v.enabled = micEnabled;
-    });
-  }, [micEnabled, settings.webcamStream]);
 
   useAsync(async () => {
     if (!isPaint) {

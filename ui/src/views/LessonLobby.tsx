@@ -69,8 +69,6 @@ const StyledSelect = styled(Select)`
 
 export function LessonLobby(): ReactElement {
   const { lid } = useParams<{ lid: string }>();
-  // TODO(james): Connect to Websocket in lobby for probing people already in call
-  // const signalling = new Signalling(auth.claims.sub, lid, null)
   const api = useContext(APIContext);
   const history = useHistory();
   const signalling = useRef<Signalling>();
@@ -107,16 +105,24 @@ export function LessonLobby(): ReactElement {
     otherProfiles,
   };
 
-  useEffect(() => {
+  const connect = () => {
     signalling.current = new Signalling(api.claims?.sub ?? '', `${config.signallingUrl}/${lid}`, {
       onopen: (event: Event) => {
         console.log('Connected to WS: ', lid);
         // TODO(james): Probe Users
         // signalling.current?.send(MESSAGE_TYPE.PROBE, '', null);
       },
-      onclose: console.log,
+      onclose: () => {
+        setTimeout(() => {
+          connect();
+        }, 1000);
+      },
       onerror: console.log,
     });
+  };
+
+  useEffect(() => {
+    connect();
   }, []);
 
   useAsync(async () => {
@@ -160,6 +166,7 @@ export function LessonLobby(): ReactElement {
       setSelectedWebcam(id);
       const stream = await Devices.cameraStream(id, mid);
       setWebcamStream(stream);
+      console.log('webcam init');
     }
   }, []);
   useEffect(() => {
@@ -175,6 +182,7 @@ export function LessonLobby(): ReactElement {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
       webcamStream.getAudioTracks().forEach((v) => v.stop());
       setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
+      console.log('webcam change');
     }
   }, [selectedWebcam, selectedMicrophone]);
   return (
@@ -383,10 +391,16 @@ export function LessonLobby(): ReactElement {
               style={{
                 height: 300,
               }}
-              ref={(r) => {
+              ref={async (r) => {
                 if (r && webcamStream) {
-                  r.srcObject = webcamStream;
-                  r.play();
+                  try {
+                    if (webcamStream.getTracks().filter((v) => v.enabled).length > 0) {
+                      r.srcObject = webcamStream;
+                      await r.play();
+                    }
+                  } catch ({ message }) {
+                    console.error(message);
+                  }
                 }
               }}
             ></video>
