@@ -158,6 +158,7 @@ export function LessonLobby(): ReactElement {
       setSelectedWebcam(id);
       const stream = await Devices.cameraStream(id, mid);
       setWebcamStream(stream);
+      console.log('webcam init');
     }
   }, []);
   useEffect(() => {
@@ -173,6 +174,7 @@ export function LessonLobby(): ReactElement {
       webcamStream.getVideoTracks().forEach((v) => v.stop());
       webcamStream.getAudioTracks().forEach((v) => v.stop());
       setWebcamStream(await Devices.cameraStream(selectedWebcam, selectedMicrophone));
+      console.log('webcam change');
     }
   }, [selectedWebcam, selectedMicrophone]);
   return (
@@ -381,10 +383,16 @@ export function LessonLobby(): ReactElement {
               style={{
                 height: 300,
               }}
-              ref={(r) => {
+              ref={async (r) => {
                 if (r && webcamStream) {
-                  r.srcObject = webcamStream;
-                  r.play();
+                  try {
+                    if (webcamStream.getTracks().filter((v) => v.enabled).length > 0) {
+                      r.srcObject = webcamStream;
+                      await r.play();
+                    }
+                  } catch ({ message }) {
+                    console.error(message);
+                  }
                 }
               }}
             ></video>
