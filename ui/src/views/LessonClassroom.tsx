@@ -124,6 +124,7 @@ const StyledStreaming = styled.div`
   bottom: 120px;
   right: 40px;
   color: #fff;
+  text-shadow: 0 0 3px #000000;
   opacity: 0;
   animation: transp 8s;
 `;
@@ -344,12 +345,12 @@ export function LessonClassroom(): ReactElement {
     }
   };
 
-  const syncCanvas = (polite: boolean) => {
+  const syncCanvas = (color: string) => (polite: boolean) => {
     if (!polite && layer.current) {
       console.log(bg);
       const data: IJoin = {
         layerJson: JSON.stringify(layer.current.children),
-        background: bg,
+        background: color,
       };
       signalling?.send(MESSAGE_TYPE.INIT, '', data);
     }
@@ -360,7 +361,7 @@ export function LessonClassroom(): ReactElement {
     if (signalling == null) return;
 
     const credentials = await api.services.getTurnCredentials();
-    handler.current = new WebRTCHandler(signalling, credentials, syncCanvas);
+    handler.current = new WebRTCHandler(signalling, credentials, syncCanvas(bg));
     console.log(handler.current);
 
     signalling.onmessage(signallingOnMessage);
@@ -370,6 +371,12 @@ export function LessonClassroom(): ReactElement {
     handler.current.ondisconnect = onDisconnect;
     handler.current.ontrack = onTrack;
   }, []);
+
+  useEffect(() => {
+    if (handler.current) {
+      handler.current.onAddPeer = syncCanvas(bg);
+    }
+  }, [bg]);
 
   useAsync(async () => {
     const last = messages[messages.length - 1];
