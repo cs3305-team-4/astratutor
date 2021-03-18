@@ -260,6 +260,21 @@ export default function Lesson(props: LessonProps): React.ReactElement {
     </>
   );
 
+  const completedButton = (
+    <>
+      <Button
+        style={{ margin: '0.2rem' }}
+        type="primary"
+        onClick={async () => {
+          await api.services.updateLessonStageCompleted(lesson.id);
+          reload();
+        }}
+      >
+        Mark as completed
+      </Button>
+    </>
+  );
+
   const pay = async ({ cardName }: { cardName?: string }) => {
     const secret_id = await api.services.readLessonBillingPaymentIntentSecret(props.lesson.id);
 
@@ -414,6 +429,9 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       break;
 
     case LessonRequestStage.Scheduled:
+      if (new Date() > new Date(lesson.start_time)) {
+        buttons.push(completedButton);
+      }
       buttons.push(
         <Button
           ghost

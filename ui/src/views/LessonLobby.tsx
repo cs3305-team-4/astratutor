@@ -238,14 +238,10 @@ export function LessonLobby(): ReactElement {
               </Button>
             )}
 
-            {(api.account?.type === AccountType.Student || completed) && (
-              <>
-                <StyledDivider />
-                <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-                  <Link to={`/lessons`}>Go back to my lessons</Link>
-                </Button>
-              </>
-            )}
+            <StyledDivider />
+            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+              <Link to={`/lessons`}>Go back to my lessons</Link>
+            </Button>
           </StyledLayout>
         </Route>
         <Route path="/lessons/:lid/classroom">
