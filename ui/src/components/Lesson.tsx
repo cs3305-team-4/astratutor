@@ -429,7 +429,7 @@ export default function Lesson(props: LessonProps): React.ReactElement {
       break;
 
     case LessonRequestStage.Scheduled:
-      if (new Date() > new Date(lesson.start_time)) {
+      if (api.account?.type === AccountType.Tutor && new Date() > new Date(lesson.start_time)) {
         buttons.push(completedButton);
       }
       buttons.push(
