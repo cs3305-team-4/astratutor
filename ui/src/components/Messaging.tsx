@@ -56,6 +56,7 @@ const StyledTextArea = styled(Search)`
 
 const StyledMessage = styled.div<{ self: boolean }>`
   background: ${(props) => (props.self ? '#2d2d2d' : '#1890ff')};
+  word-wrap: break-word;
   border-radius: 0.3em;
   padding: 0.1em 1em;
   max-width: ${(props) => (props.self ? '80%' : '60%')};
@@ -129,7 +130,7 @@ export default function Messaging(props: MessagingProps): JSX.Element {
           return (
             <StyledMessage key={i} self={!v.profile}>
               {v.text}
-              <span>
+              <span style={{ wordWrap: 'break-word' }}>
                 {new Intl.DateTimeFormat('en-IE', {
                   hour: 'numeric',
                   minute: 'numeric',
