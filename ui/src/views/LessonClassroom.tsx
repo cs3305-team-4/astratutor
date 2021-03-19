@@ -126,7 +126,7 @@ const StyledStreaming = styled.div`
   color: #fff;
   text-shadow: 0 0 3px #000000;
   opacity: 0;
-  animation: transp 8s;
+  animation: transp 20s;
 `;
 
 const StyledDrawMenu = styled.div`
@@ -251,6 +251,7 @@ export function LessonClassroom(): ReactElement {
       case MESSAGE_TYPE.STOP_STREAM: {
         console.log('MESSAGE STOP_STREAM');
         setScreenEnabled(false);
+        setStreamingID('');
         break;
       }
       case MESSAGE_TYPE.DRAW: {
@@ -511,7 +512,6 @@ export function LessonClassroom(): ReactElement {
         handler.current?.removeTrack(v);
       });
       setScreen(undefined);
-      setStreamingID(signalling.id);
     }
   }, [screenEnabled]);
 

@@ -238,14 +238,10 @@ export function LessonLobby(): ReactElement {
               </Button>
             )}
 
-            {(api.account?.type === AccountType.Student || completed) && (
-              <>
-                <StyledDivider />
-                <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-                  <Link to={`/lessons`}>Go back to my lessons</Link>
-                </Button>
-              </>
-            )}
+            <StyledDivider />
+            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+              <Link to={`/lessons`}>Go back to my lessons</Link>
+            </Button>
           </StyledLayout>
         </Route>
         <Route path="/lessons/:lid/classroom">
@@ -274,15 +270,11 @@ export function LessonLobby(): ReactElement {
         </Route>
         <Route path="/lessons/:lid/lobby">
           <StyledNav>
-            <Button
-              type="link"
-              ghost
-              onClick={() => {
-                window.history.back();
-              }}
-            >
-              <ArrowLeftOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
-            </Button>
+            <Link to="/lessons">
+              <Button type="link" ghost>
+                <ArrowLeftOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              </Button>
+            </Link>
             <Button
               type="link"
               ghost
@@ -405,11 +397,13 @@ export function LessonLobby(): ReactElement {
               }}
             ></video>
             <StyledDivider />
-            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-              <Link onClick={() => setJoined(true)} to={`/lessons/${lid}/classroom`}>
-                Join
-              </Link>
-            </Button>
+            {Object.keys(settingsValue.otherProfiles).length > 0 && (
+              <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+                <Link onClick={() => setJoined(true)} to={`/lessons/${lid}/classroom`}>
+                  Join
+                </Link>
+              </Button>
+            )}
           </StyledLayout>
         </Route>
       </Switch>
