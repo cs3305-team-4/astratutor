@@ -397,11 +397,13 @@ export function LessonLobby(): ReactElement {
               }}
             ></video>
             <StyledDivider />
-            <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
-              <Link onClick={() => setJoined(true)} to={`/lessons/${lid}/classroom`}>
-                Join
-              </Link>
-            </Button>
+            {Object.keys(settingsValue.otherProfiles).length > 0 && (
+              <Button style={{ width: '50%', margin: '.1em auto' }} ghost type="primary">
+                <Link onClick={() => setJoined(true)} to={`/lessons/${lid}/classroom`}>
+                  Join
+                </Link>
+              </Button>
+            )}
           </StyledLayout>
         </Route>
       </Switch>
