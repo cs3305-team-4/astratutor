@@ -270,15 +270,11 @@ export function LessonLobby(): ReactElement {
         </Route>
         <Route path="/lessons/:lid/lobby">
           <StyledNav>
-            <Button
-              type="link"
-              ghost
-              onClick={() => {
-                window.history.back();
-              }}
-            >
-              <ArrowLeftOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
-            </Button>
+            <Link to="/lessons">
+              <Button type="link" ghost>
+                <ArrowLeftOutlined title="Go back" style={{ color: '#c0c0c0', fontSize: 30 }} />
+              </Button>
+            </Link>
             <Button
               type="link"
               ghost
