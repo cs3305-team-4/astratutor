@@ -83,6 +83,7 @@ export function LessonLobby(): ReactElement {
   const [otherProfiles, setOtherProfiles] = React.useState<{ [id: string]: ProfileResponseDTO }>({});
   const [metadata, setMetadata] = useState<LessonResponseDTO>();
   const [completed, setCompleted] = useState(false);
+  const [alreadyInClass, setAlreadyInClass] = useState<ProfileResponseDTO[] | undefined>(undefined);
 
   if (!joined && !history.location.pathname.endsWith('lobby')) {
     history.push(`/lessons/${lid}/lobby`);
@@ -106,11 +107,20 @@ export function LessonLobby(): ReactElement {
   };
 
   const connect = () => {
-    signalling.current = new Signalling(api.claims?.sub ?? '', `${config.signallingUrl}/${lid}`, {
+    signalling.current = new Signalling(api.claims!.sub, `${config.signallingUrl}/${lid}`, {
       onopen: (event: Event) => {
         console.log('Connected to WS: ', lid);
-        // TODO(james): Probe Users
-        // signalling.current?.send(MESSAGE_TYPE.PROBE, '', null);
+        signalling.current?.send(MESSAGE_TYPE.PROBE, '', null);
+      },
+      onmessage: (event) => {
+        const message = JSON.parse(event.data);
+        if (message.src === api.claims!.sub) return;
+        if (message.to !== undefined && message.to !== api.claims!.sub) return;
+
+        const type: MESSAGE_TYPE = message.type;
+        if (type === MESSAGE_TYPE.PROBE_RESPONSE) {
+          setAlreadyInClass(alreadyInClass ? alreadyInClass.concat(message.data) : [message.data]);
+        }
       },
       onclose: () => {
         setTimeout(() => {
@@ -301,31 +311,21 @@ export function LessonLobby(): ReactElement {
                 Joining your {metadata?.subject_name} classroom!
               </Typography.Title>
             </Typography>
-            {/* TODO(james): Send probe message to discover users */}
             <Typography style={{ textAlign: 'center' }}>
               <Typography.Text style={{ color: '#fff' }}>Already in this meeting:</Typography.Text>
             </Typography>
             <Row align="middle" justify="center">
-              <Col>
-                <Avatar.Group size="default">
-                  <Tooltip title="Gamer">
-                    <UserAvatar
-                      profile={{
-                        account_id: '1',
-                        avatar: '',
-                        slug: '/',
-                        first_name: 'Gamer',
-                        last_name: 'Jones',
-                        city: 'Cark',
-                        country: 'Ireland',
-                        subtitle: 'Gamer',
-                        description: 'Gamer',
-                        color: '#199a4c',
-                      }}
-                    />
-                  </Tooltip>
-                </Avatar.Group>
-              </Col>
+              {alreadyInClass?.map((profile) => {
+                return (
+                  <Col key={profile.account_id}>
+                    <Avatar.Group size="default">
+                      <Tooltip title={`${profile.first_name} ${profile.last_name}`}>
+                        <UserAvatar profile={profile} />
+                      </Tooltip>
+                    </Avatar.Group>
+                  </Col>
+                );
+              })}
             </Row>
             <br />
             <Row align="middle" justify="center">

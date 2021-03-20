@@ -181,7 +181,7 @@ export class WebRTCHandler {
   }
 
   addTrack(track: MediaStreamTrack, kind: StreamType, stream: MediaStream) {
-    if (this.tracks[track.id]) return;
+    if (this.tracks[track.id] || stream.getTrackById(track.id) === null) return;
 
     console.log('Adding Track: ', track);
     this.tracks[track.id] = [stream, kind];

@@ -1,6 +1,6 @@
 # AstraTutor
 
-This repo serves as the monorepo for the GrindsApp application for Team 4 of the CS3305 Team Software Project module
+This repo serves as the monorepo for the AstraTutor application for Team 4 of the CS3305 Team Software Project module
 
 ## Instructions
 

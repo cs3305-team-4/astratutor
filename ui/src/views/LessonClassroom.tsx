@@ -230,6 +230,10 @@ export function LessonClassroom(): ReactElement {
 
     const type: MESSAGE_TYPE = message.type;
     switch (type) {
+      case MESSAGE_TYPE.PROBE: {
+        signalling.send(MESSAGE_TYPE.PROBE_RESPONSE, message.src, settings.otherProfiles[signalling.id]);
+        break;
+      }
       case MESSAGE_TYPE.AHOY_HOY: {
         handler.current!.addPeer(message.src);
         break;

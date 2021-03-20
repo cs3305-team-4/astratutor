@@ -6,7 +6,9 @@ export interface Callbacks {
 }
 
 export enum MESSAGE_TYPE {
-  AHOY_HOY = 1,
+  PROBE = 1,
+  PROBE_RESPONSE,
+  AHOY_HOY,
   CHAT,
   SDP,
   CANDIDATE,
