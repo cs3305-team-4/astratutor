@@ -147,6 +147,8 @@ func LessonAtTime(acc *Account, startTime time.Time, endTime time.Time) (bool, e
 	return false, nil
 }
 
+//Sends a lesson request between a Student and a Tutor
+//Keeps track of who is sending the current request via the requestor Account
 func RequestLesson(requester *Account, student *Account, subjectTaught *SubjectTaught, startTime time.Time, lessonDetail string) error {
 	if !startTime.After(time.Now()) {
 		return fmt.Errorf("can't request a lesson in the past")
@@ -243,6 +245,7 @@ func RequestLesson(requester *Account, student *Account, subjectTaught *SubjectT
 
 }
 
+//retuen a specific lesson by its id
 func ReadLessonByID(id uuid.UUID, preloads ...string) (*Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
@@ -261,6 +264,7 @@ func ReadLessonByID(id uuid.UUID, preloads ...string) (*Lesson, error) {
 	return &lesson, nil
 }
 
+//returns all lessons associated with the account by its id
 func ReadLessonsByAccountID(id uuid.UUID, preloads ...string) ([]Lesson, error) {
 	db, err := database.Open()
 	if err != nil {
@@ -302,6 +306,7 @@ func (l *Lesson) CreateResource(name string, mime string, data []byte) error {
 	return nil
 }
 
+//marks a speific lesson as scheduled if the student account has completed payment
 func (l *Lesson) MarkScheduled(requester *Account) error {
 	db, err := database.Open()
 	if err != nil {
@@ -344,6 +349,7 @@ func (l *Lesson) MarkScheduled(requester *Account) error {
 	return err
 }
 
+//marks that a lesson is accepted and now requires payment.
 func (l *Lesson) MarkPaymentRequired(acceptor *Account) error {
 	db, err := database.Open()
 	if err != nil {
@@ -621,6 +627,7 @@ func (r *ResourceMetadata) GetData() ([]byte, error) {
 	return resourceData.Data, nil
 }
 
+//Confirms if the student has completed a lesson with a tutor
 func HaveCompletedLesson(student uuid.UUID, tutor uuid.UUID) (bool, error) {
 	db, err := database.Open()
 	if err != nil {

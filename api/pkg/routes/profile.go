@@ -82,6 +82,8 @@ type WorkExperienceResponseDTO struct {
 	Verified    bool   `json:"verified" validate:"required"`
 }
 
+//creates a DTO from a given profile
+//Switch statment changes DTO returned based on account type
 func dtoFromProfile(p *services.Profile, accountType services.AccountType) interface{} {
 	switch accountType {
 	case services.Student:
