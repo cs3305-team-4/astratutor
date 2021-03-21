@@ -24,6 +24,24 @@ Student password:   grindsapp
 
 This will take some time to start as it needs to seed the database
 
+## Folder Structure
+api             Contains GO Backend
+ - cmd          Contains script used to start webserver
+ - pkg          Contains backend code
+  - db          Contains code to open database connection
+  - routes      Contains code to define api endpoints
+  - services    Contains services code
+- seed          Contains data used for seeding
+documents       Contains various documents for project
+pgadmin4        Contains config for pgadmin
+ui              Contains React frontend
+- public        Contains Static files
+- src           Contains frontend components
+ - api          Contains typescript for interfacing with backend
+ - components   Contains react components
+ - views        Contains pages
+ - webrtc       Contains typescript for webrtc connections
+
 ## Documentation
 https://docs.astratutor.com/v1.pdf
 
