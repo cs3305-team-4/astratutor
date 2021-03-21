@@ -283,7 +283,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
     } catch (e) {
       Modal.error({
         title: 'Error',
-        content: `Could not set description: ${e}`,
+        content: `Could not set price: ${e}`,
       });
     }
   };
@@ -523,7 +523,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                     <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{profile.description}</Paragraph>
                   ) : (
                     <TextArea
-                      maxLength={1000}
+                      maxLength={3000}
                       onChange={(ev) => {
                         setNewDesc(ev.target.value);
                       }}
@@ -879,7 +879,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                   </Form.Item>
                   <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
                     <TextArea
-                      maxLength={1000}
+                      maxLength={3000}
                       placeholder="Description of your subject"
                       style={{ minHeight: '240px', margin: '0.5rem 0' }}
                       size="large"
@@ -901,7 +901,7 @@ export function Profile(props: ProfileProps): React.ReactElement {
                 <Form onFinish={commitSubDescription} layout="vertical" name="add-desc" preserve={false}>
                   <Form.Item name="description" rules={[{ required: true, message: 'Please enter a description!' }]}>
                     <TextArea
-                      maxLength={1000}
+                      maxLength={3000}
                       placeholder="Description of your subject"
                       style={{ minHeight: '240px', margin: '0.5rem 0' }}
                       size="large"

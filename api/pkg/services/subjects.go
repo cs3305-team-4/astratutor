@@ -17,6 +17,7 @@ type Subject struct {
 	Slug string `gorm:"unique;not null;"`
 }
 
+//Subject Request contains information about a requested subject and who has requested it
 type SubjectRequest struct {
 	database.Model
 	RequesterID uuid.UUID
@@ -53,7 +54,7 @@ func CreateSubject(name string, image string, slug string, db *gorm.DB) error {
 	return db.Create(&Subject{Name: name, Slug: slug}).Error
 }
 
-//Contains information on
+//Contains information on a single tutor subject relation
 type SubjectTaught struct {
 	database.Model
 
@@ -69,15 +70,6 @@ type SubjectTaught struct {
 	Description string `gorm:"not null;"`
 	Price       int64  `gorn:"not null;"`
 }
-
-// type TutorSubjects struct {
-// 	database.Model
-
-// 	Tutor   Profile `gorm:"foreignKey:TutorID"`
-// 	TutorID uuid.UUID
-
-// 	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
-// }
 
 //gets all subjects in the DB
 func GetSubjects(query string, db *gorm.DB) ([]Subject, error) {
@@ -387,54 +379,6 @@ func UpdateDescription(stid uuid.UUID, description string, db *gorm.DB) (*Subjec
 		}
 		return tx.Model(subjectTaught).Update("Description", description).Error
 	})
-}
-
-//function used to create data for tests
-func CreateSubjectTestAccounts() error {
-	db, err := database.Open()
-	if err != nil {
-		return err
-	}
-	db.Create(&Subject{Name: "French", Slug: "french"})
-	db.Create(&Subject{Name: "Irish", Slug: "irish"})
-	hash, err := NewPasswordHash("grindshub")
-	if err != nil {
-		return err
-	}
-
-	John := &Account{Model: database.Model{ID: uuid.MustParse("11111111-1111-1111-1111-111111111111")},
-		Email:         "tutor4@grindshub.localhost",
-		EmailVerified: true,
-		Type:          Tutor,
-		Suspended:     false,
-		PasswordHash:  *hash,
-		Profile: &Profile{
-			Avatar:         "",
-			Slug:           "john-tutor",
-			FirstName:      "John",
-			LastName:       "Tutor",
-			City:           "Cork",
-			Country:        "Ireland",
-			Description:    "A tutor",
-			Qualifications: []Qualification{},
-			WorkExperience: []WorkExperience{},
-		},
-	}
-
-	irish, err := GetSubjectBySlug("irish", nil)
-	TeachSubject(irish, John, "I teach irish", 67, nil)
-
-	if err != nil {
-		return err
-	}
-
-	french, err := GetSubjectBySlug("french", nil)
-	TeachSubject(french, John, "I teach French", 59, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Request a subject to be added

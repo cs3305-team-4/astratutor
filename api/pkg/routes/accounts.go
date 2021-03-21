@@ -53,6 +53,7 @@ type AccountRequestDTO struct {
 	ParentsEmail string `json:"parents_email,omitempty" validate:"omitempty,email"`
 }
 
+//creates a AccountResponseDTO from an account
 func dtoFromAccount(a *services.Account) *AccountResponseDTO {
 	return &AccountResponseDTO{
 		ID:    a.ID.String(),
