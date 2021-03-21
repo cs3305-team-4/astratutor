@@ -4,9 +4,7 @@ This repo serves as the monorepo for the AstraTutor application for Team 4 of th
 
 ## Instructions
 
-### Use website
-Visit [astratutor.com](https://astratutor.com/)
-We have 2 test accounts
+We have 2 test accounts for logging in
 ```
 Tutor email:        tutor@grindsapp.localhost
 Tutor password:     grindsapp
@@ -14,6 +12,17 @@ Tutor password:     grindsapp
 Student email:      student@grindsapp.localhost
 Student password:   grindsapp
 ```
+
+To look at pg admin use the following credentials
+```
+Email:              grindsapp@grindsapp.localhost
+Password:           grindsapp
+
+Second password:    grindsapp
+```
+
+### Use website
+Visit [astratutor.com](https://astratutor.com/)
 
 ### Install Locally
 1. Clone the repo
