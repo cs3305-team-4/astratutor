@@ -70,15 +70,6 @@ type SubjectTaught struct {
 	Price       int64  `gorn:"not null;"`
 }
 
-// type TutorSubjects struct {
-// 	database.Model
-
-// 	Tutor   Profile `gorm:"foreignKey:TutorID"`
-// 	TutorID uuid.UUID
-
-// 	SubjectsTaught []SubjectTaught `gorm:"many2many:tutor_teaching"`
-// }
-
 //gets all subjects in the DB
 func GetSubjects(query string, db *gorm.DB) ([]Subject, error) {
 	if db == nil {
