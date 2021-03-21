@@ -302,69 +302,6 @@ func (l *Lesson) CreateResource(name string, mime string, data []byte) error {
 	return nil
 }
 
-// ChangeRequestStage changes the stage the lesson is at
-// i.e a requester can request the lesson move from the Requested state to the Acceptd state to confirm that the lesson will take place
-// func (l *Lesson) UpdateRequestStageByAccount(stageRequester *Account, newStage LessonRequestStage, detail string) error {
-// 	db, err := database.Open()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	err = db.Transaction(func(tx *gorm.DB) error {
-// 		// re-read the lesson, stops data races
-// 		lesson, err := ReadLessonByID(l.ID)
-// 		if err != nil {
-// 			tx.Rollback()
-// 			return err
-// 		}
-
-// 		// Make a decision based off the current stage the lesson is at
-// 		switch lesson.RequestStage {
-// 		// If the lesson stage was 'requested'
-// 		case Requested:
-// 			switch newStage {
-// 			case Scheduled:
-// 				if stageRequester.ID == lesson.RequesterID {
-// 					return errors.New("you can not mark a lesson as scheduled if you were the one who created the lesson")
-// 				}
-
-// 			case Denied:
-// 				if stageRequester.ID == lesson.RequesterID {
-// 					return errors.New("you can not deny a lesson if you were the one who created the lesson")
-// 				}
-
-// 			case Cancelled:
-// 				if stageRequester.ID != lesson.RequesterID {
-// 					return errors.New("only the person who requested the lesson can cancel the request")
-// 				}
-
-// 			default:
-// 				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
-// 			}
-
-// 		case Scheduled:
-// 			switch newStage {
-// 			case Cancelled:
-
-// 			default:
-// 				return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
-// 			}
-
-// 		default:
-// 			return fmt.Errorf("unsupported stage %s from %s", newStage, lesson.RequestStage)
-// 		}
-
-// 		db.Model(&lesson).Updates(&Lesson{
-// 			RequestStage:          newStage,
-// 			RequestStageDetail:    detail,
-// 			RequestStageChangerID: stageRequester.ID,
-// 		})
-// 		return nil
-// 	})
-
-// 	return err
-// }
-
 func (l *Lesson) MarkScheduled(requester *Account) error {
 	db, err := database.Open()
 	if err != nil {
