@@ -55,4 +55,4 @@ This will take some time to start as it needs to seed the database
 ```
 
 ## Documentation
-https://docs.astratutor.com/v1.pdf
+https://cs3305-team-4.github.io/astratutor/documents/Project%20Documentation%20%5BFINAL%5D.pdf
